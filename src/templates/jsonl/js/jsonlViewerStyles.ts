@@ -1,0 +1,300 @@
+// Inline copy of `src/templates/jsonl/css/jsonlViewer.css` so the bundled JS
+// module can self-inject styles when the router mounts the viewer into the
+// legacy SPA host. Keep this string in sync with the .css file.
+//
+// Mirrors `jsonViewerStyles.ts`. See that module's header for the rationale.
+
+export const JSONL_VIEWER_CSS = `
+.jl-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    color: #e8e8e8;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 13px;
+}
+.jl-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+.jl-info {
+    font-size: 12px;
+    opacity: 0.7;
+}
+.jl-load-more {
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    color: #e8e8e8;
+    font: inherit;
+    cursor: pointer;
+}
+.jl-load-more:hover {
+    background: rgba(255, 255, 255, 0.10);
+}
+.jl-load-more:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.jl-list {
+    flex: 1;
+    overflow: auto;
+    min-height: 0;
+    padding: 4px 0;
+    position: relative;
+}
+.jl-error {
+    padding: 12px;
+    border: 1px solid rgba(255, 100, 100, 0.4);
+    border-radius: 4px;
+    background: rgba(255, 100, 100, 0.08);
+    color: #ffb0b0;
+    margin: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.jl-download {
+    padding: 4px 10px;
+    background: rgba(120, 200, 255, 0.10);
+    border: 1px solid rgba(120, 200, 255, 0.35);
+    border-radius: 4px;
+    color: #cfe9ff;
+    font: inherit;
+    cursor: pointer;
+}
+.jl-download:hover {
+    background: rgba(120, 200, 255, 0.18);
+}
+.jl-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 1px 12px;
+    line-height: 1.5;
+    cursor: pointer;
+    white-space: pre;
+}
+.jl-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+.jl-row.jl-invalid {
+    background: rgba(255, 100, 100, 0.06);
+}
+.jl-row.jl-invalid:hover {
+    background: rgba(255, 100, 100, 0.10);
+}
+.jl-row.jl-empty {
+    opacity: 0.45;
+}
+.jl-line-number {
+    color: rgba(255, 255, 255, 0.35);
+    min-width: 4ch;
+    text-align: right;
+    user-select: none;
+    flex-shrink: 0;
+}
+.jl-line-content {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.jl-invalid-badge {
+    display: inline-block;
+    margin-right: 6px;
+    padding: 0 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    background: rgba(255, 100, 100, 0.18);
+    color: #ffb0b0;
+    border: 1px solid rgba(255, 100, 100, 0.35);
+    user-select: none;
+}
+.omni-jsonl-popup {
+    position: fixed;
+    box-sizing: border-box;
+    background: #1f1f1f;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 6px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    color: #e8e8e8;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    overflow: auto;
+    z-index: 1000;
+    pointer-events: none;
+}
+.omni-jsonl-popup-content {
+    margin: 0;
+    padding: 10px 12px;
+    white-space: pre;
+    color: inherit;
+    background: transparent;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+/* Syntax highlight tokens (issue #61). Colours mirror the JSON viewer
+ * (jv-tok-) palette so the two viewers feel like the same product;
+ * the prefix differs only to keep the namespaces independent. The
+ * default theme is the dark palette (the host page uses a dark chrome).
+ * The light overrides below match when the host opts in via the
+ * prefers-color-scheme media query OR via an explicit jl-theme-light
+ * class on an ancestor. */
+.jl-tok-key { color: #a3d1ff; }
+.jl-tok-string { color: #ffb86c; }
+.jl-tok-number { color: #f1fa8c; }
+.jl-tok-bool { color: #ff79c6; }
+.jl-tok-null { color: rgba(255, 255, 255, 0.55); }
+.jl-tok-punct { color: rgba(255, 255, 255, 0.65); }
+.jl-tok-unknown {
+    color: #ff8080;
+    text-decoration: underline wavy rgba(255, 100, 100, 0.6);
+}
+
+@media (prefers-color-scheme: light) {
+    .jl-tok-key { color: #0451a5; }
+    .jl-tok-string { color: #a31515; }
+    .jl-tok-number { color: #098658; }
+    .jl-tok-bool { color: #af00db; }
+    .jl-tok-null { color: rgba(0, 0, 0, 0.55); }
+    .jl-tok-punct { color: rgba(0, 0, 0, 0.65); }
+    .jl-tok-unknown {
+        color: #b00020;
+        text-decoration: underline wavy rgba(176, 0, 32, 0.6);
+    }
+}
+
+.jl-theme-light .jl-tok-key { color: #0451a5; }
+.jl-theme-light .jl-tok-string { color: #a31515; }
+.jl-theme-light .jl-tok-number { color: #098658; }
+.jl-theme-light .jl-tok-bool { color: #af00db; }
+.jl-theme-light .jl-tok-null { color: rgba(0, 0, 0, 0.55); }
+.jl-theme-light .jl-tok-punct { color: rgba(0, 0, 0, 0.65); }
+.jl-theme-light .jl-tok-unknown {
+    color: #b00020;
+    text-decoration: underline wavy rgba(176, 0, 32, 0.6);
+}
+
+/* Click-to-edit popup mode (issue #60). The popup is reused as the
+ * editor surface; pointer-events are toggled to interactive while
+ * the editor box is mounted so the textarea + buttons receive
+ * input. */
+.jl-edit-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    height: 100%;
+    box-sizing: border-box;
+}
+.jl-edit-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.jl-edit-title {
+    font-size: 12px;
+    opacity: 0.8;
+}
+.jl-edit-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    user-select: none;
+    border: 1px solid transparent;
+}
+.jl-edit-badge-valid {
+    background: rgba(120, 220, 140, 0.15);
+    border-color: rgba(120, 220, 140, 0.45);
+    color: #a8e6b8;
+}
+.jl-edit-badge-invalid {
+    background: rgba(255, 100, 100, 0.18);
+    border-color: rgba(255, 100, 100, 0.45);
+    color: #ffb0b0;
+}
+.jl-edit-textarea {
+    flex: 1;
+    min-height: 120px;
+    resize: vertical;
+    box-sizing: border-box;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: #141414;
+    color: #e8e8e8;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.45;
+    white-space: pre;
+    overflow: auto;
+    outline: none;
+}
+.jl-edit-textarea:focus {
+    border-color: rgba(120, 180, 255, 0.55);
+    box-shadow: 0 0 0 2px rgba(120, 180, 255, 0.18);
+}
+.jl-edit-textarea-valid {
+    border-color: rgba(120, 220, 140, 0.45);
+}
+.jl-edit-textarea-invalid {
+    border-color: rgba(255, 100, 100, 0.55);
+    box-shadow: 0 0 0 2px rgba(255, 100, 100, 0.12);
+}
+.jl-edit-error {
+    display: none;
+    padding: 6px 8px;
+    border-radius: 4px;
+    background: rgba(255, 100, 100, 0.10);
+    border: 1px solid rgba(255, 100, 100, 0.35);
+    color: #ffb0b0;
+    font-size: 11px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.jl-edit-error.jl-edit-error-visible {
+    display: block;
+}
+.jl-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.jl-edit-save,
+.jl-edit-cancel {
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.05);
+    color: #e8e8e8;
+    font: inherit;
+    cursor: pointer;
+}
+.jl-edit-save {
+    background: rgba(120, 180, 255, 0.18);
+    border-color: rgba(120, 180, 255, 0.45);
+}
+.jl-edit-save:hover:not(:disabled) {
+    background: rgba(120, 180, 255, 0.28);
+}
+.jl-edit-cancel:hover {
+    background: rgba(255, 255, 255, 0.10);
+}
+.jl-edit-save:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+`;

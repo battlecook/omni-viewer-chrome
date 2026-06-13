@@ -1,0 +1,59 @@
+<!doctype html>
+<!--
+  Per-viewer entry shell for the CSV viewer.
+
+  Note: this shell is wired only as a thin "load-the-bundle" page for now.
+  The router (src/router.ts) mounts the viewer in-page through the registry
+  provider; the standalone page route will be wired up in issue #5
+  (handoff via blob URL + chrome.storage.session).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Omni Viewer — CSV</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="css/csvViewer.css">
+</head>
+<body>
+  <main class="app">
+    <section id="viewer" class="viewer" data-viewer="csv">
+      <!-- The CSV viewer mounts a `.csv-container` here at runtime. The
+           static skeleton below mirrors the eventual DOM shape so styling
+           and structure can be inspected without a file loaded yet. -->
+      <div class="csv-container" data-static-skeleton>
+        <div class="csv-header">
+          <div class="csv-title">CSV Viewer</div>
+          <div class="csv-file-info">
+            <span class="csv-row-count">0 rows</span>
+            <span class="csv-sep"> • </span>
+            <span class="csv-column-count">0 columns</span>
+            <span class="csv-sep"> • </span>
+            <span class="csv-file-size">0 KB</span>
+          </div>
+        </div>
+        <div class="csv-toolbar">
+          <label class="csv-delimiter-label" for="delimiterSelect">Delimiter:</label>
+          <select id="delimiterSelect" class="csv-delimiter-select" disabled>
+            <option value=",">Comma  (,)</option>
+            <option value="&#9;">Tab  (\t)</option>
+            <option value=";">Semicolon  (;)</option>
+            <option value="|">Pipe  (|)</option>
+          </select>
+        </div>
+        <div class="csv-table-container">
+          <div class="csv-loading">No file loaded.</div>
+          <div class="csv-error" style="display:none;"></div>
+          <div class="csv-table-wrapper" style="display:none;">
+            <table class="csv-table" id="csvTable">
+              <thead id="tableHeader"></thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="../../../dist/templates/csv/csvViewer.js"></script>
+</body>
+</html>

@@ -1,0 +1,670 @@
+{
+  "appName": {
+    "message": "Omni Viewer",
+    "description": "Extension name."
+  },
+  "appShortName": {
+    "message": "Omni Viewer",
+    "description": "Short extension name."
+  },
+  "appDescription": {
+    "message": "Open local files in Chrome: images, PDF, CSV, JSON, YAML, TOML, audio, video, Office, PSD, Parquet, HWP/HWPX, and archives.",
+    "description": "Extension description shown by Chrome and the Chrome Web Store."
+  },
+  "actionTitle": {
+    "message": "Open Omni Viewer",
+    "description": "Toolbar action title."
+  },
+  "fileHandlerName": {
+    "message": "Open with Omni Viewer",
+    "description": "File handler action name."
+  },
+  "supportSummary": {
+    "message": "Local multi-format file viewer",
+    "description": "Subtitle on the viewer start screen."
+  },
+  "themeButton": {
+    "message": "Theme",
+    "description": "Button text for toggling the color theme."
+  },
+  "themeButtonTitle": {
+    "message": "Toggle theme",
+    "description": "Tooltip for the theme toggle button."
+  },
+  "resetButton": {
+    "message": "Clear",
+    "description": "Button text for clearing the current file."
+  },
+  "openFileButton": {
+    "message": "Open File",
+    "description": "Button text for selecting a file."
+  },
+  "dropPrompt": {
+    "message": "Drop a file here",
+    "description": "Drag and drop prompt."
+  },
+  "formatsSummary": {
+    "message": "Images, PDF, CSV/TSV, JSON/JSONL, YAML/TOML, media, Office, PSD, Parquet, HWP/HWPX, archives",
+    "description": "Summary of supported file formats."
+  },
+  "downloadOriginal": {
+    "message": "Download original",
+    "description": "Button text for downloading the original file."
+  },
+  "commonLoading": {
+    "message": "Loading…",
+    "description": "Generic loading indicator text."
+  },
+  "commonError": {
+    "message": "Error",
+    "description": "Generic error label."
+  },
+  "commonRetry": {
+    "message": "Retry",
+    "description": "Generic retry button label."
+  },
+  "commonCancel": {
+    "message": "Cancel",
+    "description": "Generic cancel button label."
+  },
+  "commonSave": {
+    "message": "Save",
+    "description": "Generic save button label."
+  },
+  "commonSaveAs": {
+    "message": "Save As",
+    "description": "Generic Save As button label."
+  },
+  "commonClose": {
+    "message": "Close",
+    "description": "Generic close button label."
+  },
+  "commonSearchPlaceholder": {
+    "message": "Search…",
+    "description": "Generic search input placeholder."
+  },
+  "commonClear": {
+    "message": "Clear",
+    "description": "Generic clear button label."
+  },
+  "commonCopy": {
+    "message": "Copy",
+    "description": "Generic copy button label."
+  },
+  "commonCopied": {
+    "message": "Copied!",
+    "description": "Toast / button flash when content was copied."
+  },
+  "commonDownload": {
+    "message": "Download",
+    "description": "Generic download button label."
+  },
+  "commonOpen": {
+    "message": "Open",
+    "description": "Generic open button label."
+  },
+  "commonNext": {
+    "message": "Next",
+    "description": "Generic next button label."
+  },
+  "commonPrevious": {
+    "message": "Previous",
+    "description": "Generic previous button label."
+  },
+  "commonPage": {
+    "message": "Page",
+    "description": "Generic page label."
+  },
+  "commonOf": {
+    "message": "of",
+    "description": "Generic 'of' connector for X of Y forms (page X of Y)."
+  },
+  "commonReset": {
+    "message": "Reset",
+    "description": "Generic reset button label."
+  },
+  "commonZoomIn": {
+    "message": "Zoom in",
+    "description": "Generic zoom-in tooltip."
+  },
+  "commonZoomOut": {
+    "message": "Zoom out",
+    "description": "Generic zoom-out tooltip."
+  },
+  "commonFit": {
+    "message": "Fit",
+    "description": "Generic fit-to-screen tooltip."
+  },
+  "commonFailedToLoad": {
+    "message": "Failed to load file",
+    "description": "Generic load-failure heading shown by viewers."
+  },
+  "commonUnsupportedFile": {
+    "message": "No supported viewer matched this file.",
+    "description": "Fallback shown when no viewer can handle a file."
+  },
+  "imageRotateTitle": {
+    "message": "Rotate 90°",
+    "description": "Image viewer rotate button tooltip."
+  },
+  "imageFlipHorizontalTitle": {
+    "message": "Flip horizontal",
+    "description": "Image viewer flip-horizontal button tooltip."
+  },
+  "imageFlipVerticalTitle": {
+    "message": "Flip vertical",
+    "description": "Image viewer flip-vertical button tooltip."
+  },
+  "imageResetTitle": {
+    "message": "Reset (R)",
+    "description": "Image viewer reset button tooltip."
+  },
+  "imageFitTitle": {
+    "message": "Fit (0)",
+    "description": "Image viewer fit-to-screen button tooltip."
+  },
+  "imageInfoSize": {
+    "message": "Size",
+    "description": "Image viewer info panel: pixel dimensions label."
+  },
+  "imageInfoFormat": {
+    "message": "Format",
+    "description": "Image viewer info panel: format label."
+  },
+  "imageInfoFileSize": {
+    "message": "File Size",
+    "description": "Image viewer info panel: byte size label."
+  },
+  "imageLoading": {
+    "message": "Loading image…",
+    "description": "Image viewer loading text."
+  },
+  "imageLoadError": {
+    "message": "Error loading image file",
+    "description": "Image viewer load-error message."
+  },
+  "imageFilterBrightness": {
+    "message": "Brightness",
+    "description": "Image filter slider label: brightness."
+  },
+  "imageFilterContrast": {
+    "message": "Contrast",
+    "description": "Image filter slider label: contrast."
+  },
+  "imageFilterSaturation": {
+    "message": "Saturation",
+    "description": "Image filter slider label: saturation."
+  },
+  "imageFilterGrayscale": {
+    "message": "Grayscale",
+    "description": "Image filter slider label: grayscale."
+  },
+  "imagePresetOriginal": {
+    "message": "Original",
+    "description": "Image filter preset: original / no filter."
+  },
+  "imagePresetBright": {
+    "message": "Bright",
+    "description": "Image filter preset: bright."
+  },
+  "imagePresetDark": {
+    "message": "Dark",
+    "description": "Image filter preset: dark."
+  },
+  "imagePresetVintage": {
+    "message": "Vintage",
+    "description": "Image filter preset: vintage."
+  },
+  "imagePresetBw": {
+    "message": "B&W",
+    "description": "Image filter preset: black and white."
+  },
+  "imageEditToggle": {
+    "message": "Edit",
+    "description": "Image viewer button to enter edit mode."
+  },
+  "imageEditToolText": {
+    "message": "Text",
+    "description": "Image edit mode tool: add text."
+  },
+  "imageEditToolCircle": {
+    "message": "Circle",
+    "description": "Image edit mode tool: add circle."
+  },
+  "imageEditToolRect": {
+    "message": "Rectangle",
+    "description": "Image edit mode tool: add rectangle."
+  },
+  "imageEditToolSelect": {
+    "message": "Select",
+    "description": "Image edit mode tool: select."
+  },
+  "imageEditToolDelete": {
+    "message": "Delete",
+    "description": "Image edit mode tool: delete selected."
+  },
+  "imageSelectionInfo": {
+    "message": "$1 selected",
+    "description": "Image edit mode: number of currently selected elements. $1 = count."
+  },
+  "imageSaveCopy": {
+    "message": "Save copy",
+    "description": "Image viewer button: save edited copy."
+  },
+  "pdfLoading": {
+    "message": "Loading PDF…",
+    "description": "PDF viewer loading text."
+  },
+  "pdfLoadCancelled": {
+    "message": "PDF load was cancelled.",
+    "description": "PDF viewer message when the user cancels the password modal."
+  },
+  "pdfLoadFailed": {
+    "message": "Failed to load PDF: $1",
+    "description": "PDF viewer load-failure with reason. $1 = error."
+  },
+  "pdfPasswordPromptInitial": {
+    "message": "Enter PDF password:",
+    "description": "PDF password modal: initial prompt label."
+  },
+  "pdfPasswordPromptIncorrect": {
+    "message": "Incorrect password. Try again:",
+    "description": "PDF password modal: retry prompt label."
+  },
+  "pdfPasswordHintInitial": {
+    "message": "This PDF is password protected.",
+    "description": "PDF password modal: initial hint."
+  },
+  "pdfPasswordHintIncorrect": {
+    "message": "The password did not match this PDF.",
+    "description": "PDF password modal: retry hint."
+  },
+  "pdfPasswordEmpty": {
+    "message": "Please enter a password.",
+    "description": "PDF password modal: empty input hint."
+  },
+  "pdfPasswordPlaceholder": {
+    "message": "Password",
+    "description": "PDF password modal: input placeholder."
+  },
+  "pdfPasswordOpen": {
+    "message": "Open PDF",
+    "description": "PDF password modal: confirm button."
+  },
+  "pdfTextAnnotationButton": {
+    "message": "Text",
+    "description": "PDF toolbar button: add text annotation."
+  },
+  "pdfTextAnnotationTitle": {
+    "message": "Add text annotation",
+    "description": "PDF toolbar button tooltip: add text annotation."
+  },
+  "pdfTextAnnotationLabel": {
+    "message": "Add text annotation:",
+    "description": "PDF text annotation modal label."
+  },
+  "pdfTextAnnotationPlaceholder": {
+    "message": "Type annotation text",
+    "description": "PDF text annotation modal placeholder."
+  },
+  "pdfTextAnnotationSizeLabel": {
+    "message": "Size",
+    "description": "PDF text annotation modal: size input label."
+  },
+  "pdfTextAnnotationColorLabel": {
+    "message": "Color",
+    "description": "PDF text annotation modal: color input label."
+  },
+  "pdfTextAnnotationConfirm": {
+    "message": "Add",
+    "description": "PDF text annotation modal: confirm button."
+  },
+  "pdfSignatureButton": {
+    "message": "Signature",
+    "description": "PDF toolbar button: add signature."
+  },
+  "pdfMergeButton": {
+    "message": "Merge PDF",
+    "description": "PDF toolbar button: merge another PDF."
+  },
+  "pdfThumbnailEmpty": {
+    "message": "No thumbnails",
+    "description": "PDF thumbnail sidebar empty state."
+  },
+  "csvDelimiterLabel": {
+    "message": "Delimiter:",
+    "description": "CSV viewer: delimiter selector label."
+  },
+  "csvSearchPlaceholder": {
+    "message": "Search rows…",
+    "description": "CSV viewer: search input placeholder."
+  },
+  "csvShowStatistics": {
+    "message": "Show Statistics",
+    "description": "CSV viewer: show statistics button."
+  },
+  "csvHideStatistics": {
+    "message": "Hide Statistics",
+    "description": "CSV viewer: hide statistics button."
+  },
+  "csvLoading": {
+    "message": "Loading CSV…",
+    "description": "CSV viewer loading text."
+  },
+  "csvLoadFailed": {
+    "message": "Failed to load CSV: $1",
+    "description": "CSV viewer load-failure with reason. $1 = error."
+  },
+  "csvRowCount": {
+    "message": "$1 rows",
+    "description": "CSV viewer: row count label. $1 = number."
+  },
+  "csvColumnCount": {
+    "message": "$1 columns",
+    "description": "CSV viewer: column count label. $1 = number."
+  },
+  "audioLoading": {
+    "message": "Loading audio…",
+    "description": "Audio viewer loading text."
+  },
+  "audioLoadFailed": {
+    "message": "Failed to load audio: $1",
+    "description": "Audio viewer load-failure with reason. $1 = error."
+  },
+  "audioFormatNotSupported": {
+    "message": "$1 files aren't decodable in this build yet.",
+    "description": "Audio viewer: friendly message when extension is not yet decoded. $1 = extension."
+  },
+  "audioPlay": {
+    "message": "Play",
+    "description": "Audio viewer: play button label."
+  },
+  "audioPause": {
+    "message": "Pause",
+    "description": "Audio viewer: pause button label."
+  },
+  "audioLoopToggle": {
+    "message": "Loop region",
+    "description": "Audio viewer: toggle loop region."
+  },
+  "audioSetA": {
+    "message": "Set A",
+    "description": "Audio viewer: set loop A marker."
+  },
+  "audioSetB": {
+    "message": "Set B",
+    "description": "Audio viewer: set loop B marker."
+  },
+  "audioClearLoop": {
+    "message": "Clear A-B",
+    "description": "Audio viewer: clear loop A-B markers."
+  },
+  "audioCopyRegion": {
+    "message": "Copy region",
+    "description": "Audio viewer context menu: copy current region."
+  },
+  "audioExportRegion": {
+    "message": "Export region",
+    "description": "Audio viewer context menu: export current region."
+  },
+  "audioDeleteRegion": {
+    "message": "Delete region",
+    "description": "Audio viewer context menu: delete current region."
+  },
+  "videoCodecUnsupported": {
+    "message": "$1 files use a codec your browser doesn't decode natively. You can download the file or open it in a media player.",
+    "description": "Video viewer: codec-unsupported fallback. $1 = extension."
+  },
+  "videoSetA": {
+    "message": "Set A",
+    "description": "Video viewer: set loop A marker."
+  },
+  "videoSetB": {
+    "message": "Set B",
+    "description": "Video viewer: set loop B marker."
+  },
+  "videoClearLoop": {
+    "message": "Clear A-B",
+    "description": "Video viewer: clear loop A-B markers."
+  },
+  "videoSkipBackward": {
+    "message": "-10s",
+    "description": "Video viewer: skip backward 10 seconds."
+  },
+  "videoSkipForward": {
+    "message": "+10s",
+    "description": "Video viewer: skip forward 10 seconds."
+  },
+  "videoPlaybackSpeedLabel": {
+    "message": "Speed",
+    "description": "Video viewer: playback speed label."
+  },
+  "excelSearchPlaceholder": {
+    "message": "Search in table…",
+    "description": "Excel viewer: search input placeholder."
+  },
+  "excelSheetLabel": {
+    "message": "Sheet:",
+    "description": "Excel viewer: sheet selector label."
+  },
+  "excelLoading": {
+    "message": "Loading Excel file…",
+    "description": "Excel viewer loading text."
+  },
+  "excelLoadFailed": {
+    "message": "Failed to load Excel file: $1",
+    "description": "Excel viewer load-failure. $1 = error."
+  },
+  "excelCopyTsv": {
+    "message": "Copy",
+    "description": "Excel viewer: copy filtered rows as TSV."
+  },
+  "excelCopyJson": {
+    "message": "Copy as JSON",
+    "description": "Excel viewer: copy filtered rows as JSON."
+  },
+  "excelToggleView": {
+    "message": "Toggle View",
+    "description": "Excel viewer: toggle between table and raw JSON view."
+  },
+  "excelTableView": {
+    "message": "Table View",
+    "description": "Excel viewer: switch back to table view (button label when in raw view)."
+  },
+  "excelRawView": {
+    "message": "Raw View",
+    "description": "Excel viewer: switch to raw JSON view."
+  },
+  "parquetLoading": {
+    "message": "Loading Parquet…",
+    "description": "Parquet viewer loading text."
+  },
+  "parquetLoadFailed": {
+    "message": "Failed to render Parquet: $1",
+    "description": "Parquet viewer load-failure. $1 = error."
+  },
+  "parquetReaderLoadFailed": {
+    "message": "Couldn't load Parquet reader",
+    "description": "Parquet viewer: failure to load hyparquet bundle."
+  },
+  "parquetSearchPlaceholder": {
+    "message": "Search rows…",
+    "description": "Parquet viewer: search input placeholder."
+  },
+  "parquetLoadMore": {
+    "message": "Load Next 10,000 Rows",
+    "description": "Parquet viewer: progressive load button label."
+  },
+  "parquetLoadingMore": {
+    "message": "Loading…",
+    "description": "Parquet viewer: progressive load in-flight label."
+  },
+  "parquetLoadMoreFailed": {
+    "message": "Failed to load more rows: $1",
+    "description": "Parquet viewer: progressive load failure. $1 = error."
+  },
+  "parquetBlockHeadline": {
+    "message": "File too large to open inline",
+    "description": "Parquet viewer: block panel headline for >=150MB files."
+  },
+  "parquetCopyCellValue": {
+    "message": "Copy cell value",
+    "description": "Parquet viewer: cell context menu item."
+  },
+  "parquetCopyColumn": {
+    "message": "Copy column \"$1\"",
+    "description": "Parquet viewer: column context menu item. $1 = header."
+  },
+  "parquetCopyRowAsJson": {
+    "message": "Copy row as JSON",
+    "description": "Parquet viewer: row context menu item."
+  },
+  "wordLoading": {
+    "message": "Loading Word document…",
+    "description": "Word viewer loading text."
+  },
+  "wordLoadFailed": {
+    "message": "Failed to load Word document: $1",
+    "description": "Word viewer load-failure. $1 = error."
+  },
+  "wordPrintButton": {
+    "message": "Print",
+    "description": "Word viewer: print button."
+  },
+  "wordEmbeddedPanelTitle": {
+    "message": "Embedded objects",
+    "description": "Word viewer: embedded workbook / chart panel title."
+  },
+  "pptLoading": {
+    "message": "Loading presentation…",
+    "description": "PPT viewer loading text."
+  },
+  "pptLoadFailed": {
+    "message": "Failed to load presentation: $1",
+    "description": "PPT viewer load-failure. $1 = error."
+  },
+  "pptSlideJumpLabel": {
+    "message": "Slide:",
+    "description": "PPT viewer: slide-jump selector label."
+  },
+  "pptFallbackParserFailed": {
+    "message": "Could not read this presentation. The file may be corrupt or saved in an unsupported format. Try converting it to PDF and opening the PDF in this viewer.",
+    "description": "PPT viewer: shown when both the primary parser and the fallback text extractor fail."
+  },
+  "pptFallbackNoRenderable": {
+    "message": "This presentation has no renderable content (master-only or template-only deck). The viewer could not extract any slide text.",
+    "description": "PPT viewer: shown when the parser succeeded but produced no renderable shapes and the loose-text fallback also found nothing."
+  },
+  "pptFallbackBrowserFailed": {
+    "message": "Could not load this presentation in the browser. The unzip / decode step failed; please verify the file is not corrupted.",
+    "description": "PPT viewer: shown when a browser-side dependency (e.g. JSZip) throws before parsing begins."
+  },
+  "pptRenderProgress": {
+    "message": "Rendering slides… ($1/$2)",
+    "description": "PPT viewer: progress label while the continuous render loop is running. $1 = current slide, $2 = total."
+  },
+  "pptRenderTimeout": {
+    "message": "Rendering took too long and was stopped. Already-rendered slides remain visible.",
+    "description": "PPT viewer: shown when the continuous render exceeds the wall-clock budget."
+  },
+  "psdLoading": {
+    "message": "Loading PSD…",
+    "description": "PSD viewer loading text."
+  },
+  "psdLoadFailed": {
+    "message": "Failed to load PSD: $1",
+    "description": "PSD viewer load-failure. $1 = error."
+  },
+  "psdSizeBlocked": {
+    "message": "PSD file is $1; inline preview is disabled for files at or above 200 MB.",
+    "description": "PSD viewer: size guard message. $1 = formatted size."
+  },
+  "hwpLoading": {
+    "message": "Loading HWP…",
+    "description": "HWP viewer loading text."
+  },
+  "hwpLoadFailed": {
+    "message": "Failed to load HWP: $1",
+    "description": "HWP viewer load-failure. $1 = error."
+  },
+  "hwpRendererLoadFailed": {
+    "message": "Couldn't load HWP renderer",
+    "description": "HWP viewer: rhwp WASM load failure."
+  },
+  "archiveLoading": {
+    "message": "Loading archive…",
+    "description": "Archive viewer loading text."
+  },
+  "archiveLoadFailed": {
+    "message": "Failed to load archive: $1",
+    "description": "Archive viewer load-failure. $1 = error."
+  },
+  "archiveDmgPartial": {
+    "message": "DMG (HFS+/APFS) is partially supported; some images can't be browsed.",
+    "description": "Archive viewer: DMG partial-support note."
+  },
+  "archiveTooLarge": {
+    "message": "File too large for inline preview",
+    "description": "Archive viewer: too-large preview fallback."
+  },
+  "jsonLoading": {
+    "message": "Loading JSON…",
+    "description": "JSON viewer loading text."
+  },
+  "jsonLoadFailed": {
+    "message": "Failed to load JSON: $1",
+    "description": "JSON viewer load-failure. $1 = error."
+  },
+  "jsonTreeButton": {
+    "message": "Tree",
+    "description": "JSON viewer: tree mode toggle."
+  },
+  "jsonSourceButton": {
+    "message": "Source",
+    "description": "JSON viewer: source mode toggle."
+  },
+  "jsonlLoading": {
+    "message": "Loading JSONL…",
+    "description": "JSONL viewer loading text."
+  },
+  "jsonlLoadFailed": {
+    "message": "Failed to load JSONL: $1",
+    "description": "JSONL viewer load-failure. $1 = error."
+  },
+  "jsonlEditSave": {
+    "message": "Save",
+    "description": "JSONL inline editor: save button."
+  },
+  "jsonlEditCancel": {
+    "message": "Cancel",
+    "description": "JSONL inline editor: cancel button."
+  },
+  "jsonlInvalidJson": {
+    "message": "Invalid JSON",
+    "description": "JSONL viewer: indicator for malformed lines."
+  },
+  "jsonlLoadMore": {
+    "message": "Load more rows",
+    "description": "JSONL viewer: load more rows button."
+  },
+  "jsonlEmptyJsonValue": {
+    "message": "Empty JSON value",
+    "description": "JSONL editor: empty input error."
+  },
+  "yamlLoading": {
+    "message": "Loading YAML…",
+    "description": "YAML viewer loading text."
+  },
+  "yamlLoadFailed": {
+    "message": "Failed to load YAML: $1",
+    "description": "YAML viewer load-failure. $1 = error."
+  },
+  "tomlLoading": {
+    "message": "Loading TOML…",
+    "description": "TOML viewer loading text."
+  },
+  "tomlLoadFailed": {
+    "message": "Failed to load TOML: $1",
+    "description": "TOML viewer load-failure. $1 = error."
+  }
+}

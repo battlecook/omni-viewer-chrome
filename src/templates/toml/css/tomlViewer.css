@@ -1,0 +1,237 @@
+/* Static stylesheet for the TOML viewer (issue #65).
+ *
+ * The runtime bundle injects the same rules via tomlViewerStyles.ts, so
+ * `mountTomlViewer` works even when called by the registry router (which
+ * doesn't load this file). This file is here for the standalone
+ * `tomlViewer.html` shell so the page renders correctly even before the
+ * bundle finishes executing.
+ */
+
+:root {
+    color-scheme: light dark;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.app, .viewer {
+    height: 100%;
+    min-height: 0;
+}
+
+.toml-viewer-host {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    color: #1f2933;
+    background: #f8fafc;
+}
+
+.toml-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.toml-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.toml-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: #0f172a;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.toml-file-info {
+    font-size: 11px;
+    color: #64748b;
+    white-space: nowrap;
+}
+
+.toml-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: #f1f5f9;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.toml-search {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 12px;
+    background: #ffffff;
+    color: #0f172a;
+}
+
+.toml-button {
+    padding: 6px 12px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #0f172a;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.toml-button:hover {
+    background: #f8fafc;
+}
+
+.toml-button.is-active {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+}
+
+.toml-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    background: #ffffff;
+}
+
+.toml-tree {
+    padding: 12px 16px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.55;
+}
+
+.toml-node {
+    display: block;
+}
+
+.toml-node.is-hidden {
+    display: none;
+}
+
+.toml-node-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 2px 0;
+    cursor: default;
+}
+
+.toml-node-row.is-clickable {
+    cursor: pointer;
+}
+
+.toml-node-row.is-clickable:hover {
+    background: #f1f5f9;
+}
+
+.toml-disclosure {
+    display: inline-block;
+    width: 12px;
+    text-align: center;
+    color: #64748b;
+    user-select: none;
+}
+
+.toml-disclosure.is-empty {
+    visibility: hidden;
+}
+
+.toml-key {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.toml-key-table {
+    color: #1d4ed8;
+}
+
+.toml-key-aot {
+    color: #7c3aed;
+}
+
+.toml-equals {
+    color: #94a3b8;
+    margin: 0 4px;
+}
+
+.toml-value {
+    color: #0f172a;
+}
+
+.toml-value-string { color: #047857; }
+.toml-value-integer { color: #b45309; }
+.toml-value-float { color: #b45309; }
+.toml-value-boolean { color: #be123c; }
+.toml-value-datetime-offset,
+.toml-value-datetime-local,
+.toml-value-date-local,
+.toml-value-time-local { color: #6d28d9; }
+.toml-value-array,
+.toml-value-inline-table {
+    color: #475569;
+}
+
+.toml-children {
+    margin-left: 16px;
+    padding-left: 8px;
+    border-left: 1px dashed #e2e8f0;
+}
+
+.toml-raw {
+    margin: 0;
+    padding: 12px 16px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    color: #0f172a;
+    background: #ffffff;
+    white-space: pre;
+    overflow: auto;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+}
+
+.toml-raw-token-key { color: #1d4ed8; font-weight: 600; }
+.toml-raw-token-string { color: #047857; }
+.toml-raw-token-number { color: #b45309; }
+.toml-raw-token-boolean { color: #be123c; }
+.toml-raw-token-null { color: #64748b; font-style: italic; }
+.toml-raw-token-comment { color: #94a3b8; font-style: italic; }
+.toml-raw-token-punctuation { color: #64748b; }
+.toml-raw-token-value { color: #6d28d9; }
+.toml-error {
+    margin: 16px;
+    padding: 12px 14px;
+    border: 1px solid #fca5a5;
+    background: #fef2f2;
+    color: #b91c1c;
+    border-radius: 4px;
+    font-size: 12.5px;
+}
+
+.toml-loading {
+    padding: 16px;
+    color: #64748b;
+}
+
+.toml-search-hit > .toml-node-row {
+    background: #fef3c7;
+}

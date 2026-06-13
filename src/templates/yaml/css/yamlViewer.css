@@ -1,0 +1,202 @@
+/* YAML viewer stylesheet (issue #64).
+ *
+ * Mirrors the JSON viewer styles (`templates/json/css/jsonViewer.css`)
+ * because the two viewers share the lazy-render tree pattern. The
+ * `yv-*` namespace keeps selectors from colliding with `jv-*`. The
+ * runtime-injected copy in `yamlViewerStyles.ts` MUST stay in sync
+ * with this file.
+ */
+
+.yv-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    padding: 12px;
+    box-sizing: border-box;
+    color: #e8e8e8;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 13px;
+}
+.yv-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-wrap: wrap;
+}
+.yv-mode-group {
+    display: inline-flex;
+    gap: 0;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.yv-mode-button {
+    padding: 4px 10px;
+    background: transparent;
+    border: none;
+    color: #e8e8e8;
+    font: inherit;
+    cursor: pointer;
+}
+.yv-mode-button:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+.yv-mode-button.is-active {
+    background: rgba(120, 170, 255, 0.18);
+    color: #ffffff;
+}
+.yv-search {
+    flex: 1;
+    min-width: 200px;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    color: #e8e8e8;
+    font-family: inherit;
+    font-size: 12px;
+    outline: none;
+}
+.yv-search:focus {
+    border-color: rgba(120, 170, 255, 0.6);
+    box-shadow: 0 0 0 2px rgba(120, 170, 255, 0.18);
+}
+.yv-match-info {
+    font-size: 12px;
+    opacity: 0.75;
+    min-width: 80px;
+    text-align: right;
+}
+.yv-button {
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    color: #e8e8e8;
+    font: inherit;
+    cursor: pointer;
+}
+.yv-button:hover {
+    background: rgba(255, 255, 255, 0.10);
+}
+.yv-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.yv-content {
+    flex: 1;
+    overflow: auto;
+    min-height: 0;
+    padding: 4px 0;
+}
+.yv-source {
+    flex: 1;
+    overflow: auto;
+    min-height: 0;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
+    white-space: pre;
+    word-break: normal;
+    color: #e8e8e8;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 12px;
+    margin: 0;
+}
+.yv-source-token-key { color: #8be9fd; font-weight: 600; }
+.yv-source-token-string { color: #ffb86c; }
+.yv-source-token-number { color: #f1fa8c; }
+.yv-source-token-boolean { color: #ff79c6; }
+.yv-source-token-null { color: rgba(255, 255, 255, 0.45); font-style: italic; }
+.yv-source-token-comment { color: rgba(255, 255, 255, 0.42); font-style: italic; }
+.yv-source-token-punctuation { color: rgba(255, 255, 255, 0.55); }
+.yv-source-token-value { color: #ffb86c; }
+.yv-error {
+    padding: 12px;
+    border: 1px solid rgba(255, 100, 100, 0.4);
+    border-radius: 4px;
+    background: rgba(255, 100, 100, 0.08);
+    color: #ffb0b0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.yv-node { display: block; }
+.yv-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 1px 6px;
+    line-height: 1.5;
+    cursor: default;
+    border-radius: 3px;
+}
+.yv-row.yv-toggleable { cursor: pointer; }
+.yv-row:hover { background: rgba(255, 255, 255, 0.04); }
+.yv-row.yv-current {
+    background: rgba(255, 200, 80, 0.18);
+    outline: 1px solid rgba(255, 200, 80, 0.5);
+}
+.yv-toggle {
+    display: inline-block;
+    width: 14px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.55);
+    user-select: none;
+    flex-shrink: 0;
+}
+.yv-toggle.yv-leaf { visibility: hidden; }
+.yv-key {
+    color: #a3d1ff;
+    flex-shrink: 0;
+}
+.yv-key.yv-array-index { color: rgba(255, 255, 255, 0.45); }
+.yv-colon {
+    color: rgba(255, 255, 255, 0.45);
+    margin-right: 4px;
+}
+.yv-summary {
+    color: rgba(255, 255, 255, 0.45);
+    font-style: italic;
+}
+.yv-value {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    flex: 1;
+    min-width: 0;
+}
+.yv-value-string { color: #ffb86c; }
+.yv-value-number { color: #f1fa8c; }
+.yv-value-boolean { color: #ff79c6; }
+.yv-value-null { color: rgba(255, 255, 255, 0.4); }
+.yv-value-alias { color: #c8a8ff; }
+.yv-children {
+    display: block;
+    border-left: 1px dashed rgba(255, 255, 255, 0.08);
+    margin-left: 9px;
+}
+.yv-match-highlight {
+    background: rgba(255, 235, 130, 0.22);
+    border-radius: 2px;
+}
+.yv-anchor-chip {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 0 6px;
+    background: rgba(120, 200, 255, 0.18);
+    color: #b8e0ff;
+    border-radius: 8px;
+    font-size: 11px;
+}
+.yv-alias-chip {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 0 6px;
+    background: rgba(200, 168, 255, 0.18);
+    color: #d8c0ff;
+    border-radius: 8px;
+    font-size: 11px;
+}

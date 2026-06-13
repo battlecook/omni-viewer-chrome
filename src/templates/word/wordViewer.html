@@ -1,0 +1,28 @@
+<!doctype html>
+<!--
+  Per-viewer entry shell for the word viewer (issue #43).
+
+  This page is the manual-debug entry point. The bundled
+  `wordViewer.js` self-bootstraps when it sees an element with
+  `data-viewer="word"`, picks up the file from the `?src=` query
+  parameter, and mounts via `mountWordViewer`.
+
+  We link both the global `styles.css` (for the SPA shell) and the
+  Word-specific `wordViewer.css` (mirror of the runtime CSS embedded
+  in `wordViewerStyles.ts`).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Omni Viewer — Word</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="css/wordViewer.css">
+</head>
+<body>
+  <main class="app">
+    <section id="viewer" class="viewer" data-viewer="word"></section>
+  </main>
+  <script type="module" src="../../../dist/templates/word/wordViewer.js"></script>
+</body>
+</html>

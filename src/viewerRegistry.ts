@@ -1,0 +1,385 @@
+// Chrome-flavored port of the VSCode `viewerRegistry.ts` module.
+//
+// Each entry mirrors the VSCode original (viewType, command, missingMessage,
+// retainContextWhenHidden, createProvider) so a future split between the two
+// codebases stays diff-friendly. The differences are:
+//
+//   - `createProvider` no longer takes `vscode.ExtensionContext`. The Chrome
+//     page just needs a File-handle-driven render call, so the factory is
+//     parameterless and produces a `ChromeViewerProvider`.
+//   - `command` is kept as a stable string identifier that mirrors the VSCode
+//     command palette IDs. It is currently informational on the Chrome side
+//     (no command palette), but downstream issues (#5 context menus,
+//     "Open with…" right-click integration) will key off it.
+//   - `retainContextWhenHidden` has no Chrome equivalent. It is preserved as
+//     metadata so the value can drive future page-cache decisions; for now
+//     the router ignores it.
+//
+// The actual per-viewer providers will be filled in by later issues. Until
+// then every entry resolves to a placeholder provider that renders an
+// "implementation pending" notice. That keeps the routing layer testable now
+// while leaving the per-viewer logic to its own dedicated issue.
+
+import {
+    ChromeViewerProvider,
+    renderUnsupported
+} from './viewerProviderUtils';
+
+/**
+ * Stable view-type identifiers. These are the same strings the VSCode
+ * extension uses (`omni-viewer.<viewer>Viewer`) so the registry shape stays
+ * one-to-one with `vscode-omni-viewer/src/utils/fileUtils.ts`.
+ */
+export type OmniViewerViewType =
+    | 'omni-viewer.audioViewer'
+    | 'omni-viewer.videoViewer'
+    | 'omni-viewer.imageViewer'
+    | 'omni-viewer.archiveViewer'
+    | 'omni-viewer.csvViewer'
+    | 'omni-viewer.jsonViewer'
+    | 'omni-viewer.yamlViewer'
+    | 'omni-viewer.jsonlViewer'
+    | 'omni-viewer.tomlViewer'
+    | 'omni-viewer.markdownViewer'
+    | 'omni-viewer.mermaidViewer'
+    | 'omni-viewer.plantumlViewer'
+    | 'omni-viewer.automotiveViewer'
+    | 'omni-viewer.parquetViewer'
+    | 'omni-viewer.hwpViewer'
+    | 'omni-viewer.psdViewer'
+    | 'omni-viewer.excelViewer'
+    | 'omni-viewer.wordViewer'
+    | 'omni-viewer.pdfViewer'
+    | 'omni-viewer.pptViewer';
+
+/**
+ * The short slug used in URLs and the `templates/<slug>/` directory layout.
+ * Mapped from the full `omni-viewer.*Viewer` viewType.
+ */
+export type ViewerSlug =
+    | 'audio'
+    | 'video'
+    | 'image'
+    | 'archive'
+    | 'csv'
+    | 'json'
+    | 'yaml'
+    | 'jsonl'
+    | 'toml'
+    | 'markdown'
+    | 'mermaid'
+    | 'plantuml'
+    | 'automotive'
+    | 'parquet'
+    | 'hwp'
+    | 'psd'
+    | 'excel'
+    | 'word'
+    | 'pdf'
+    | 'ppt';
+
+export interface ViewerRegistration {
+    viewType: OmniViewerViewType;
+    slug: ViewerSlug;
+    command: string;
+    missingMessage: string;
+    retainContextWhenHidden: boolean;
+    createProvider: () => ChromeViewerProvider;
+}
+
+/**
+ * Default placeholder provider used by every entry until per-viewer logic
+ * lands in subsequent issues. It renders a neutral "this viewer is wired up
+ * but not implemented yet" notice into the host container so the routing
+ * layer is end-to-end testable.
+ */
+function createPlaceholderProvider(viewType: OmniViewerViewType): ChromeViewerProvider {
+    return {
+        render(file: File, container: HTMLElement): void {
+            renderUnsupported(container, file.name, `viewType=${viewType}`, {
+                title: 'Viewer not yet implemented',
+                message:
+                    'The routing layer matched this viewer, but the renderer ' +
+                    'will be ported in a follow-up issue.',
+                icon: '*'
+            });
+        }
+    };
+}
+
+export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
+    {
+        viewType: 'omni-viewer.archiveViewer',
+        slug: 'archive',
+        command: 'omni-viewer.openArchiveViewer',
+        missingMessage: 'No archive file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.archiveViewer')
+    },
+    {
+        viewType: 'omni-viewer.audioViewer',
+        slug: 'audio',
+        command: 'omni-viewer.openAudioViewer',
+        missingMessage: 'No audio file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.audioViewer')
+    },
+    {
+        viewType: 'omni-viewer.imageViewer',
+        slug: 'image',
+        command: 'omni-viewer.openImageViewer',
+        missingMessage: 'No image file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.imageViewer')
+    },
+    {
+        viewType: 'omni-viewer.videoViewer',
+        slug: 'video',
+        command: 'omni-viewer.openVideoViewer',
+        missingMessage: 'No video file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.videoViewer')
+    },
+    {
+        viewType: 'omni-viewer.csvViewer',
+        slug: 'csv',
+        command: 'omni-viewer.openCsvViewer',
+        missingMessage: 'No CSV file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.csvViewer')
+    },
+    {
+        viewType: 'omni-viewer.jsonViewer',
+        slug: 'json',
+        command: 'omni-viewer.openJsonViewer',
+        missingMessage: 'No JSON file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.jsonViewer')
+    },
+    {
+        viewType: 'omni-viewer.yamlViewer',
+        slug: 'yaml',
+        command: 'omni-viewer.openYamlViewer',
+        missingMessage: 'No YAML file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.yamlViewer')
+    },
+    {
+        viewType: 'omni-viewer.jsonlViewer',
+        slug: 'jsonl',
+        command: 'omni-viewer.openJsonlViewer',
+        missingMessage: 'No JSONL file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.jsonlViewer')
+    },
+    {
+        viewType: 'omni-viewer.tomlViewer',
+        slug: 'toml',
+        command: 'omni-viewer.openTomlViewer',
+        missingMessage: 'No TOML file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.tomlViewer')
+    },
+    {
+        viewType: 'omni-viewer.markdownViewer',
+        slug: 'markdown',
+        command: 'omni-viewer.openMarkdownViewer',
+        missingMessage: 'No Markdown file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.markdownViewer')
+    },
+    {
+        viewType: 'omni-viewer.mermaidViewer',
+        slug: 'mermaid',
+        command: 'omni-viewer.openMermaidViewer',
+        missingMessage: 'No Mermaid file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.mermaidViewer')
+    },
+    {
+        viewType: 'omni-viewer.plantumlViewer',
+        slug: 'plantuml',
+        command: 'omni-viewer.openPlantUmlViewer',
+        missingMessage: 'No PlantUML file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.plantumlViewer')
+    },
+    {
+        viewType: 'omni-viewer.automotiveViewer',
+        slug: 'automotive',
+        command: 'omni-viewer.openAutomotiveViewer',
+        missingMessage: 'No automotive data file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.automotiveViewer')
+    },
+    {
+        viewType: 'omni-viewer.parquetViewer',
+        slug: 'parquet',
+        command: 'omni-viewer.openParquetViewer',
+        missingMessage: 'No Parquet file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.parquetViewer')
+    },
+    {
+        viewType: 'omni-viewer.hwpViewer',
+        slug: 'hwp',
+        command: 'omni-viewer.openHwpViewer',
+        missingMessage: 'No HWP file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.hwpViewer')
+    },
+    {
+        viewType: 'omni-viewer.psdViewer',
+        slug: 'psd',
+        command: 'omni-viewer.openPsdViewer',
+        missingMessage: 'No PSD file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.psdViewer')
+    },
+    {
+        viewType: 'omni-viewer.excelViewer',
+        slug: 'excel',
+        command: 'omni-viewer.openExcelViewer',
+        missingMessage: 'No Excel file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.excelViewer')
+    },
+    {
+        viewType: 'omni-viewer.wordViewer',
+        slug: 'word',
+        command: 'omni-viewer.openWordViewer',
+        missingMessage: 'No Word file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.wordViewer')
+    },
+    {
+        viewType: 'omni-viewer.pdfViewer',
+        slug: 'pdf',
+        command: 'omni-viewer.openPdfViewer',
+        missingMessage: 'No PDF file selected',
+        retainContextWhenHidden: false,
+        createProvider: () => createPlaceholderProvider('omni-viewer.pdfViewer')
+    },
+    {
+        viewType: 'omni-viewer.pptViewer',
+        slug: 'ppt',
+        command: 'omni-viewer.openPptViewer',
+        missingMessage: 'No PowerPoint file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.pptViewer')
+    }
+];
+
+/**
+ * Lookup helpers. These do not duplicate state — they are pure derivations
+ * over `VIEWER_REGISTRATIONS`, which is the single source of truth.
+ */
+
+export function getRegistrationByViewType(
+    viewType: OmniViewerViewType
+): ViewerRegistration | undefined {
+    return VIEWER_REGISTRATIONS.find((r) => r.viewType === viewType);
+}
+
+export function getRegistrationBySlug(slug: ViewerSlug): ViewerRegistration | undefined {
+    return VIEWER_REGISTRATIONS.find((r) => r.slug === slug);
+}
+
+/**
+ * Mapping of common file extensions to a registry slug. This is intentionally
+ * a small, pragmatic subset that mirrors the legacy `formats` table in
+ * `src/app.js`; the authoritative byte-signature detection from
+ * `vscode-omni-viewer/src/utils/fileUtils.ts` will be ported in a later issue.
+ */
+const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
+    '.jpg': 'image',
+    '.jpeg': 'image',
+    '.png': 'image',
+    '.gif': 'image',
+    '.bmp': 'image',
+    '.webp': 'image',
+    '.svg': 'image',
+    '.pdf': 'pdf',
+    '.csv': 'csv',
+    '.tsv': 'csv',
+    '.json': 'json',
+    '.jsonl': 'jsonl',
+    '.ndjson': 'jsonl',
+    '.jsonlines': 'jsonl',
+    '.yaml': 'yaml',
+    '.yml': 'yaml',
+    '.toml': 'toml',
+    '.md': 'markdown',
+    '.markdown': 'markdown',
+    '.mmd': 'mermaid',
+    '.mermaid': 'mermaid',
+    '.puml': 'plantuml',
+    '.plantuml': 'plantuml',
+    '.iuml': 'plantuml',
+    '.dbc': 'automotive',
+    '.arxml': 'automotive',
+    '.a2l': 'automotive',
+    '.asc': 'automotive',
+    '.blf': 'automotive',
+    '.mf4': 'automotive',
+    '.mdf': 'automotive',
+    '.mp3': 'audio',
+    '.wav': 'audio',
+    '.ogg': 'audio',
+    '.flac': 'audio',
+    '.aac': 'audio',
+    '.m4a': 'audio',
+    '.pcm': 'audio',
+    '.mp4': 'video',
+    '.webm': 'video',
+    '.mov': 'video',
+    '.m4v': 'video',
+    '.ogv': 'video',
+    '.xlsx': 'excel',
+    '.xls': 'excel',
+    '.docx': 'word',
+    '.doc': 'word',
+    '.pptx': 'ppt',
+    '.ppt': 'ppt',
+    '.psd': 'psd',
+    '.parquet': 'parquet',
+    '.hwp': 'hwp',
+    '.hwpx': 'hwp',
+    '.zip': 'archive',
+    '.jar': 'archive',
+    '.apk': 'archive',
+    '.tar': 'archive',
+    '.tgz': 'archive',
+    '.gz': 'archive',
+    '.7z': 'archive',
+    '.rar': 'archive'
+};
+
+/**
+ * Returns the registry entry that should handle the given filename, based on
+ * its extension. Returns `undefined` if no entry matches — the caller should
+ * fall through to `renderUnsupportedFallback`.
+ */
+export function resolveRegistrationByFileName(
+    fileName: string
+): ViewerRegistration | undefined {
+    const lower = fileName.toLowerCase();
+    // Try multi-segment extensions first (e.g. ".tar.gz") so the longer match wins.
+    const dotIdx = lower.lastIndexOf('.');
+    if (dotIdx === -1) {
+        return undefined;
+    }
+
+    const compoundIdx = lower.lastIndexOf('.', dotIdx - 1);
+    if (compoundIdx !== -1) {
+        const compoundExt = lower.slice(compoundIdx);
+        const compoundSlug = EXTENSION_TO_SLUG[compoundExt];
+        if (compoundSlug) {
+            return getRegistrationBySlug(compoundSlug);
+        }
+    }
+
+    const ext = lower.slice(dotIdx);
+    const slug = EXTENSION_TO_SLUG[ext];
+    return slug ? getRegistrationBySlug(slug) : undefined;
+}

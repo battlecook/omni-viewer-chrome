@@ -1,0 +1,157 @@
+/*
+ * Image viewer styles. Ported from
+ * `vscode-omni-viewer/src/templates/image/css/imageViewer.css`.
+ *
+ * Differences vs. the VSCode original:
+ *   - All `var(--vscode-*)` theme tokens are replaced with concrete values
+ *     because Chrome MV3 pages don't get the VSCode theme variables. We
+ *     also intentionally don't touch the host page's global tokens (the
+ *     legacy SPA defines its own in src/styles.css).
+ *   - The selectors are namespaced under `.iv-` so they don't collide with
+ *     the legacy SPA when the image viewer is mounted into the same DOM.
+ *   - Edit-mode / filter / modal selectors from the original are dropped
+ *     for issue #9 — those land in a follow-up.
+ */
+
+.iv-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    padding: 12px;
+    box-sizing: border-box;
+    color: #e8e8e8;
+}
+
+.iv-main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+}
+
+.iv-file-info {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-size: 12px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.iv-file-info-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+.iv-file-info-label {
+    font-size: 10px;
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.iv-file-info-value {
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-weight: 500;
+}
+
+.iv-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    flex-wrap: wrap;
+}
+
+.iv-control-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.iv-btn {
+    background: #2c2c2c;
+    color: #e8e8e8;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.15s ease;
+    line-height: 1.2;
+}
+
+.iv-btn:hover {
+    background: #3a3a3a;
+}
+
+.iv-btn:active {
+    background: #444;
+}
+
+.iv-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.iv-image-container {
+    flex: 1;
+    background: #1a1a1a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 20px;
+    position: relative;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 0;
+    box-sizing: border-box;
+}
+
+.iv-image-wrapper {
+    position: relative;
+    max-width: 100%;
+    transform-origin: center center;
+    margin: auto;
+    overflow: visible;
+}
+
+.iv-image-wrapper > img {
+    max-width: 100%;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+    display: block;
+    z-index: 1;
+    position: relative;
+}
+
+.iv-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+.iv-error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    color: #f48771;
+    text-align: center;
+    padding: 20px;
+}

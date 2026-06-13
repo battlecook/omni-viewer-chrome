@@ -1,0 +1,100 @@
+{
+  "manifest_version": 3,
+  "name": "__MSG_appName__",
+  "short_name": "__MSG_appShortName__",
+  "version": "0.1.0",
+  "default_locale": "en",
+  "description": "__MSG_appDescription__",
+  "action": {
+    "default_title": "__MSG_actionTitle__"
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "file_handlers": [
+    {
+      "action": "viewer.html",
+      "name": "__MSG_fileHandlerName__",
+      "accept": {
+        "image/jpeg": [".jpg", ".jpeg"],
+        "image/png": [".png"],
+        "image/gif": [".gif"],
+        "image/bmp": [".bmp"],
+        "image/webp": [".webp"],
+        "image/svg+xml": [".svg"],
+        "image/vnd.adobe.photoshop": [".psd"],
+        "application/pdf": [".pdf"],
+        "text/csv": [".csv"],
+        "text/tab-separated-values": [".tsv"],
+        "application/json": [".json"],
+        "application/jsonl": [".jsonl", ".ndjson", ".jsonlines"],
+        "application/yaml": [".yaml", ".yml"],
+        "application/toml": [".toml"],
+        "text/markdown": [".md", ".markdown"],
+        "text/vnd.mermaid": [".mmd", ".mermaid"],
+        "text/x-plantuml": [".puml", ".plantuml", ".iuml"],
+        "text/plain": [".dbc", ".a2l", ".asc"],
+        "application/xml": [".arxml"],
+        "audio/mpeg": [".mp3"],
+        "audio/wav": [".wav"],
+        "audio/L16": [".pcm"],
+        "audio/aiff": [".aiff", ".aif", ".aifc"],
+        "audio/amr": [".amr"],
+        "audio/amr-wb": [".awb"],
+        "audio/ogg": [".ogg"],
+        "audio/flac": [".flac"],
+        "audio/ac3": [".ac3"],
+        "audio/aac": [".aac"],
+        "audio/mp4": [".m4a"],
+        "video/mp4": [".mp4", ".m4v"],
+        "video/mp2t": [".mts", ".m2ts"],
+        "video/x-msvideo": [".avi"],
+        "video/quicktime": [".mov"],
+        "video/x-ms-wmv": [".wmv"],
+        "video/x-flv": [".flv"],
+        "video/webm": [".webm"],
+        "video/x-matroska": [".mkv"],
+        "video/ogg": [".ogv"],
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+        "application/vnd.ms-excel": [".xls"],
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+        "application/msword": [".doc"],
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
+        "application/vnd.ms-powerpoint": [".ppt"],
+        "application/zip": [".zip", ".jar", ".apk"],
+        "application/vnd.rar": [".rar"],
+        "application/x-7z-compressed": [".7z"],
+        "application/x-apple-diskimage": [".dmg"],
+        "application/x-tar": [".tar"],
+        "application/gzip": [".gz", ".tgz", ".tar.gz"],
+        "application/x-bzip2": [".bz2", ".tbz2", ".tar.bz2"],
+        "application/x-xz": [".xz", ".txz", ".tar.xz"],
+        "application/octet-stream": [".parquet", ".hwp", ".hwpx", ".blf", ".mf4", ".mdf"]
+      },
+      "launch_type": "single-client"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; worker-src 'self';"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "vendor/**/*",
+        "templates/**/*"
+      ],
+      "matches": [
+        "*://*/*"
+      ]
+    }
+  ]
+}

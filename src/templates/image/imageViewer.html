@@ -1,0 +1,32 @@
+<!doctype html>
+<!--
+  Per-viewer entry shell for the image viewer.
+
+  This page is intentionally minimal. It loads the bundled per-viewer JS
+  produced by webpack at `dist/templates/image/imageViewer.js`. The bundled
+  module self-bootstraps when it sees a `data-viewer="image"` host element
+  in the DOM and reads `?src=<blob-url>` from the query string.
+
+  This page is for manual debugging only. Production traffic flows through
+  `src/router.ts` (the registry-driven dispatcher), which calls
+  `mountImageViewer(file, container)` directly — no navigation through this
+  HTML page.
+
+  The path is relative so the same shell works whether the extension is
+  loaded unpacked from the repo root or from `dist/`.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Omni Viewer — Image</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="css/imageViewer.css">
+</head>
+<body>
+  <main class="app">
+    <section id="viewer" class="viewer" data-viewer="image"></section>
+  </main>
+  <script type="module" src="../../../dist/templates/image/imageViewer.js"></script>
+</body>
+</html>

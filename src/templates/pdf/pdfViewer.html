@@ -1,0 +1,49 @@
+<!doctype html>
+<!--
+  Per-viewer entry shell for the pdf viewer.
+
+  This file mirrors the role of `imageViewer.html` (manual-debug entry point
+  used when loading the extension under chrome://extensions and navigating
+  directly to `templates/pdf/pdfViewer.html?src=<blob>`). The bundled
+  `pdfViewer.js` self-bootstraps against the `data-viewer="pdf"` host
+  element below.
+
+  The two `<script>` blocks at the top mirror the `__OMNI_PDFJS_WORKER__` /
+  `__OMNI_PDFJS_READY__` bootstrap pattern from the VSCode original
+  (`vscode-omni-viewer/src/templates/pdf/pdfViewer.html`). They warm pdf.js
+  up before the entry script loads so the renderer can `await
+  window.__OMNI_PDFJS_READY__` instead of doing its own dynamic import.
+  When this shell is NOT used (i.e. the extension router mounts the viewer
+  inside the legacy SPA host page) the bundled JS resolves the worker URL
+  itself — see `pdfRenderer.ts::loadPdfJsLib`.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Omni Viewer — Pdf</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="css/pdfViewer.css">
+  <script>
+    // Resolve the worker URL relative to this shell so chrome-extension://…
+    // paths and file:// previews both work.
+    window.__OMNI_PDFJS_WORKER__ = new URL('../../../vendor/pdf.worker.min.mjs', document.baseURI).toString();
+  </script>
+  <script type="module">
+    window.__OMNI_PDFJS_READY__ = import(new URL('../../../vendor/pdf.min.mjs', document.baseURI).toString())
+      .then((module) => {
+        const pdfjsLib = module && module.default ? module.default : module;
+        if (window.__OMNI_PDFJS_WORKER__ && pdfjsLib && pdfjsLib.GlobalWorkerOptions) {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = window.__OMNI_PDFJS_WORKER__;
+        }
+        return pdfjsLib;
+      });
+  </script>
+</head>
+<body>
+  <main class="app">
+    <section id="viewer" class="viewer" data-viewer="pdf"></section>
+  </main>
+  <script type="module" src="../../../dist/templates/pdf/pdfViewer.js"></script>
+</body>
+</html>

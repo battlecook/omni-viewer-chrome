@@ -1,0 +1,24 @@
+<!doctype html>
+<!--
+  Per-viewer entry shell for the parquet viewer. Same shape as
+  templates/hwp/hwpViewer.html: a tiny host page that the bundled
+  entry self-bootstraps into when launched standalone (manual debug).
+  The legacy SPA host page also renders this viewer through the
+  registry, so this file is only used for the dedicated
+  `/templates/parquet/parquetViewer.html?src=...` flow.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Omni Viewer — Parquet</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="./css/parquetViewer.css">
+</head>
+<body>
+  <main class="app">
+    <section id="viewer" class="viewer" data-viewer="parquet"></section>
+  </main>
+  <script type="module" src="../../../dist/templates/parquet/parquetViewer.js"></script>
+</body>
+</html>

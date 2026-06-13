@@ -1,0 +1,29 @@
+<!doctype html>
+<!--
+  Per-viewer manual-debug entry shell for the PSD viewer.
+
+  Loaded directly via `chrome://extensions` "Load unpacked" + manual
+  navigation to `templates/psd/psdViewer.html`. The bundled module
+  (`dist/templates/psd/psdViewer.js`) reads `?src=<blob-url>` from the
+  query string and self-bootstraps into the `data-viewer="psd"` host
+  element. See `src/router.ts` for the routing-strategy notes.
+
+  Per issue #50 the shell stays minimal — composite render only. Layer
+  panel (#51), view modal + checkerboard (#52), and any toolbar glue
+  arrive in their own issues.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Omni Viewer — PSD</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="./css/psdViewer.css">
+</head>
+<body>
+  <main class="app">
+    <section id="viewer" class="viewer" data-viewer="psd"></section>
+  </main>
+  <script type="module" src="../../../dist/templates/psd/psdViewer.js"></script>
+</body>
+</html>

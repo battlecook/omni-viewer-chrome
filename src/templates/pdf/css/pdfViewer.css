@@ -1,0 +1,235 @@
+/* Stylesheet for the Chrome PDF viewer.
+ *
+ * Ported from `vscode-omni-viewer/src/templates/pdf/css/pdfViewer.css` for
+ * issue #16 (basic render / zoom / page indicator). VSCode `var(--vscode-…)`
+ * tokens are replaced with neutral values so the viewer reads naturally
+ * inside the Chrome host page.
+ *
+ * The annotation / signature / modal / thumbnail-item styles are intentionally
+ * NOT copied here yet — they will land alongside their respective issues
+ * (#17 thumbnails, #18 password modal, #19 text annotation, #20 signature,
+ * #21–#23 select / move / delete / merge / save). The shells they hang off
+ * (#thumbnailSidebar, #overlayLayer) are styled minimally so the layout
+ * stabilizes before those issues fill them in.
+ */
+
+* {
+    box-sizing: border-box;
+}
+
+.pv-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    color: #e8e8e8;
+    background: #1e1e1e;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.pv-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #252526;
+    border-bottom: 1px solid #3c3c3c;
+    flex-shrink: 0;
+}
+
+.pv-title {
+    font-weight: 600;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 60%;
+}
+
+.pv-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pv-page-info {
+    font-size: 12px;
+    color: #cccccc;
+    margin-left: 12px;
+}
+
+.pv-zoom-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 6px;
+    background: #252526;
+    border-bottom: 1px solid #3c3c3c;
+    flex-shrink: 0;
+}
+
+.pv-icon-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0;
+    border: 1px solid transparent;
+    background: #3c3c3c;
+    color: #e8e8e8;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.pv-icon-btn:hover {
+    background: #4a4a4a;
+}
+
+.pv-icon-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.pv-zoom-level {
+    min-width: 56px;
+    text-align: center;
+    font-size: 12px;
+}
+
+.pv-loading,
+.pv-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+}
+
+.pv-error {
+    color: #f48771;
+}
+
+/* Two-pane PDF layout (issue #86).
+ *
+ * The body splits into a thumbnail sidebar on the left (`.pv-thumbnail-sidebar`)
+ * and the document scroll port on the right (`.pv-pdf-container`). Each
+ * pane owns its own vertical scroll so that clicking a thumbnail only
+ * moves the document — the sidebar's scroll position is untouched. The
+ * grid layout gives a robust fallback even when the host (SPA viewer
+ * panel) does not enforce a fixed height: `min-height: 0` lets each
+ * grid track shrink correctly while the explicit row prevents the panes
+ * from collapsing to zero. */
+.pv-body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: var(--pv-sidebar-width, 160px) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Thumbnail sidebar — left pane, independent scroll. */
+.pv-thumbnail-sidebar {
+    grid-column: 1;
+    grid-row: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-right: 1px solid #3c3c3c;
+    background: #252526;
+    padding: 0;
+    min-width: 0;
+}
+
+/* Legacy hook for `mountThumbnails(...)`: it adds `.is-active` to the
+   sidebar element on mount. The grid layout above already shows the
+   sidebar, so this class is now a no-op decoration kept for backwards
+   compatibility with any test that asserts on it. */
+.pv-thumbnail-sidebar.is-active { /* layout already handled by .pv-body grid */ }
+
+.pv-thumbnail-help {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 8px;
+    border-bottom: 1px solid #3c3c3c;
+    background: #252526;
+    color: #a8a8a8;
+    font-size: 10px;
+    line-height: 1.35;
+}
+
+.pv-thumbnail-list {
+    position: relative;
+    padding: 8px;
+}
+
+.pv-pdf-container {
+    grid-column: 2;
+    grid-row: 1;
+    overflow: auto;
+    position: relative;
+    padding: 20px;
+    min-width: 0;
+}
+
+/* Narrow viewports: stack sidebar above the document body so they do
+   not overlap. Keeps the sidebar scroll independent from the document
+   scroll (each pane is still its own scroll container).
+   Drawer/toggle is intentionally not implemented (see issue #86). */
+@media (max-width: 720px) {
+    .pv-body {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(120px, 30vh) minmax(0, 1fr);
+    }
+    .pv-thumbnail-sidebar {
+        grid-column: 1;
+        grid-row: 1;
+        border-right: none;
+        border-bottom: 1px solid #3c3c3c;
+    }
+    .pv-pdf-container {
+        grid-column: 1;
+        grid-row: 2;
+    }
+}
+
+.pv-pages-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.pv-page-wrapper {
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    background: #fff;
+    /* Width / height are set per page after the viewport is known so
+       IntersectionObserver can reserve scroll space without rendering. */
+}
+
+.pv-page-wrapper canvas {
+    display: block;
+    vertical-align: top;
+}
+
+.pv-page-placeholder {
+    color: #888;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* Overlay layer placeholder (issues #19/#20 fill this in). */
+.pv-overlay-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+}

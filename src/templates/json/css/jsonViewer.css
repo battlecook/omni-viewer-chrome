@@ -1,0 +1,190 @@
+/* Stylesheet for the JSON viewer (issue #62).
+ *
+ * This file is the human-readable copy of `src/templates/json/js/
+ * jsonViewerStyles.ts`. It is loaded by `templates/json/jsonViewer.html`
+ * (the per-viewer manual debug shell) but at runtime — when the router
+ * mounts the viewer inside the legacy SPA host page — the JS module
+ * injects `JSON_VIEWER_CSS` as a `<style>` tag instead. Keep both copies
+ * in sync.
+ */
+
+.jv-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    padding: 12px;
+    box-sizing: border-box;
+    color: #e8e8e8;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 13px;
+}
+.jv-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.jv-search {
+    flex: 1;
+    min-width: 200px;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    color: #e8e8e8;
+    font-family: inherit;
+    font-size: 12px;
+    outline: none;
+}
+.jv-search:focus {
+    border-color: rgba(120, 170, 255, 0.6);
+    box-shadow: 0 0 0 2px rgba(120, 170, 255, 0.18);
+}
+.jv-match-info {
+    font-size: 12px;
+    opacity: 0.75;
+    min-width: 80px;
+    text-align: right;
+}
+.jv-button {
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    color: #e8e8e8;
+    font: inherit;
+    cursor: pointer;
+}
+.jv-button:hover {
+    background: rgba(255, 255, 255, 0.10);
+}
+.jv-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.jv-tree {
+    flex: 1;
+    overflow: auto;
+    min-height: 0;
+    padding: 4px 0;
+}
+.jv-error {
+    padding: 12px;
+    border: 1px solid rgba(255, 100, 100, 0.4);
+    border-radius: 4px;
+    background: rgba(255, 100, 100, 0.08);
+    color: #ffb0b0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.jv-node {
+    display: block;
+}
+.jv-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 1px 6px;
+    line-height: 1.5;
+    cursor: default;
+    border-radius: 3px;
+}
+.jv-row.jv-toggleable {
+    cursor: pointer;
+}
+.jv-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+.jv-row.jv-current {
+    background: rgba(255, 200, 80, 0.18);
+    outline: 1px solid rgba(255, 200, 80, 0.5);
+}
+.jv-toggle {
+    display: inline-block;
+    width: 14px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.55);
+    user-select: none;
+    flex-shrink: 0;
+}
+.jv-toggle.jv-leaf {
+    visibility: hidden;
+}
+.jv-key {
+    color: #a3d1ff;
+    flex-shrink: 0;
+}
+.jv-key.jv-array-index {
+    color: rgba(255, 255, 255, 0.45);
+}
+.jv-colon {
+    color: rgba(255, 255, 255, 0.45);
+    margin-right: 4px;
+}
+.jv-summary {
+    color: rgba(255, 255, 255, 0.45);
+    font-style: italic;
+}
+.jv-value {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    flex: 1;
+    min-width: 0;
+}
+.jv-value-string { color: #ffb86c; }
+.jv-value-number { color: #f1fa8c; }
+.jv-value-boolean { color: #ff79c6; }
+.jv-value-null { color: rgba(255, 255, 255, 0.4); }
+.jv-children {
+    display: block;
+    border-left: 1px dashed rgba(255, 255, 255, 0.08);
+    margin-left: 9px;
+}
+.jv-match-highlight {
+    background: rgba(255, 235, 130, 0.22);
+    border-radius: 2px;
+}
+.jv-mode-group {
+    display: inline-flex;
+    gap: 4px;
+}
+.jv-mode-button {
+    padding: 4px 10px;
+}
+.jv-mode-button.jv-mode-active {
+    background: rgba(120, 170, 255, 0.18);
+    border-color: rgba(120, 170, 255, 0.55);
+    color: #ffffff;
+}
+.jv-source {
+    flex: 1;
+    overflow: auto;
+    min-height: 0;
+    padding: 4px 0;
+}
+.jv-source-pre {
+    margin: 0;
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.5;
+    color: #e8e8e8;
+    white-space: pre;
+    tab-size: 2;
+}
+.jv-source-code {
+    font-family: inherit;
+}
+.jv-tok-key { color: #a3d1ff; }
+.jv-tok-string { color: #ffb86c; }
+.jv-tok-number { color: #f1fa8c; }
+.jv-tok-bool { color: #ff79c6; }
+.jv-tok-null { color: rgba(255, 255, 255, 0.55); }
+.jv-tok-punct { color: rgba(255, 255, 255, 0.65); }
+.jv-tok-unknown {
+    color: #ff8080;
+    text-decoration: underline wavy rgba(255, 100, 100, 0.6);
+}

@@ -1,0 +1,400 @@
+/* CSV Viewer styles (issue #33).
+ *
+ * Scope: minimum needed for the column-sort UI. Editing, resize handles,
+ * pagination chrome, raw view, etc. are deferred to follow-up issues.
+ *
+ * Class names are namespaced with `csv-` (or scoped under `.csv-table`) so
+ * they don't collide with the legacy SPA styles in src/styles.css.
+ */
+
+.csv-viewer-host {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.csv-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 320px;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.csv-viewer-host{background:#fff;color:#1f2328}
+
+.csv-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #d0d0d0;
+    flex-shrink: 0;
+    gap: 12px;
+}
+
+.csv-title {
+    font-size: 18px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.csv-file-info {
+    font-size: 12px;
+    color: #666;
+    flex-shrink: 0;
+}
+
+.csv-sep {
+    margin: 0 2px;
+    color: #999;
+}
+
+.csv-toolbar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-bottom:1px solid #d0d7de;
+    background:#f6f8fa;
+}
+.csv-search-controls,.csv-view-controls,.csv-secondary-toolbar{display:flex;align-items:center;gap:8px}.csv-secondary-toolbar{padding:8px 20px;border-bottom:1px solid #d0d7de}.csv-search-controls .csv-search-input{margin-left:0;min-width:240px}.csv-view-controls .csv-stats-toggle,.csv-search-controls .csv-stats-toggle,.csv-secondary-toolbar .csv-stats-toggle{margin-left:0;padding:7px 10px;border-radius:4px}
+
+.csv-toolbar:empty {
+    padding: 0;
+    border: 0;
+}
+
+.csv-delimiter-label {
+    font-size: 12px;
+    color: #555;
+}
+
+.csv-delimiter-select {
+    font-size: 12px;
+    padding: 3px 6px;
+    border: 1px solid #c8c8c8;
+    border-radius: 3px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.csv-delimiter-select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Toolbar: search + statistics toggle (issue #35) ----------------------- */
+
+.csv-search-input {
+    font-size: 12px;
+    padding: 3px 8px;
+    border: 1px solid #c8c8c8;
+    border-radius: 3px;
+    background: #fff;
+    min-width: 180px;
+    margin-left: 8px;
+}
+
+.csv-search-input:focus {
+    outline: 1px solid #2a64d4;
+    outline-offset: 0;
+    border-color: #2a64d4;
+}
+
+.csv-stats-toggle {
+    font-size: 12px;
+    padding: 3px 8px;
+    border: 1px solid #c8c8c8;
+    border-radius: 3px;
+    background: #fff;
+    cursor: pointer;
+    margin-left: auto;
+}
+
+.csv-stats-toggle:hover {
+    background: #f0f0f0;
+}
+
+.csv-stats-toggle[aria-pressed="true"] {
+    background: #e6efff;
+    border-color: #2a64d4;
+    color: #1a3c80;
+}
+
+.csv-stats-panel {
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    background: #fafafa;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    max-height: 220px;
+    overflow: auto;
+    font-size: 12px;
+}
+
+.csv-stats-summary {
+    margin-bottom: 6px;
+    color: #555;
+    font-weight: 500;
+}
+
+.csv-stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.csv-stats-table th,
+.csv-stats-table td {
+    border-bottom: 1px solid #e0e0e0;
+    padding: 3px 8px;
+    text-align: left;
+}
+
+.csv-stats-table th {
+    color: #444;
+    font-weight: 600;
+    background: transparent;
+}
+
+.csv-stats-col {
+    font-weight: 500;
+    color: #1a1a1a;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.csv-table-container {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.csv-loading,
+.csv-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-height: 120px;
+    font-size: 13px;
+    color: #555;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.csv-error {
+    color: #b00020;
+}
+
+.csv-table-wrapper {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    position: relative;
+}
+
+.csv-raw-pane {
+    margin: 0;
+    padding: 16px;
+    max-height: 65vh;
+    overflow: auto;
+    border: 1px solid var(--line, #d9dee7);
+    border-radius: 6px;
+    background: var(--panel, #fff);
+    color: var(--text, #172033);
+    font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre;
+}
+
+.csv-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px;
+}
+
+.csv-page-info { color: var(--muted, #667085); font-size: 12px; }
+
+.csv-table {
+    border-collapse: collapse;
+    font-size: 13px;
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
+}
+
+.csv-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f4f4f4;
+}
+
+.csv-table th {
+    border: 1px solid #d0d0d0;
+    padding: 6px 10px;
+    text-align: left;
+    font-weight: 600;
+    background: #f4f4f4;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    position: relative;
+}
+
+.csv-table th:hover {
+    background: #ececec;
+}
+
+.csv-table td {
+    border: 1px solid #e0e0e0;
+    padding: 4px 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+}
+
+.csv-table tbody tr:nth-child(even) {
+    background: #fafafa;
+}
+
+.csv-table tbody tr:hover {
+    background: #eef5ff;
+}
+
+/* Header content + sort button --------------------------------------------- */
+
+.header-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.header-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 280px;
+}
+
+.sort-button {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 1px 3px;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    background: transparent;
+    color: #888;
+    cursor: pointer;
+}
+
+.sort-button:hover {
+    background: #e0e0e0;
+    color: #222;
+}
+
+.sort-button:focus-visible {
+    outline: 1px solid #2a64d4;
+    outline-offset: 1px;
+}
+
+.sort-icon {
+    font-size: 8px;
+    line-height: 1;
+    opacity: 0.4;
+}
+
+.sort-button[data-sort-direction="asc"] .sort-icon-asc,
+.sort-button[data-sort-direction="desc"] .sort-icon-desc {
+    opacity: 1;
+    color: #1a1a1a;
+}
+
+/* Dark theme passthrough for the per-viewer page. The legacy SPA may or may
+ * not be in light mode; we keep colors mild and let outer styles override. */
+@media (prefers-color-scheme: dark) {
+    .csv-header {
+        border-bottom-color: #3a3a3a;
+    }
+    .csv-file-info {
+        color: #aaa;
+    }
+    .csv-table th {
+        background: #2a2a2a;
+        border-color: #3a3a3a;
+    }
+    .csv-table th:hover {
+        background: #333;
+    }
+    .csv-table td {
+        border-color: #333;
+    }
+    .csv-table tbody tr:nth-child(even) {
+        background: #1f1f1f;
+    }
+    .csv-table tbody tr:hover {
+        background: #2c3a52;
+    }
+    .sort-button:hover {
+        background: #3a3a3a;
+        color: #f0f0f0;
+    }
+    .sort-button[data-sort-direction="asc"] .sort-icon-asc,
+    .sort-button[data-sort-direction="desc"] .sort-icon-desc {
+        color: #f0f0f0;
+    }
+    .csv-error {
+        color: #ff6e6e;
+    }
+    .csv-search-input,
+    .csv-stats-toggle {
+        background: #1f1f1f;
+        color: #e8e8e8;
+        border-color: #3a3a3a;
+    }
+    .csv-stats-toggle:hover {
+        background: #2a2a2a;
+    }
+    .csv-stats-toggle[aria-pressed="true"] {
+        background: #1a2a4a;
+        color: #cfe0ff;
+        border-color: #2a64d4;
+    }
+    .csv-stats-panel {
+        background: #1d1d1d;
+        border-color: #3a3a3a;
+        color: #d8d8d8;
+    }
+    .csv-stats-summary {
+        color: #aaa;
+    }
+    .csv-stats-table th {
+        color: #d8d8d8;
+    }
+    .csv-stats-table th,
+    .csv-stats-table td {
+        border-bottom-color: #2e2e2e;
+    }
+    .csv-stats-col {
+        color: #f0f0f0;
+    }
+}

@@ -1,0 +1,24 @@
+<!doctype html>
+<!--
+  Per-viewer entry shell for the hwp viewer. Same shape as
+  templates/pdf/pdfViewer.html: a tiny host page that the bundled
+  entry self-bootstraps into when launched standalone (manual debug).
+  The legacy SPA host page also renders this viewer through the
+  registry, so this file is only used for the dedicated
+  `/templates/hwp/hwpViewer.html?src=...` flow.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Omni Viewer — HWP</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="./css/hwpViewer.css">
+</head>
+<body>
+  <main class="app">
+    <section id="viewer" class="viewer" data-viewer="hwp"></section>
+  </main>
+  <script type="module" src="../../../dist/templates/hwp/hwpViewer.js"></script>
+</body>
+</html>
