@@ -41,7 +41,8 @@ ticked is a blocker.
 - [ ] `manifest_version` is `3`.
 - [ ] `permissions` is exactly `["storage"]`. If anything else appears,
       justify it explicitly in `store/listing.md` **before** packaging.
-- [ ] `host_permissions` is absent (or empty).
+- [ ] `host_permissions` contains only the documented Share API, Firebase
+      Authentication, and Omni Viewer share-storage origins.
 - [ ] `content_security_policy.extension_pages` does **not** allow
       `unsafe-eval` for scripts (only `'wasm-unsafe-eval'` is acceptable
       for the bundled audio decoder).
@@ -71,9 +72,10 @@ ticked is a blocker.
       video, CSV, Excel, Parquet, Word, PowerPoint, PSD, HWP, archive,
       JSON, JSONL, YAML, TOML. Each opens without console errors.
 - [ ] Theme toggle persists across reloads (verifies `storage`).
-- [ ] Share action: not invoked unless explicitly tested. When tested, the
-      uploaded payload is reachable only via the returned `share_id` and
-      disappears after 5 minutes.
+- [ ] Share action uploads only after an explicit click. Confirm the copied
+      web URL opens the file and expires after 5 minutes.
+- [ ] Open Link accepts both the copied `/share/<id>` URL and a bare share
+      ID, then routes the downloaded file through the normal viewer.
 
 ## 7. Web Store dashboard fields
 

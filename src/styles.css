@@ -50,6 +50,59 @@ textarea {
   padding: 20px;
 }
 
+.app-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.app-toolbar > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.app-toolbar > div:first-child span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.app-toolbar-actions,
+.viewer-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.share-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 10000;
+  display: grid;
+  gap: 7px;
+  width: min(440px, calc(100vw - 40px));
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--teal) 65%, var(--line));
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.share-toast a {
+  overflow: hidden;
+  color: var(--teal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.share-toast span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .toolbar,
 .file-meta,
 .status,

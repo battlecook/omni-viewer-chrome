@@ -18,6 +18,12 @@ describe('parseShareInput', () => {
         });
     });
 
+    it('accepts the production web app /share/<id> path', () => {
+        expect(parseShareInput('https://omni-viewer-web.web.app/share/abc123')).toEqual({
+            shareId: 'abc123',
+        });
+    });
+
     it('accepts a share URL with query/hash trailing the id', () => {
         expect(
             parseShareInput('https://omni-viewer-share.example.com/s/abc123?utm=x'),
@@ -161,7 +167,7 @@ describe('openSharedLink', () => {
         ]);
 
         const result = await openSharedLink(
-            'https://omni-viewer-share.example.com/s/abc123',
+            'https://omni-viewer-web.web.app/share/abc123',
             { fetchImpl, apiBase: 'https://api.test/' },
         );
 
@@ -170,7 +176,7 @@ describe('openSharedLink', () => {
         expect(result.type).toBe('text/plain');
         expect(result.size).toBe(fileBytes.size);
         // Trailing slash in apiBase normalized; id passed through.
-        expect(calls[0].url).toBe('https://api.test/share/abc123');
+        expect(calls[0].url).toBe('https://api.test/v1/shares/abc123/download');
         expect(calls[0].init?.method).toBe('GET');
         expect(calls[1].url).toBe('https://cdn.test/blob/abc');
         expect(calls[1].init?.method).toBe('GET');
@@ -192,7 +198,35 @@ describe('openSharedLink', () => {
         expect(result.name).toBe('data.json');
         expect(result.type).toBe('application/json');
         // Bare id resolves against the documented default API base.
-        expect(calls[0].url).toBe(`${DEFAULT_SHARE_API_BASE}/share/rawId_123`);
+        expect(calls[0].url).toBe(`${DEFAULT_SHARE_API_BASE}/v1/shares/rawId_123/download`);
+    });
+
+    it('uses a custom download transport for signed storage URLs', async () => {
+        const fileBytes = new Blob(['from background'], { type: 'text/plain' });
+        const { fetchImpl, calls } = makeFetchStub([
+            () =>
+                jsonResponse({
+                    download_url: 'https://storage.googleapis.com/omni-viewer-web-share/shared-file',
+                    filename: 'background.txt',
+                    content_type: 'text/plain',
+                }),
+        ]);
+        const downloadImpl = jest.fn(async () => fileBytes);
+
+        const result = await openSharedLink('background123', {
+            fetchImpl,
+            apiBase: 'https://api.test',
+            downloadImpl,
+        });
+
+        expect(calls).toHaveLength(1);
+        expect(downloadImpl).toHaveBeenCalledWith(
+            'https://storage.googleapis.com/omni-viewer-web-share/shared-file',
+            undefined,
+        );
+        expect(result.name).toBe('background.txt');
+        expect(result.type).toBe('text/plain');
+        expect(result.size).toBe(fileBytes.size);
     });
 
     it('maps a 410 on the ticket call to "This link has expired"', async () => {

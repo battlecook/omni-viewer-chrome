@@ -128,13 +128,14 @@ describe('storeManifest invariants', () => {
             expect(unexpected).toEqual([]);
         });
 
-        it('does not declare any host_permissions', () => {
-            // host_permissions broadens the trust model significantly and
-            // is not needed for a local-file viewer. Reject by default; if
-            // a future feature genuinely needs one, justify it in
-            // `store/listing.md` and widen the assertion explicitly.
+        it('limits host permissions to the documented share API', () => {
             const hosts = manifest.host_permissions ?? [];
-            expect(hosts).toEqual([]);
+            expect(hosts).toEqual([
+                'https://omni-viewer-share-624036133562.us-west1.run.app/*',
+                'https://identitytoolkit.googleapis.com/*',
+                'https://securetoken.googleapis.com/*',
+                'https://storage.googleapis.com/*',
+            ]);
         });
     });
 

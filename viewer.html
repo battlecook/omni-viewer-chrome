@@ -8,6 +8,17 @@
 </head>
 <body>
   <main class="app">
+    <header class="app-toolbar">
+      <div>
+        <strong>Omni Viewer</strong>
+        <span data-i18n="supportSummary">Local multi-format file viewer</span>
+      </div>
+      <div class="app-toolbar-actions">
+        <button id="openSharedLink" type="button">Open Link</button>
+        <button id="shareCurrentFile" type="button" disabled
+          title="Share with Omni Viewer. Shared data is stored on the server for 5 minutes only, then discarded.">Share</button>
+      </div>
+    </header>
     <section id="dropZone" class="drop-zone" role="button" tabindex="0">
       <div class="drop-copy">
         <strong data-i18n="dropPrompt">Drop a file here</strong>
@@ -20,6 +31,11 @@
     <section id="status" class="status hidden"></section>
     <section id="viewer" class="viewer"></section>
   </main>
+  <aside id="shareToast" class="share-toast hidden" role="status" aria-live="polite">
+    <strong>Share link copied</strong>
+    <a id="shareToastLink" href="#" target="_blank" rel="noopener noreferrer"></a>
+    <span>Expires in 5 minutes</span>
+  </aside>
 
   <script src="vendor/jszip.min.js"></script>
   <script src="vendor/xlsx.full.min.js"></script>

@@ -5,14 +5,13 @@
  * and `FormData` instead of Node's `https`. The flow:
  *
  *   1. Validate the file against the 10 MB ceiling (no network call).
- *   2. POST `/upload-token` -> short-lived JWT.
- *   3. POST multipart `/share` with `Authorization: Bearer <jwt>`.
+ *   2. Sign in anonymously with Firebase and obtain an ID token.
+ *   3. POST multipart `/v1/shares` with `Authorization: Bearer <id-token>`.
  *   4. Parse the response into `{ shareId, expiresAt, url }`.
  *
- * This module deliberately does NOT wire any UI; #67 is responsible for
- * hooking the share buttons to call `shareFile`. We keep `shareFile`
- * pure-ish (returns a `Promise<ShareResult>`, throws `Error` on failure)
- * so the caller chooses how to surface errors.
+ * UI wiring lives in the Chrome viewer shell. This module remains pure-ish
+ * (returns a `Promise<ShareResult>`, throws `Error` on failure) so callers
+ * choose how to surface progress and errors.
  */
 
 import {
@@ -23,9 +22,11 @@ import {
     parseShareResponse,
     validateShareSize,
 } from './utils/sharePayload';
+import { getFirebaseAnonymousIdToken } from './firebaseAnonymousAuth';
 
 /** Default share API base. Inject `apiBase` to override (e.g. tests, staging). */
-export const DEFAULT_SHARE_API_BASE = 'https://omni-viewer-share.example.com';
+export const DEFAULT_SHARE_API_BASE = 'https://omni-viewer-share-624036133562.us-west1.run.app';
+export const DEFAULT_SHARE_WEB_BASE = 'https://omni-viewer-web.web.app';
 
 /** Public options accepted by {@link shareFile}. */
 export interface ShareFileOptions {
@@ -40,6 +41,8 @@ export interface ShareFileOptions {
     fetchImpl?: typeof fetch;
     /** Optional abort signal forwarded to every underlying `fetch` call. */
     signal?: AbortSignal;
+    /** Override anonymous authentication in tests or alternate clients. */
+    getIdToken?: () => Promise<string>;
 }
 
 /** Successful share upload result. */
@@ -53,7 +56,7 @@ export interface ShareResult extends ParsedShareResponse {
  *
  * Throws a friendly `Error` on any failure path:
  *   - size guard (>10 MB or empty)
- *   - upload-token endpoint 401 / 5xx / non-JSON
+ *   - Firebase anonymous authentication failure
  *   - share endpoint 401 / 5xx / non-JSON / malformed
  *   - network errors (`fetch` rejection)
  */
@@ -67,60 +70,18 @@ export async function shareFile(file: File | Blob, opts: ShareFileOptions = {}):
     const apiBase = normalizeBase(opts.apiBase ?? DEFAULT_SHARE_API_BASE);
     const fetchImpl = opts.fetchImpl ?? globalThis.fetch.bind(globalThis);
 
-    const token = await fetchUploadToken(apiBase, fetchImpl, opts.signal);
+    const token = await (opts.getIdToken ?? (() => getFirebaseAnonymousIdToken({ fetchImpl })))();
     const minted = await postShare(apiBase, token, file, filename, fetchImpl, opts.signal);
 
     return {
         ...minted,
+        url: `${DEFAULT_SHARE_WEB_BASE}/share/${encodeURIComponent(minted.shareId)}`,
         filename,
         size: file.size,
     };
 }
 
 // --- internals ----------------------------------------------------------
-
-async function fetchUploadToken(
-    apiBase: string,
-    fetchImpl: typeof fetch,
-    signal: AbortSignal | undefined,
-): Promise<string> {
-    let res: Response;
-    try {
-        res = await fetchImpl(`${apiBase}/upload-token`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ platform: 'chrome' }),
-            signal,
-        });
-    } catch (err) {
-        throw new Error(`Network error while requesting upload token: ${describeError(err)}`);
-    }
-
-    if (res.status === 401 || res.status === 403) {
-        throw new Error('Share upload was rejected (authentication failed).');
-    }
-    if (!res.ok) {
-        const detail = await safeReadError(res);
-        throw new Error(
-            res.status >= 500
-                ? `Share service is unavailable (HTTP ${res.status}). ${detail}`.trim()
-                : `Failed to obtain upload token (HTTP ${res.status}). ${detail}`.trim(),
-        );
-    }
-
-    let parsed: unknown;
-    try {
-        parsed = await res.json();
-    } catch {
-        throw new Error('Invalid response from upload-token endpoint (not JSON).');
-    }
-
-    const token = extractToken(parsed);
-    if (!token) {
-        throw new Error('Invalid response from upload-token endpoint (missing token).');
-    }
-    return token;
-}
 
 async function postShare(
     apiBase: string,
@@ -134,7 +95,7 @@ async function postShare(
 
     let res: Response;
     try {
-        res = await fetchImpl(`${apiBase}/share`, {
+        res = await fetchImpl(`${apiBase}/v1/shares?expires_in_minutes=5`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` },
             body: fd,
@@ -166,16 +127,6 @@ async function postShare(
         throw new Error('Invalid response from share endpoint (not JSON).');
     }
     return parseShareResponse(parsed);
-}
-
-function extractToken(parsed: unknown): string | undefined {
-    if (!parsed || typeof parsed !== 'object') return undefined;
-    const obj = parsed as Record<string, unknown>;
-    for (const key of ['upload_token', 'uploadToken', 'token', 'jwt']) {
-        const v = obj[key];
-        if (typeof v === 'string' && v.trim()) return v;
-    }
-    return undefined;
 }
 
 async function safeReadError(res: Response): Promise<string> {
@@ -223,6 +174,8 @@ export interface OpenSharedLinkOptions {
     fetchImpl?: typeof fetch;
     /** Optional abort signal forwarded to every underlying `fetch` call. */
     signal?: AbortSignal;
+    /** Override the signed-URL download transport (Chrome uses its service worker). */
+    downloadImpl?: (url: string, signal?: AbortSignal) => Promise<Blob>;
 }
 
 /** Server-issued ticket describing a shared file we are allowed to download. */
@@ -262,7 +215,9 @@ export async function openSharedLink(
     const fetchImpl = opts.fetchImpl ?? globalThis.fetch.bind(globalThis);
 
     const ticket = await fetchDownloadTicket(apiBase, parsed.shareId, fetchImpl, opts.signal);
-    const blob = await downloadShareBlob(ticket.download_url, fetchImpl, opts.signal);
+    const blob = opts.downloadImpl
+        ? await opts.downloadImpl(ticket.download_url, opts.signal)
+        : await downloadShareBlob(ticket.download_url, fetchImpl, opts.signal);
 
     const filename = sanitizeFilename(ticket.filename) || `share-${parsed.shareId}`;
     const mime = ticket.mime || blob.type || 'application/octet-stream';
@@ -278,7 +233,7 @@ async function fetchDownloadTicket(
     fetchImpl: typeof fetch,
     signal: AbortSignal | undefined,
 ): Promise<DownloadTicket> {
-    const url = `${apiBase}/share/${encodeURIComponent(shareId)}`;
+    const url = `${apiBase}/v1/shares/${encodeURIComponent(shareId)}/download`;
 
     let res: Response;
     try {
@@ -354,7 +309,7 @@ function parseDownloadTicket(parsed: unknown): DownloadTicket {
     const obj = parsed as Record<string, unknown>;
     const download_url = pickStringProp(obj, ['download_url', 'downloadUrl', 'url']);
     const filename = pickStringProp(obj, ['filename', 'fileName', 'name']);
-    const mime = pickStringProp(obj, ['mime', 'mime_type', 'mimeType', 'content_type', 'contentType']);
+    const mime = pickStringProp(obj, ['content_type', 'contentType', 'mime', 'mime_type', 'mimeType']);
 
     if (!download_url) {
         throw new Error('Invalid share response: missing download_url.');

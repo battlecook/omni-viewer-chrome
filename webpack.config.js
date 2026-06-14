@@ -47,6 +47,7 @@ const entries = VIEWERS.reduce((acc, viewer) => {
     `./src/templates/${viewer}/js/${viewer}Viewer.ts`;
   return acc;
 }, {});
+entries['share/shareCommand'] = './src/shareCommand.ts';
 
 module.exports = (env, argv) => {
   const mode = (argv && argv.mode) || 'production';

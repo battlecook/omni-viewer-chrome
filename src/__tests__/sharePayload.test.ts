@@ -176,6 +176,8 @@ function makeFetchStub(
 }
 
 describe('shareFile', () => {
+    const getIdToken = async () => 'firebase-id-token';
+
     it('rejects oversize files BEFORE making any network call', async () => {
         const big = { size: MAX_SHARE_SIZE_BYTES + 1, name: 'huge.bin' } as unknown as File;
         const { fetchImpl, mock } = makeFetchStub([]);
@@ -191,10 +193,9 @@ describe('shareFile', () => {
         expect(mock).not.toHaveBeenCalled();
     });
 
-    it('performs token + share legs and returns the parsed result', async () => {
+    it('uploads with a Firebase ID token and returns the parsed result', async () => {
         const file = new File(['hello world'], 'note.txt', { type: 'text/plain' });
         const { fetchImpl, calls } = makeFetchStub([
-            () => jsonResponse({ upload_token: 'jwt-abc' }),
             () =>
                 jsonResponse({
                     share_id: 'sid-1',
@@ -206,34 +207,32 @@ describe('shareFile', () => {
         const result = await shareFile(file, {
             fetchImpl,
             apiBase: 'https://api.test/',
+            getIdToken,
         });
 
         expect(result).toEqual({
             shareId: 'sid-1',
             expiresAt: '2026-05-08T12:05:00Z',
-            url: 'https://share.example.com/share/sid-1',
+            url: 'https://omni-viewer-web.web.app/share/sid-1',
             filename: 'note.txt',
             size: file.size,
         });
 
         // Trailing slash on apiBase should be normalized.
-        expect(calls[0].url).toBe('https://api.test/upload-token');
+        expect(calls[0].url).toBe('https://api.test/v1/shares?expires_in_minutes=5');
         expect(calls[0].init?.method).toBe('POST');
-        expect(calls[1].url).toBe('https://api.test/share');
-        expect(calls[1].init?.method).toBe('POST');
 
-        // Bearer token is forwarded on the second leg.
-        const authHeader = (calls[1].init?.headers as Record<string, string>)?.Authorization;
-        expect(authHeader).toBe('Bearer jwt-abc');
+        const auth = (calls[0].init?.headers as Record<string, string>)?.Authorization;
+        expect(auth).toBe('Bearer firebase-id-token');
 
         // Multipart body must be a FormData.
-        expect(calls[1].init?.body).toBeInstanceOf(FormData);
+        expect(calls[0].init?.body).toBeInstanceOf(FormData);
+        expect((calls[0].init?.body as FormData).get('platform')).toBe('chrome');
     });
 
     it('uses the documented default API base when none is passed', async () => {
         const file = new File(['x'], 'x.bin');
         const { fetchImpl, calls } = makeFetchStub([
-            () => jsonResponse({ upload_token: 't' }),
             () =>
                 jsonResponse({
                     share_id: 's',
@@ -242,102 +241,69 @@ describe('shareFile', () => {
                 }),
         ]);
 
-        await shareFile(file, { fetchImpl });
+        await shareFile(file, { fetchImpl, getIdToken });
         expect(calls[0].url.startsWith(DEFAULT_SHARE_API_BASE + '/')).toBe(true);
     });
 
-    it('maps a 401 from /upload-token to a friendly auth error', async () => {
+    it('surfaces anonymous authentication failures before upload', async () => {
         const file = new File(['x'], 'x.bin');
-        const { fetchImpl } = makeFetchStub([
-            () => textResponse('nope', { status: 401 }),
-        ]);
-        await expect(shareFile(file, { fetchImpl })).rejects.toThrow(/authentication failed/i);
-    });
-
-    it('maps a 5xx from /upload-token to a service-unavailable error', async () => {
-        const file = new File(['x'], 'x.bin');
-        const { fetchImpl } = makeFetchStub([
-            () => textResponse('boom', { status: 503 }),
-        ]);
-        await expect(shareFile(file, { fetchImpl })).rejects.toThrow(/unavailable/i);
-    });
-
-    it('maps fetch rejection on /upload-token to a network error', async () => {
-        const file = new File(['x'], 'x.bin');
-        const fetchImpl = jest.fn(async () => {
-            throw new TypeError('Failed to fetch');
-        }) as unknown as typeof fetch;
-        await expect(shareFile(file, { fetchImpl })).rejects.toThrow(/network error.*upload token/i);
-    });
-
-    it('throws when /upload-token returns JSON without a token field', async () => {
-        const file = new File(['x'], 'x.bin');
-        const { fetchImpl } = makeFetchStub([
-            () => jsonResponse({ irrelevant: true }),
-        ]);
-        await expect(shareFile(file, { fetchImpl })).rejects.toThrow(/missing token/i);
+        const fetchImpl = jest.fn() as unknown as typeof fetch;
+        const authFailure = async () => { throw new Error('Anonymous login failed.'); };
+        await expect(shareFile(file, { fetchImpl, getIdToken: authFailure })).rejects.toThrow(/anonymous login failed/i);
+        expect(fetchImpl).not.toHaveBeenCalled();
     });
 
     it('maps a 401 from /share to a token-expired error', async () => {
         const file = new File(['x'], 'x.bin');
         const { fetchImpl } = makeFetchStub([
-            () => jsonResponse({ upload_token: 't' }),
             () => textResponse('nope', { status: 403 }),
         ]);
-        await expect(shareFile(file, { fetchImpl })).rejects.toThrow(/token expired or invalid/i);
+        await expect(shareFile(file, { fetchImpl, getIdToken })).rejects.toThrow(/token expired or invalid/i);
     });
 
     it('maps a 413 from /share to a too-large server-side error', async () => {
         const file = new File(['x'], 'x.bin');
         const { fetchImpl } = makeFetchStub([
-            () => jsonResponse({ upload_token: 't' }),
             () => textResponse('too big', { status: 413 }),
         ]);
-        await expect(shareFile(file, { fetchImpl })).rejects.toThrow(/too large/i);
+        await expect(shareFile(file, { fetchImpl, getIdToken })).rejects.toThrow(/too large/i);
     });
 
     it('maps a 5xx from /share to a service-unavailable error', async () => {
         const file = new File(['x'], 'x.bin');
         const { fetchImpl } = makeFetchStub([
-            () => jsonResponse({ upload_token: 't' }),
             () => textResponse('boom', { status: 500 }),
         ]);
-        await expect(shareFile(file, { fetchImpl })).rejects.toThrow(/unavailable/i);
+        await expect(shareFile(file, { fetchImpl, getIdToken })).rejects.toThrow(/unavailable/i);
     });
 
     it('maps fetch rejection on /share to a network error', async () => {
         const file = new File(['x'], 'x.bin');
-        let call = 0;
         const fetchImpl = jest.fn(async () => {
-            call += 1;
-            if (call === 1) return jsonResponse({ upload_token: 't' });
             throw new TypeError('Failed to fetch');
         }) as unknown as typeof fetch;
-        await expect(shareFile(file, { fetchImpl })).rejects.toThrow(/network error.*uploading share/i);
+        await expect(shareFile(file, { fetchImpl, getIdToken })).rejects.toThrow(/network error.*uploading share/i);
     });
 
     it('throws when /share returns invalid JSON', async () => {
         const file = new File(['x'], 'x.bin');
         const { fetchImpl } = makeFetchStub([
-            () => jsonResponse({ upload_token: 't' }),
             () => textResponse('not-json', { status: 200 }),
         ]);
-        await expect(shareFile(file, { fetchImpl })).rejects.toThrow(/not JSON/i);
+        await expect(shareFile(file, { fetchImpl, getIdToken })).rejects.toThrow(/not JSON/i);
     });
 
     it('throws when /share returns JSON missing share_id', async () => {
         const file = new File(['x'], 'x.bin');
         const { fetchImpl } = makeFetchStub([
-            () => jsonResponse({ upload_token: 't' }),
             () => jsonResponse({ expires_at: 'e', download_url: 'u' }),
         ]);
-        await expect(shareFile(file, { fetchImpl })).rejects.toThrow(/share_id/);
+        await expect(shareFile(file, { fetchImpl, getIdToken })).rejects.toThrow(/share_id/);
     });
 
     it('honors an explicit filename override', async () => {
         const file = new File(['data'], 'original.bin');
         const { fetchImpl, calls } = makeFetchStub([
-            () => jsonResponse({ upload_token: 't' }),
             () =>
                 jsonResponse({
                     share_id: 's',
@@ -345,9 +311,9 @@ describe('shareFile', () => {
                     download_url: 'u-good',
                 }),
         ]);
-        const result = await shareFile(file, { fetchImpl, filename: 'renamed.bin' });
+        const result = await shareFile(file, { fetchImpl, filename: 'renamed.bin', getIdToken });
         expect(result.filename).toBe('renamed.bin');
         // Smoke check: second leg actually carried a multipart body.
-        expect(calls[1].init?.body).toBeInstanceOf(FormData);
+        expect(calls[0].init?.body).toBeInstanceOf(FormData);
     });
 });

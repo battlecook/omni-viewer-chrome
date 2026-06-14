@@ -60,8 +60,12 @@ most five minutes; access is gated by a signed `share_id`.
 
 **What it asks for**
 
-- `storage` — to remember UI preferences (theme, last-used mode). Nothing
-  else. No host permissions. No content scripts.
+- `storage` — to remember UI preferences (theme, last-used mode).
+- Share API host access — only to upload a file after you press Share and
+  to resolve an Omni Viewer share ID. Upload requests identify this client
+  as the `chrome` platform. No content scripts.
+- Firebase Authentication hosts — create and refresh an anonymous account
+  used only to authenticate Share uploads.
 
 **What it does not do**
 
@@ -86,9 +90,14 @@ local viewer for the supported formats listed above.
 
 - `storage`: persists small UI preferences such as theme. No file contents,
   no personal data.
-- No `host_permissions`. The `web_accessible_resources` block only exposes
-  the extension's own `vendor/**/*` and `templates/**/*` files to its own
-  viewer page.
+- `https://omni-viewer-share-624036133562.us-west1.run.app/*`: creates and
+  opens temporary share links only after an explicit Share or Open Link
+  action. Shared files expire after five minutes.
+- `https://identitytoolkit.googleapis.com/*` and
+  `https://securetoken.googleapis.com/*`: create and refresh the anonymous
+  Firebase identity used to authenticate Share uploads.
+- `https://storage.googleapis.com/*`: downloads only signed URLs whose path
+  is validated as the `omni-viewer-web-share` bucket before the request.
 
 ### Remote code declaration
 
@@ -152,8 +161,11 @@ are packaged under the extension directory.
 **요구하는 권한**
 
 - `storage` — 테마, 마지막으로 사용한 모드 등 UI 환경설정 저장 용도.
-  그 외에는 사용하지 않습니다. `host_permissions` 없음, 콘텐츠 스크립트
-  없음.
+- 공유 API 호스트 접근 — 사용자가 Share를 누른 뒤 파일을 업로드하거나
+  Omni Viewer 공유 ID를 열 때만 사용하며 업로드 요청은 `chrome`
+  플랫폼으로 식별됩니다. 콘텐츠 스크립트는 없습니다.
+- Firebase Authentication 호스트 — Share 업로드 인증에만 사용하는 익명
+  계정을 생성하고 토큰을 갱신합니다.
 
 **하지 않는 것**
 
@@ -178,9 +190,14 @@ are packaged under the extension directory.
 
 - `storage`: 테마 등 작은 UI 환경설정 저장. 파일 내용이나 개인정보는
   저장하지 않습니다.
-- `host_permissions` 없음. `web_accessible_resources`는 확장 자체의
-  `vendor/**/*`, `templates/**/*` 자산만을 자체 뷰어 페이지에 공급하는
-  용도입니다.
+- `https://omni-viewer-share-624036133562.us-west1.run.app/*`: 사용자가
+  Share 또는 Open Link를 명시적으로 실행했을 때만 5분짜리 임시 공유
+  링크를 생성하거나 엽니다.
+- `https://identitytoolkit.googleapis.com/*`,
+  `https://securetoken.googleapis.com/*`: Share 업로드 인증용 Firebase 익명
+  ID를 생성하고 갱신합니다.
+- `https://storage.googleapis.com/*`: 요청 전에
+  `omni-viewer-web-share` 버킷 경로인지 검증한 서명 URL만 다운로드합니다.
 
 ### 원격 코드 선언
 

@@ -20,6 +20,12 @@
   "permissions": [
     "storage"
   ],
+  "host_permissions": [
+    "https://omni-viewer-share-624036133562.us-west1.run.app/*",
+    "https://identitytoolkit.googleapis.com/*",
+    "https://securetoken.googleapis.com/*",
+    "https://storage.googleapis.com/*"
+  ],
   "file_handlers": [
     {
       "action": "viewer.html",

@@ -28,6 +28,37 @@ const dropZone = $('#dropZone');
 const viewer = $('#viewer');
 const statusBox = $('#status');
 const fileMeta = $('#fileMeta');
+const shareCurrentFileButton = $('#shareCurrentFile');
+const openSharedLinkButton = $('#openSharedLink');
+const shareToast = $('#shareToast');
+const shareToastLink = $('#shareToastLink');
+let shareToastTimer;
+
+let shareModulePromise;
+async function loadShareModule() {
+  if (!shareModulePromise) {
+    shareModulePromise = loadFirstModule([
+      'share/shareCommand.js',
+      'dist/share/shareCommand.js',
+    ]);
+  }
+  return shareModulePromise;
+}
+
+async function loadFirstModule(candidates) {
+  let lastError;
+  for (const relativePath of candidates) {
+    try {
+      const url = globalThis.chrome?.runtime?.getURL
+        ? chrome.runtime.getURL(relativePath)
+        : relativePath;
+      return await import(url);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error('Failed to load module.');
+}
 
 function i18n(messageName, substitutions) {
   const message = globalThis.chrome?.i18n?.getMessage?.(messageName, substitutions);
@@ -204,6 +235,57 @@ function setStatus(message, error = false) {
   statusBox.classList.toggle('error', error);
 }
 
+function showShareToast(url, copied) {
+  clearTimeout(shareToastTimer);
+  shareToast.querySelector('strong').textContent = copied ? 'Share link copied' : 'Share link created';
+  shareToastLink.href = url;
+  shareToastLink.textContent = url;
+  shareToast.classList.remove('hidden');
+  shareToastTimer = setTimeout(() => shareToast.classList.add('hidden'), 7000);
+}
+
+async function downloadSharedFileViaBackground(url) {
+  try {
+    const ping = await chrome.runtime.sendMessage({ type: 'omniViewerSharePing' });
+    if (!ping?.ok) throw new Error('Share background service is not ready.');
+    const response = await chrome.runtime.sendMessage({
+      type: 'omniViewerFetchSharedFile',
+      url,
+    });
+    if (response?.ok && typeof response.base64 === 'string') {
+      return base64ToBlob(response.base64, response.contentType);
+    }
+    if (response) {
+      throw new Error(response.error || 'Background download failed.');
+    }
+  } catch (backgroundError) {
+    console.warn('Background shared-file download unavailable; trying direct fetch.', backgroundError);
+  }
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.blob();
+  } catch (directError) {
+    throw new Error(
+      'Shared file download failed. Reload the extension at chrome://extensions, close this viewer tab, '
+      + 'then open Omni Viewer again. '
+      + (directError instanceof Error ? directError.message : String(directError))
+    );
+  }
+}
+
+function base64ToBlob(base64, contentType) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return new Blob([bytes], {
+    type: contentType || 'application/octet-stream',
+  });
+}
+
 function panel(title, body = '') {
   viewer.innerHTML = `
     <article class="viewer-panel">
@@ -212,12 +294,16 @@ function panel(title, body = '') {
           <div class="viewer-title">${escapeHtml(title)}</div>
           <span class="badge">${escapeHtml(labels[state.type] || state.type)}</span>
         </div>
-        <button id="downloadOriginal" type="button">${escapeHtml(i18n('downloadOriginal') || 'Download original')}</button>
+        <div class="viewer-head-actions">
+          <button id="shareViewerFile" type="button" title="Shared data is stored on the server for 5 minutes only, then discarded.">Share</button>
+          <button id="downloadOriginal" type="button">${escapeHtml(i18n('downloadOriginal') || 'Download original')}</button>
+        </div>
       </header>
       <div class="viewer-body">${body}</div>
     </article>
   `;
   $('#downloadOriginal')?.addEventListener('click', () => downloadBlob(state.file, state.file.name));
+  $('#shareViewerFile')?.addEventListener('click', shareCurrentFile);
   return $('.viewer-body');
 }
 
@@ -324,6 +410,7 @@ async function openFile(file) {
   releaseAudio();
   releaseAdvancedViewer();
   state.file = file;
+  shareCurrentFileButton.disabled = false;
   state.type = await detectType(file);
   setStatus('');
   fileMeta.classList.remove('hidden');
@@ -339,6 +426,51 @@ async function openFile(file) {
   } catch (error) {
     console.error(error);
     setStatus(error instanceof Error ? error.message : String(error), true);
+  }
+}
+
+async function shareCurrentFile() {
+  if (!state.file) {
+    setStatus('No file selected to share.', true);
+    return;
+  }
+  const buttons = [shareCurrentFileButton, $('#shareViewerFile')].filter(Boolean);
+  buttons.forEach((button) => { button.disabled = true; });
+  setStatus(`Uploading ${state.file.name}...`);
+  try {
+    const { shareFile } = await loadShareModule();
+    const result = await shareFile(state.file);
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(result.url);
+      copied = true;
+    } catch (clipboardError) {
+      console.warn('Could not copy share link to clipboard.', clipboardError);
+    }
+    showShareToast(result.url, copied);
+    setStatus(`${copied ? 'Share link copied to clipboard' : 'Share link created'}: ${result.url} The link is valid for 5 minutes only, then it expires.`);
+  } catch (error) {
+    console.error(error);
+    setStatus(`Share failed: ${error instanceof Error ? error.message : String(error)}`, true);
+  } finally {
+    buttons.forEach((button) => { button.disabled = false; });
+  }
+}
+
+async function openSharedLinkPrompt() {
+  const input = window.prompt('Enter Omni Viewer share URL or share ID');
+  if (!input) return;
+  openSharedLinkButton.disabled = true;
+  setStatus('Downloading shared file...');
+  try {
+    const { openSharedLink } = await loadShareModule();
+    const file = await openSharedLink(input, { downloadImpl: downloadSharedFileViaBackground });
+    await openFile(file);
+  } catch (error) {
+    console.error(error);
+    setStatus(`Download failed: ${error instanceof Error ? error.message : String(error)}`, true);
+  } finally {
+    openSharedLinkButton.disabled = false;
   }
 }
 
@@ -1548,6 +1680,9 @@ async function renderRawData() {
 }
 
 localizeDocument();
+
+shareCurrentFileButton.addEventListener('click', shareCurrentFile);
+openSharedLinkButton.addEventListener('click', openSharedLinkPrompt);
 
 fileInput.addEventListener('change', () => {
   const file = fileInput.files?.[0];

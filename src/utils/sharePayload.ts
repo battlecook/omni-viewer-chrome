@@ -19,6 +19,9 @@ export const MAX_SHARE_SIZE_BYTES = 10 * 1024 * 1024;
 /** Default expiry (minutes) we ask the server to honor. */
 export const DEFAULT_SHARE_EXPIRES_IN_MINUTES = 5;
 
+/** The current backend issues IDE upload tokens only for this client id. */
+export const SHARE_PLATFORM = 'chrome';
+
 /** Result of {@link validateShareSize}. */
 export interface ShareSizeValidation {
     ok: boolean;
@@ -39,12 +42,12 @@ export interface ParsedShareInput {
 
 /**
  * Permissive matcher for the share path segment we mint:
- *   `https://omni-viewer-share.example.com/s/<id>`
+ *   `https://omni-viewer-web.web.app/share/<id>`
  *
  * We accept any host so the helper works against staging/test bases too.
  * The captured group is URL-decoded by the caller.
  */
-const SHARE_PATH_PATTERN = /\/s\/([^/?#]+)/;
+const SHARE_PATH_PATTERN = /\/(?:share|s)\/([^/?#]+)/;
 
 /**
  * Bare ID format. We deliberately keep this strict (URL-safe characters
@@ -55,7 +58,7 @@ const BARE_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 /**
  * Recognize either a full share URL (e.g.
- * `https://omni-viewer-share.example.com/s/<id>`) or a bare share ID, and
+ * `https://omni-viewer-web.web.app/share/<id>`) or a bare share ID, and
  * normalize it into `{ shareId }`.
  *
  * Returns `null` if the input is empty / not a string / does not match
@@ -66,8 +69,7 @@ export function parseShareInput(input: unknown): ParsedShareInput | null {
     const trimmed = input.trim();
     if (!trimmed) return null;
 
-    // URL form: anything containing `/s/<id>`. We do not require a scheme
-    // so `omni-viewer-share.example.com/s/abc` also works.
+    // URL form: anything containing `/share/<id>` or legacy `/s/<id>`.
     const match = trimmed.match(SHARE_PATH_PATTERN);
     if (match && match[1]) {
         let id = match[1];
@@ -122,7 +124,7 @@ export function validateShareSize(file: { size: number; name?: string } | null |
  */
 export function buildShareFormData(file: Blob, filename?: string): FormData {
     const fd = new FormData();
-    fd.append('platform', 'chrome');
+    fd.append('platform', SHARE_PLATFORM);
     fd.append('is_paid_user', 'false');
     if (filename) {
         fd.append('file', file, filename);
