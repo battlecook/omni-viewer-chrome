@@ -83,6 +83,8 @@ ticked is a blocker.
 - [ ] Short description: from `store/listing.md` (English) — under 132
       characters.
 - [ ] Long description: from `store/listing.md` (English) — copy verbatim.
+- [ ] Listing copy explains user benefits without repeated format names,
+      extension lists, search terms, or other keyword stuffing.
 - [ ] 한국어 listing fields populated from the same file.
 - [ ] Category: Productivity.
 - [ ] Single-purpose statement: from `store/listing.md`.

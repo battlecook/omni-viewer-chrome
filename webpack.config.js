@@ -106,6 +106,9 @@ module.exports = (env, argv) => {
       new CopyWebpackPlugin({
         patterns: [
           { from: 'manifest.json', to: 'manifest.json' },
+          { from: 'LICENSE', to: 'LICENSE', toType: 'file' },
+          { from: 'THIRD-PARTY-NOTICES.md', to: 'THIRD-PARTY-NOTICES.md' },
+          { from: 'THIRD-PARTY-LICENSES', to: 'THIRD-PARTY-LICENSES' },
           { from: 'viewer.html', to: 'viewer.html' },
           { from: '_locales', to: '_locales' },
           { from: 'icons', to: 'icons' },

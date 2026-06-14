@@ -32,7 +32,31 @@ const shareCurrentFileButton = $('#shareCurrentFile');
 const openSharedLinkButton = $('#openSharedLink');
 const shareToast = $('#shareToast');
 const shareToastLink = $('#shareToastLink');
+const languageSelect = $('#languageSelect');
 let shareToastTimer;
+
+const LOCALE_NATIVE_NAMES = {
+  am: 'አማርኛ', ar: 'العربية', as: 'অসমীয়া', az: 'azərbaycan',
+  bg: 'български', bn: 'বাংলা', ca: 'català', cs: 'čeština',
+  da: 'dansk', de: 'Deutsch', el: 'Ελληνικά', en: 'English',
+  en_AU: 'English (Australia)', en_GB: 'English (United Kingdom)',
+  en_US: 'English (United States)', es: 'español',
+  es_419: 'español (Latinoamérica)', et: 'eesti', eu: 'euskara', fa: 'فارسی',
+  fi: 'suomi', fil: 'Filipino', fr: 'français', gu: 'ગુજરાતી', he: 'עברית',
+  hi: 'हिन्दी', hr: 'hrvatski', hu: 'magyar', hy: 'հայերեն',
+  id: 'Bahasa Indonesia', it: 'italiano', ja: '日本語', ka: 'ქართული',
+  kn: 'ಕನ್ನಡ', ko: '한국어', lt: 'lietuvių', lv: 'latviešu',
+  mk: 'македонски', ml: 'മലയാളം', mr: 'मराठी', ms: 'Bahasa Melayu',
+  my: 'မြန်မာ', ne: 'नेपाली', nl: 'Nederlands', no: 'norsk', or: 'ଓଡ଼ିଆ',
+  pa: 'ਪੰਜਾਬੀ', pl: 'polski', pt_BR: 'português (Brasil)',
+  pt_PT: 'português (Portugal)', ro: 'română', ru: 'русский', si: 'සිංහල',
+  sk: 'slovenčina', sl: 'slovenščina', sq: 'shqip', sr: 'српски',
+  sv: 'svenska', sw: 'Kiswahili', ta: 'தமிழ்', te: 'తెలుగు', th: 'ไทย',
+  tr: 'Türkçe', uk: 'українська', ur: 'اردو', uz: 'o‘zbek',
+  vi: 'Tiếng Việt', zh_CN: '中文（中国）', zh_TW: '中文（台灣）'
+};
+const SUPPORTED_LOCALES = Object.keys(LOCALE_NATIVE_NAMES);
+let activeLocale = '';
 
 let shareModulePromise;
 async function loadShareModule() {
@@ -61,6 +85,13 @@ async function loadFirstModule(candidates) {
 }
 
 function i18n(messageName, substitutions) {
+  const override = globalThis.__omniLocaleMessages?.[messageName]?.message;
+  if (override) {
+    const values = Array.isArray(substitutions)
+      ? substitutions
+      : substitutions == null ? [] : [substitutions];
+    return override.replace(/\$(\d+)/g, (match, index) => values[Number(index) - 1] ?? match);
+  }
   const message = globalThis.chrome?.i18n?.getMessage?.(messageName, substitutions);
   return message || '';
 }
@@ -72,7 +103,7 @@ function isRtlLocale(locale) {
 }
 
 function localizeDocument() {
-  const locale = i18n('@@ui_locale');
+  const locale = activeLocale || i18n('@@ui_locale');
   if (locale) {
     document.documentElement.lang = locale.replace('_', '-');
     document.documentElement.dir = isRtlLocale(locale) ? 'rtl' : 'ltr';
@@ -95,6 +126,58 @@ function localizeDocument() {
     const message = i18n(element.dataset.i18nAriaLabel);
     if (message) element.setAttribute('aria-label', message);
   });
+}
+
+function populateLanguageSelect(selectedLocale) {
+  if (!languageSelect) return;
+  const systemOption = document.createElement('option');
+  systemOption.value = '';
+  systemOption.textContent = i18n('languageSystemDefault') || 'System default';
+  languageSelect.replaceChildren(systemOption);
+
+  for (const locale of SUPPORTED_LOCALES) {
+    const option = document.createElement('option');
+    option.value = locale;
+    option.textContent = LOCALE_NATIVE_NAMES[locale];
+    languageSelect.appendChild(option);
+  }
+  languageSelect.value = selectedLocale;
+}
+
+async function readLocalePreference() {
+  try {
+    const result = await chrome.storage?.local?.get?.(['locale']);
+    return SUPPORTED_LOCALES.includes(result?.locale) ? result.locale : '';
+  } catch {
+    return '';
+  }
+}
+
+async function initializeLanguagePreference() {
+  const selectedLocale = await readLocalePreference();
+  if (selectedLocale) {
+    try {
+      const relativePath = `_locales/${selectedLocale}/messages.json`;
+      const url = globalThis.chrome?.runtime?.getURL
+        ? chrome.runtime.getURL(relativePath)
+        : relativePath;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      globalThis.__omniLocaleMessages = await response.json();
+      activeLocale = selectedLocale;
+    } catch (error) {
+      console.warn(`Could not load locale ${selectedLocale}; using the system language.`, error);
+    }
+  }
+  populateLanguageSelect(activeLocale);
+}
+
+async function saveLocalePreference(locale) {
+  try {
+    await chrome.storage?.local?.set?.({ locale });
+  } finally {
+    globalThis.location.reload();
+  }
 }
 
 const formats = {
@@ -1679,10 +1762,11 @@ async function renderRawData() {
   `;
 }
 
-localizeDocument();
+initializeLanguagePreference().then(localizeDocument);
 
 shareCurrentFileButton.addEventListener('click', shareCurrentFile);
 openSharedLinkButton.addEventListener('click', openSharedLinkPrompt);
+languageSelect?.addEventListener('change', () => saveLocalePreference(languageSelect.value));
 
 fileInput.addEventListener('change', () => {
   const file = fileInput.files?.[0];

@@ -51,6 +51,14 @@
     "message": "Download original",
     "description": "Button text for downloading the original file."
   },
+  "languageButtonTitle": {
+    "message": "Language",
+    "description": "Tooltip and accessible label for the language selector."
+  },
+  "languageSystemDefault": {
+    "message": "System default",
+    "description": "Language selector option that follows the Chrome system language."
+  },
   "commonLoading": {
     "message": "Loading…",
     "description": "Generic loading indicator text."

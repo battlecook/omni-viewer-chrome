@@ -17,6 +17,13 @@
         <button id="openSharedLink" type="button">Open Link</button>
         <button id="shareCurrentFile" type="button" disabled
           title="Share with Omni Viewer. Shared data is stored on the server for 5 minutes only, then discarded.">Share</button>
+        <label class="language-picker" data-i18n-title="languageButtonTitle" title="Language">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"></path>
+          </svg>
+          <select id="languageSelect" data-i18n-aria-label="languageButtonTitle" aria-label="Language"></select>
+        </label>
       </div>
     </header>
     <section id="dropZone" class="drop-zone" role="button" tabindex="0">

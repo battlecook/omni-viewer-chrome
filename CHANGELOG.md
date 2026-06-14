@@ -21,6 +21,14 @@ All notable changes to the Chrome build of Omni Viewer are documented in this fi
   Storage URLs, including host and bucket-path validation.
 - Added unit and integration coverage for anonymous authentication, share
   uploads, share URL parsing, download handling, and manifest permissions.
+- Added a language picker with a persisted system-default or explicit locale
+  preference across 69 supported locales.
+- Added translated viewer messages and locale override support, including
+  placeholder substitution for the selected language.
+- Added a locale translation maintenance script and tests for selected-locale
+  message resolution.
+- Added Chrome Web Store icon and screenshot source assets.
+- Added bundled third-party license texts to extension release packages.
 
 ### Changed
 - Replaced the placeholder Share API host and endpoints with the production
@@ -29,6 +37,9 @@ All notable changes to the Chrome build of Omni Viewer are documented in this fi
   token refresh, and signed share-file downloads.
 - Updated Chrome Web Store privacy, permission, and release-checklist
   documentation for the Share feature.
+- Revised the Chrome Web Store listing copy to describe viewer capabilities
+  without repetitive format and keyword lists.
+- Updated copyright attribution and third-party font and dependency notices.
 
 ### Fixed
 - Fixed Open Link downloads failing when signed Google Cloud Storage URLs could

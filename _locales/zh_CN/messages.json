@@ -51,620 +51,628 @@
     "message": "下载原始文件",
     "description": "Button text for downloading the original file."
   },
+  "languageButtonTitle": {
+    "message": "Language",
+    "description": "Tooltip and accessible label for the language selector."
+  },
+  "languageSystemDefault": {
+    "message": "System default",
+    "description": "Language selector option that follows the Chrome system language."
+  },
   "commonLoading": {
-    "message": "Loading…",
-    "description": "[needsTranslation] Generic loading indicator text."
+    "message": "正在加载...",
+    "description": "Generic loading indicator text."
   },
   "commonError": {
-    "message": "Error",
-    "description": "[needsTranslation] Generic error label."
+    "message": "错误",
+    "description": "Generic error label."
   },
   "commonRetry": {
-    "message": "Retry",
-    "description": "[needsTranslation] Generic retry button label."
+    "message": "重试",
+    "description": "Generic retry button label."
   },
   "commonCancel": {
-    "message": "Cancel",
-    "description": "[needsTranslation] Generic cancel button label."
+    "message": "取消",
+    "description": "Generic cancel button label."
   },
   "commonSave": {
-    "message": "Save",
-    "description": "[needsTranslation] Generic save button label."
+    "message": "保存",
+    "description": "Generic save button label."
   },
   "commonSaveAs": {
-    "message": "Save As",
-    "description": "[needsTranslation] Generic Save As button label."
+    "message": "另存为",
+    "description": "Generic Save As button label."
   },
   "commonClose": {
-    "message": "Close",
-    "description": "[needsTranslation] Generic close button label."
+    "message": "关闭",
+    "description": "Generic close button label."
   },
   "commonSearchPlaceholder": {
-    "message": "Search…",
-    "description": "[needsTranslation] Generic search input placeholder."
+    "message": "搜索...",
+    "description": "Generic search input placeholder."
   },
   "commonClear": {
-    "message": "Clear",
-    "description": "[needsTranslation] Generic clear button label."
+    "message": "清除",
+    "description": "Generic clear button label."
   },
   "commonCopy": {
-    "message": "Copy",
-    "description": "[needsTranslation] Generic copy button label."
+    "message": "复制",
+    "description": "Generic copy button label."
   },
   "commonCopied": {
-    "message": "Copied!",
-    "description": "[needsTranslation] Toast / button flash when content was copied."
+    "message": "复制了！",
+    "description": "Toast / button flash when content was copied."
   },
   "commonDownload": {
-    "message": "Download",
-    "description": "[needsTranslation] Generic download button label."
+    "message": "下载",
+    "description": "Generic download button label."
   },
   "commonOpen": {
-    "message": "Open",
-    "description": "[needsTranslation] Generic open button label."
+    "message": "打开",
+    "description": "Generic open button label."
   },
   "commonNext": {
-    "message": "Next",
-    "description": "[needsTranslation] Generic next button label."
+    "message": "下一个",
+    "description": "Generic next button label."
   },
   "commonPrevious": {
-    "message": "Previous",
-    "description": "[needsTranslation] Generic previous button label."
+    "message": "上一页",
+    "description": "Generic previous button label."
   },
   "commonPage": {
-    "message": "Page",
-    "description": "[needsTranslation] Generic page label."
+    "message": "页",
+    "description": "Generic page label."
   },
   "commonOf": {
-    "message": "of",
-    "description": "[needsTranslation] Generic 'of' connector for X of Y forms (page X of Y)."
+    "message": "共",
+    "description": "Generic 'of' connector for X of Y forms (page X of Y)."
   },
   "commonReset": {
-    "message": "Reset",
-    "description": "[needsTranslation] Generic reset button label."
+    "message": "的重置",
+    "description": "Generic reset button label."
   },
   "commonZoomIn": {
-    "message": "Zoom in",
-    "description": "[needsTranslation] Generic zoom-in tooltip."
+    "message": "放大",
+    "description": "Generic zoom-in tooltip."
   },
   "commonZoomOut": {
-    "message": "Zoom out",
-    "description": "[needsTranslation] Generic zoom-out tooltip."
+    "message": "缩小",
+    "description": "Generic zoom-out tooltip."
   },
   "commonFit": {
-    "message": "Fit",
-    "description": "[needsTranslation] Generic fit-to-screen tooltip."
+    "message": "适合",
+    "description": "Generic fit-to-screen tooltip."
   },
   "commonFailedToLoad": {
-    "message": "Failed to load file",
-    "description": "[needsTranslation] Generic load-failure heading shown by viewers."
+    "message": "无法加载文件",
+    "description": "Generic load-failure heading shown by viewers."
   },
   "commonUnsupportedFile": {
-    "message": "No supported viewer matched this file.",
-    "description": "[needsTranslation] Fallback shown when no viewer can handle a file."
+    "message": "没有支持的查看器与此文件匹配。",
+    "description": "Fallback shown when no viewer can handle a file."
   },
   "imageRotateTitle": {
-    "message": "Rotate 90°",
-    "description": "[needsTranslation] Image viewer rotate button tooltip."
+    "message": "旋转 90°",
+    "description": "Image viewer rotate button tooltip."
   },
   "imageFlipHorizontalTitle": {
-    "message": "Flip horizontal",
-    "description": "[needsTranslation] Image viewer flip-horizontal button tooltip."
+    "message": "水平翻转",
+    "description": "Image viewer flip-horizontal button tooltip."
   },
   "imageFlipVerticalTitle": {
-    "message": "Flip vertical",
-    "description": "[needsTranslation] Image viewer flip-vertical button tooltip."
+    "message": "垂直翻转",
+    "description": "Image viewer flip-vertical button tooltip."
   },
   "imageResetTitle": {
-    "message": "Reset (R)",
-    "description": "[needsTranslation] Image viewer reset button tooltip."
+    "message": "重置（R）",
+    "description": "Image viewer reset button tooltip."
   },
   "imageFitTitle": {
-    "message": "Fit (0)",
-    "description": "[needsTranslation] Image viewer fit-to-screen button tooltip."
+    "message": "适合 (0)",
+    "description": "Image viewer fit-to-screen button tooltip."
   },
   "imageInfoSize": {
-    "message": "Size",
-    "description": "[needsTranslation] Image viewer info panel: pixel dimensions label."
+    "message": "尺寸",
+    "description": "Image viewer info panel: pixel dimensions label."
   },
   "imageInfoFormat": {
-    "message": "Format",
-    "description": "[needsTranslation] Image viewer info panel: format label."
+    "message": "格式",
+    "description": "Image viewer info panel: format label."
   },
   "imageInfoFileSize": {
-    "message": "File Size",
-    "description": "[needsTranslation] Image viewer info panel: byte size label."
+    "message": "文件大小",
+    "description": "Image viewer info panel: byte size label."
   },
   "imageLoading": {
-    "message": "Loading image…",
-    "description": "[needsTranslation] Image viewer loading text."
+    "message": "加载图片...",
+    "description": "Image viewer loading text."
   },
   "imageLoadError": {
-    "message": "Error loading image file",
-    "description": "[needsTranslation] Image viewer load-error message."
+    "message": "加载图像文件时出错",
+    "description": "Image viewer load-error message."
   },
   "imageFilterBrightness": {
-    "message": "Brightness",
-    "description": "[needsTranslation] Image filter slider label: brightness."
+    "message": "亮度",
+    "description": "Image filter slider label: brightness."
   },
   "imageFilterContrast": {
-    "message": "Contrast",
-    "description": "[needsTranslation] Image filter slider label: contrast."
+    "message": "对比",
+    "description": "Image filter slider label: contrast."
   },
   "imageFilterSaturation": {
-    "message": "Saturation",
-    "description": "[needsTranslation] Image filter slider label: saturation."
+    "message": "饱和度",
+    "description": "Image filter slider label: saturation."
   },
   "imageFilterGrayscale": {
-    "message": "Grayscale",
-    "description": "[needsTranslation] Image filter slider label: grayscale."
+    "message": "灰度",
+    "description": "Image filter slider label: grayscale."
   },
   "imagePresetOriginal": {
-    "message": "Original",
-    "description": "[needsTranslation] Image filter preset: original / no filter."
+    "message": "原创",
+    "description": "Image filter preset: original / no filter."
   },
   "imagePresetBright": {
-    "message": "Bright",
-    "description": "[needsTranslation] Image filter preset: bright."
+    "message": "明亮",
+    "description": "Image filter preset: bright."
   },
   "imagePresetDark": {
-    "message": "Dark",
-    "description": "[needsTranslation] Image filter preset: dark."
+    "message": "黑暗",
+    "description": "Image filter preset: dark."
   },
   "imagePresetVintage": {
-    "message": "Vintage",
-    "description": "[needsTranslation] Image filter preset: vintage."
+    "message": "复古",
+    "description": "Image filter preset: vintage."
   },
   "imagePresetBw": {
-    "message": "B&W",
-    "description": "[needsTranslation] Image filter preset: black and white."
+    "message": "黑白",
+    "description": "Image filter preset: black and white."
   },
   "imageEditToggle": {
-    "message": "Edit",
-    "description": "[needsTranslation] Image viewer button to enter edit mode."
+    "message": "编辑",
+    "description": "Image viewer button to enter edit mode."
   },
   "imageEditToolText": {
-    "message": "Text",
-    "description": "[needsTranslation] Image edit mode tool: add text."
+    "message": "文字",
+    "description": "Image edit mode tool: add text."
   },
   "imageEditToolCircle": {
-    "message": "Circle",
-    "description": "[needsTranslation] Image edit mode tool: add circle."
+    "message": "圆圈",
+    "description": "Image edit mode tool: add circle."
   },
   "imageEditToolRect": {
-    "message": "Rectangle",
-    "description": "[needsTranslation] Image edit mode tool: add rectangle."
+    "message": "矩形",
+    "description": "Image edit mode tool: add rectangle."
   },
   "imageEditToolSelect": {
-    "message": "Select",
-    "description": "[needsTranslation] Image edit mode tool: select."
+    "message": "选择",
+    "description": "Image edit mode tool: select."
   },
   "imageEditToolDelete": {
-    "message": "Delete",
-    "description": "[needsTranslation] Image edit mode tool: delete selected."
+    "message": "删除",
+    "description": "Image edit mode tool: delete selected."
   },
   "imageSelectionInfo": {
-    "message": "$1 selected",
-    "description": "[needsTranslation] Image edit mode: number of currently selected elements. $1 = count."
+    "message": "$1 已选择",
+    "description": "Image edit mode: number of currently selected elements. $1 = count."
   },
   "imageSaveCopy": {
-    "message": "Save copy",
-    "description": "[needsTranslation] Image viewer button: save edited copy."
+    "message": "保存副本",
+    "description": "Image viewer button: save edited copy."
   },
   "pdfLoading": {
-    "message": "Loading PDF…",
-    "description": "[needsTranslation] PDF viewer loading text."
+    "message": "正在加载 PDF...",
+    "description": "PDF viewer loading text."
   },
   "pdfLoadCancelled": {
-    "message": "PDF load was cancelled.",
-    "description": "[needsTranslation] PDF viewer message when the user cancels the password modal."
+    "message": "PDF 加载已取消。",
+    "description": "PDF viewer message when the user cancels the password modal."
   },
   "pdfLoadFailed": {
-    "message": "Failed to load PDF: $1",
-    "description": "[needsTranslation] PDF viewer load-failure with reason. $1 = error."
+    "message": "无法加载 PDF：$1",
+    "description": "PDF viewer load-failure with reason. $1 = error."
   },
   "pdfPasswordPromptInitial": {
-    "message": "Enter PDF password:",
-    "description": "[needsTranslation] PDF password modal: initial prompt label."
+    "message": "输入PDF密码：",
+    "description": "PDF password modal: initial prompt label."
   },
   "pdfPasswordPromptIncorrect": {
-    "message": "Incorrect password. Try again:",
-    "description": "[needsTranslation] PDF password modal: retry prompt label."
+    "message": "密码不正确。再试一次：",
+    "description": "PDF password modal: retry prompt label."
   },
   "pdfPasswordHintInitial": {
-    "message": "This PDF is password protected.",
-    "description": "[needsTranslation] PDF password modal: initial hint."
+    "message": "此 PDF 受密码保护。",
+    "description": "PDF password modal: initial hint."
   },
   "pdfPasswordHintIncorrect": {
-    "message": "The password did not match this PDF.",
-    "description": "[needsTranslation] PDF password modal: retry hint."
+    "message": "密码与此 PDF 不匹配。",
+    "description": "PDF password modal: retry hint."
   },
   "pdfPasswordEmpty": {
-    "message": "Please enter a password.",
-    "description": "[needsTranslation] PDF password modal: empty input hint."
+    "message": "请输入密码。",
+    "description": "PDF password modal: empty input hint."
   },
   "pdfPasswordPlaceholder": {
-    "message": "Password",
-    "description": "[needsTranslation] PDF password modal: input placeholder."
+    "message": "密码",
+    "description": "PDF password modal: input placeholder."
   },
   "pdfPasswordOpen": {
-    "message": "Open PDF",
-    "description": "[needsTranslation] PDF password modal: confirm button."
+    "message": "打开 PDF",
+    "description": "PDF password modal: confirm button."
   },
   "pdfTextAnnotationButton": {
-    "message": "Text",
-    "description": "[needsTranslation] PDF toolbar button: add text annotation."
+    "message": "文字",
+    "description": "PDF toolbar button: add text annotation."
   },
   "pdfTextAnnotationTitle": {
-    "message": "Add text annotation",
-    "description": "[needsTranslation] PDF toolbar button tooltip: add text annotation."
+    "message": "添加文字注释",
+    "description": "PDF toolbar button tooltip: add text annotation."
   },
   "pdfTextAnnotationLabel": {
-    "message": "Add text annotation:",
-    "description": "[needsTranslation] PDF text annotation modal label."
+    "message": "添加文字注释：",
+    "description": "PDF text annotation modal label."
   },
   "pdfTextAnnotationPlaceholder": {
-    "message": "Type annotation text",
-    "description": "[needsTranslation] PDF text annotation modal placeholder."
+    "message": "输入注释文本",
+    "description": "PDF text annotation modal placeholder."
   },
   "pdfTextAnnotationSizeLabel": {
-    "message": "Size",
-    "description": "[needsTranslation] PDF text annotation modal: size input label."
+    "message": "尺寸",
+    "description": "PDF text annotation modal: size input label."
   },
   "pdfTextAnnotationColorLabel": {
-    "message": "Color",
-    "description": "[needsTranslation] PDF text annotation modal: color input label."
+    "message": "颜色",
+    "description": "PDF text annotation modal: color input label."
   },
   "pdfTextAnnotationConfirm": {
-    "message": "Add",
-    "description": "[needsTranslation] PDF text annotation modal: confirm button."
+    "message": "添加",
+    "description": "PDF text annotation modal: confirm button."
   },
   "pdfSignatureButton": {
-    "message": "Signature",
-    "description": "[needsTranslation] PDF toolbar button: add signature."
+    "message": "签名",
+    "description": "PDF toolbar button: add signature."
   },
   "pdfMergeButton": {
-    "message": "Merge PDF",
-    "description": "[needsTranslation] PDF toolbar button: merge another PDF."
+    "message": "合并 PDF",
+    "description": "PDF toolbar button: merge another PDF."
   },
   "pdfThumbnailEmpty": {
-    "message": "No thumbnails",
-    "description": "[needsTranslation] PDF thumbnail sidebar empty state."
+    "message": "没有缩略图",
+    "description": "PDF thumbnail sidebar empty state."
   },
   "csvDelimiterLabel": {
-    "message": "Delimiter:",
-    "description": "[needsTranslation] CSV viewer: delimiter selector label."
+    "message": "分隔符：",
+    "description": "CSV viewer: delimiter selector label."
   },
   "csvSearchPlaceholder": {
-    "message": "Search rows…",
-    "description": "[needsTranslation] CSV viewer: search input placeholder."
+    "message": "搜索行...",
+    "description": "CSV viewer: search input placeholder."
   },
   "csvShowStatistics": {
-    "message": "Show Statistics",
-    "description": "[needsTranslation] CSV viewer: show statistics button."
+    "message": "显示统计数据",
+    "description": "CSV viewer: show statistics button."
   },
   "csvHideStatistics": {
-    "message": "Hide Statistics",
-    "description": "[needsTranslation] CSV viewer: hide statistics button."
+    "message": "隐藏统计数据",
+    "description": "CSV viewer: hide statistics button."
   },
   "csvLoading": {
-    "message": "Loading CSV…",
-    "description": "[needsTranslation] CSV viewer loading text."
+    "message": "正在加载 CSV...",
+    "description": "CSV viewer loading text."
   },
   "csvLoadFailed": {
-    "message": "Failed to load CSV: $1",
-    "description": "[needsTranslation] CSV viewer load-failure with reason. $1 = error."
+    "message": "无法加载 CSV：$1",
+    "description": "CSV viewer load-failure with reason. $1 = error."
   },
   "csvRowCount": {
-    "message": "$1 rows",
-    "description": "[needsTranslation] CSV viewer: row count label. $1 = number."
+    "message": "$1 行",
+    "description": "CSV viewer: row count label. $1 = number."
   },
   "csvColumnCount": {
-    "message": "$1 columns",
-    "description": "[needsTranslation] CSV viewer: column count label. $1 = number."
+    "message": "$1 列",
+    "description": "CSV viewer: column count label. $1 = number."
   },
   "audioLoading": {
-    "message": "Loading audio…",
-    "description": "[needsTranslation] Audio viewer loading text."
+    "message": "正在加载音频...",
+    "description": "Audio viewer loading text."
   },
   "audioLoadFailed": {
-    "message": "Failed to load audio: $1",
-    "description": "[needsTranslation] Audio viewer load-failure with reason. $1 = error."
+    "message": "无法加载音频：$1",
+    "description": "Audio viewer load-failure with reason. $1 = error."
   },
   "audioFormatNotSupported": {
-    "message": "$1 files aren't decodable in this build yet.",
-    "description": "[needsTranslation] Audio viewer: friendly message when extension is not yet decoded. $1 = extension."
+    "message": "$1 文件在此版本中尚不可解码。",
+    "description": "Audio viewer: friendly message when extension is not yet decoded. $1 = extension."
   },
   "audioPlay": {
-    "message": "Play",
-    "description": "[needsTranslation] Audio viewer: play button label."
+    "message": "玩",
+    "description": "Audio viewer: play button label."
   },
   "audioPause": {
-    "message": "Pause",
-    "description": "[needsTranslation] Audio viewer: pause button label."
+    "message": "暂停",
+    "description": "Audio viewer: pause button label."
   },
   "audioLoopToggle": {
-    "message": "Loop region",
-    "description": "[needsTranslation] Audio viewer: toggle loop region."
+    "message": "循环区域",
+    "description": "Audio viewer: toggle loop region."
   },
   "audioSetA": {
-    "message": "Set A",
-    "description": "[needsTranslation] Audio viewer: set loop A marker."
+    "message": "设置 A",
+    "description": "Audio viewer: set loop A marker."
   },
   "audioSetB": {
-    "message": "Set B",
-    "description": "[needsTranslation] Audio viewer: set loop B marker."
+    "message": "套装 B",
+    "description": "Audio viewer: set loop B marker."
   },
   "audioClearLoop": {
-    "message": "Clear A-B",
-    "description": "[needsTranslation] Audio viewer: clear loop A-B markers."
+    "message": "清除 A-B",
+    "description": "Audio viewer: clear loop A-B markers."
   },
   "audioCopyRegion": {
-    "message": "Copy region",
-    "description": "[needsTranslation] Audio viewer context menu: copy current region."
+    "message": "复制区域",
+    "description": "Audio viewer context menu: copy current region."
   },
   "audioExportRegion": {
-    "message": "Export region",
-    "description": "[needsTranslation] Audio viewer context menu: export current region."
+    "message": "出口地区",
+    "description": "Audio viewer context menu: export current region."
   },
   "audioDeleteRegion": {
-    "message": "Delete region",
-    "description": "[needsTranslation] Audio viewer context menu: delete current region."
+    "message": "删除区域",
+    "description": "Audio viewer context menu: delete current region."
   },
   "videoCodecUnsupported": {
-    "message": "$1 files use a codec your browser doesn't decode natively. You can download the file or open it in a media player.",
-    "description": "[needsTranslation] Video viewer: codec-unsupported fallback. $1 = extension."
+    "message": "$1 文件使用您的浏览器本身无法解码的编解码器。您可以下载该文件或在媒体播放器中打开它。",
+    "description": "Video viewer: codec-unsupported fallback. $1 = extension."
   },
   "videoSetA": {
-    "message": "Set A",
-    "description": "[needsTranslation] Video viewer: set loop A marker."
+    "message": "设置 A",
+    "description": "Video viewer: set loop A marker."
   },
   "videoSetB": {
-    "message": "Set B",
-    "description": "[needsTranslation] Video viewer: set loop B marker."
+    "message": "套装 B",
+    "description": "Video viewer: set loop B marker."
   },
   "videoClearLoop": {
-    "message": "Clear A-B",
-    "description": "[needsTranslation] Video viewer: clear loop A-B markers."
+    "message": "清除 A-B",
+    "description": "Video viewer: clear loop A-B markers."
   },
   "videoSkipBackward": {
-    "message": "-10s",
-    "description": "[needsTranslation] Video viewer: skip backward 10 seconds."
+    "message": "-10秒",
+    "description": "Video viewer: skip backward 10 seconds."
   },
   "videoSkipForward": {
-    "message": "+10s",
-    "description": "[needsTranslation] Video viewer: skip forward 10 seconds."
+    "message": "+10 秒",
+    "description": "Video viewer: skip forward 10 seconds."
   },
   "videoPlaybackSpeedLabel": {
-    "message": "Speed",
-    "description": "[needsTranslation] Video viewer: playback speed label."
+    "message": "速度",
+    "description": "Video viewer: playback speed label."
   },
   "excelSearchPlaceholder": {
-    "message": "Search in table…",
-    "description": "[needsTranslation] Excel viewer: search input placeholder."
+    "message": "在表中搜索...",
+    "description": "Excel viewer: search input placeholder."
   },
   "excelSheetLabel": {
-    "message": "Sheet:",
-    "description": "[needsTranslation] Excel viewer: sheet selector label."
+    "message": "表：",
+    "description": "Excel viewer: sheet selector label."
   },
   "excelLoading": {
-    "message": "Loading Excel file…",
-    "description": "[needsTranslation] Excel viewer loading text."
+    "message": "正在加载 Excel 文件...",
+    "description": "Excel viewer loading text."
   },
   "excelLoadFailed": {
-    "message": "Failed to load Excel file: $1",
-    "description": "[needsTranslation] Excel viewer load-failure. $1 = error."
+    "message": "无法加载 Excel 文件：$1",
+    "description": "Excel viewer load-failure. $1 = error."
   },
   "excelCopyTsv": {
-    "message": "Copy",
-    "description": "[needsTranslation] Excel viewer: copy filtered rows as TSV."
+    "message": "复制",
+    "description": "Excel viewer: copy filtered rows as TSV."
   },
   "excelCopyJson": {
-    "message": "Copy as JSON",
-    "description": "[needsTranslation] Excel viewer: copy filtered rows as JSON."
+    "message": "复制为 JSON",
+    "description": "Excel viewer: copy filtered rows as JSON."
   },
   "excelToggleView": {
-    "message": "Toggle View",
-    "description": "[needsTranslation] Excel viewer: toggle between table and raw JSON view."
+    "message": "切换视图",
+    "description": "Excel viewer: toggle between table and raw JSON view."
   },
   "excelTableView": {
-    "message": "Table View",
-    "description": "[needsTranslation] Excel viewer: switch back to table view (button label when in raw view)."
+    "message": "表格视图",
+    "description": "Excel viewer: switch back to table view (button label when in raw view)."
   },
   "excelRawView": {
-    "message": "Raw View",
-    "description": "[needsTranslation] Excel viewer: switch to raw JSON view."
+    "message": "原始视图",
+    "description": "Excel viewer: switch to raw JSON view."
   },
   "parquetLoading": {
-    "message": "Loading Parquet…",
-    "description": "[needsTranslation] Parquet viewer loading text."
+    "message": "正在加载镶木地板...",
+    "description": "Parquet viewer loading text."
   },
   "parquetLoadFailed": {
-    "message": "Failed to render Parquet: $1",
-    "description": "[needsTranslation] Parquet viewer load-failure. $1 = error."
+    "message": "无法渲染镶木地板：$1",
+    "description": "Parquet viewer load-failure. $1 = error."
   },
   "parquetReaderLoadFailed": {
-    "message": "Couldn't load Parquet reader",
-    "description": "[needsTranslation] Parquet viewer: failure to load hyparquet bundle."
+    "message": "无法加载 Parquet 阅读器",
+    "description": "Parquet viewer: failure to load hyparquet bundle."
   },
   "parquetSearchPlaceholder": {
-    "message": "Search rows…",
-    "description": "[needsTranslation] Parquet viewer: search input placeholder."
+    "message": "搜索行...",
+    "description": "Parquet viewer: search input placeholder."
   },
   "parquetLoadMore": {
-    "message": "Load Next 10,000 Rows",
-    "description": "[needsTranslation] Parquet viewer: progressive load button label."
+    "message": "加载接下来的 10,000 行",
+    "description": "Parquet viewer: progressive load button label."
   },
   "parquetLoadingMore": {
-    "message": "Loading…",
-    "description": "[needsTranslation] Parquet viewer: progressive load in-flight label."
+    "message": "正在加载...",
+    "description": "Parquet viewer: progressive load in-flight label."
   },
   "parquetLoadMoreFailed": {
-    "message": "Failed to load more rows: $1",
-    "description": "[needsTranslation] Parquet viewer: progressive load failure. $1 = error."
+    "message": "无法加载更多行：$1",
+    "description": "Parquet viewer: progressive load failure. $1 = error."
   },
   "parquetBlockHeadline": {
-    "message": "File too large to open inline",
-    "description": "[needsTranslation] Parquet viewer: block panel headline for >=150MB files."
+    "message": "文件太大，无法内联打开",
+    "description": "Parquet viewer: block panel headline for >=150MB files."
   },
   "parquetCopyCellValue": {
-    "message": "Copy cell value",
-    "description": "[needsTranslation] Parquet viewer: cell context menu item."
+    "message": "复制单元格值",
+    "description": "Parquet viewer: cell context menu item."
   },
   "parquetCopyColumn": {
-    "message": "Copy column \"$1\"",
-    "description": "[needsTranslation] Parquet viewer: column context menu item. $1 = header."
+    "message": "复制列“$1”",
+    "description": "Parquet viewer: column context menu item. $1 = header."
   },
   "parquetCopyRowAsJson": {
-    "message": "Copy row as JSON",
-    "description": "[needsTranslation] Parquet viewer: row context menu item."
+    "message": "将行复制为 JSON",
+    "description": "Parquet viewer: row context menu item."
   },
   "wordLoading": {
-    "message": "Loading Word document…",
-    "description": "[needsTranslation] Word viewer loading text."
+    "message": "正在加载Word文档...",
+    "description": "Word viewer loading text."
   },
   "wordLoadFailed": {
-    "message": "Failed to load Word document: $1",
-    "description": "[needsTranslation] Word viewer load-failure. $1 = error."
+    "message": "无法加载Word文档：$1",
+    "description": "Word viewer load-failure. $1 = error."
   },
   "wordPrintButton": {
-    "message": "Print",
-    "description": "[needsTranslation] Word viewer: print button."
+    "message": "打印",
+    "description": "Word viewer: print button."
   },
   "wordEmbeddedPanelTitle": {
-    "message": "Embedded objects",
-    "description": "[needsTranslation] Word viewer: embedded workbook / chart panel title."
+    "message": "嵌入对象",
+    "description": "Word viewer: embedded workbook / chart panel title."
   },
   "pptLoading": {
-    "message": "Loading presentation…",
-    "description": "[needsTranslation] PPT viewer loading text."
+    "message": "正在加载演示文稿...",
+    "description": "PPT viewer loading text."
   },
   "pptLoadFailed": {
-    "message": "Failed to load presentation: $1",
-    "description": "[needsTranslation] PPT viewer load-failure. $1 = error."
+    "message": "无法加载演示文稿：$1",
+    "description": "PPT viewer load-failure. $1 = error."
   },
   "pptSlideJumpLabel": {
-    "message": "Slide:",
-    "description": "[needsTranslation] PPT viewer: slide-jump selector label."
+    "message": "幻灯片：",
+    "description": "PPT viewer: slide-jump selector label."
   },
   "pptFallbackParserFailed": {
-    "message": "Could not read this presentation. The file may be corrupt or saved in an unsupported format. Try converting it to PDF and opening the PDF in this viewer.",
-    "description": "[needsTranslation] PPT viewer: shown when both the primary parser and the fallback text extractor fail."
+    "message": "无法阅读此演示文稿。文件可能已损坏或以不受支持的格式保存。尝试将其转换为 PDF 并在此查看器中打开 PDF。",
+    "description": "PPT viewer: shown when both the primary parser and the fallback text extractor fail."
   },
   "pptFallbackNoRenderable": {
-    "message": "This presentation has no renderable content (master-only or template-only deck). The viewer could not extract any slide text.",
-    "description": "[needsTranslation] PPT viewer: shown when the parser succeeded but produced no renderable shapes and the loose-text fallback also found nothing."
+    "message": "该演示文稿没有可渲染的内容（仅主版或仅模板版）。查看者无法提取任何幻灯片文本。",
+    "description": "PPT viewer: shown when the parser succeeded but produced no renderable shapes and the loose-text fallback also found nothing."
   },
   "pptFallbackBrowserFailed": {
-    "message": "Could not load this presentation in the browser. The unzip / decode step failed; please verify the file is not corrupted.",
-    "description": "[needsTranslation] PPT viewer: shown when a browser-side dependency (e.g. JSZip) throws before parsing begins."
+    "message": "无法在浏览器中加载此演示文稿。解压/解码步骤失败；请验证文件没有损坏。",
+    "description": "PPT viewer: shown when a browser-side dependency (e.g. JSZip) throws before parsing begins."
   },
   "pptRenderProgress": {
-    "message": "Rendering slides… ($1/$2)",
-    "description": "[needsTranslation] PPT viewer: progress label while the continuous render loop is running. $1 = current slide, $2 = total."
+    "message": "渲染幻灯片... ($1/$2)",
+    "description": "PPT viewer: progress label while the continuous render loop is running. $1 = current slide, $2 = total."
   },
   "pptRenderTimeout": {
-    "message": "Rendering took too long and was stopped. Already-rendered slides remain visible.",
-    "description": "[needsTranslation] PPT viewer: shown when the continuous render exceeds the wall-clock budget."
+    "message": "渲染时间太长而被停止。已渲染的幻灯片仍然可见。",
+    "description": "PPT viewer: shown when the continuous render exceeds the wall-clock budget."
   },
   "psdLoading": {
-    "message": "Loading PSD…",
-    "description": "[needsTranslation] PSD viewer loading text."
+    "message": "正在加载 PSD...",
+    "description": "PSD viewer loading text."
   },
   "psdLoadFailed": {
-    "message": "Failed to load PSD: $1",
-    "description": "[needsTranslation] PSD viewer load-failure. $1 = error."
+    "message": "无法加载 PSD：$1",
+    "description": "PSD viewer load-failure. $1 = error."
   },
   "psdSizeBlocked": {
-    "message": "PSD file is $1; inline preview is disabled for files at or above 200 MB.",
-    "description": "[needsTranslation] PSD viewer: size guard message. $1 = formatted size."
+    "message": "PSD文件为$1；对于 200 MB 或以上的文件禁用内联预览。",
+    "description": "PSD viewer: size guard message. $1 = formatted size."
   },
   "hwpLoading": {
-    "message": "Loading HWP…",
-    "description": "[needsTranslation] HWP viewer loading text."
+    "message": "正在加载 HWP...",
+    "description": "HWP viewer loading text."
   },
   "hwpLoadFailed": {
-    "message": "Failed to load HWP: $1",
-    "description": "[needsTranslation] HWP viewer load-failure. $1 = error."
+    "message": "无法加载 HWP：$1",
+    "description": "HWP viewer load-failure. $1 = error."
   },
   "hwpRendererLoadFailed": {
-    "message": "Couldn't load HWP renderer",
-    "description": "[needsTranslation] HWP viewer: rhwp WASM load failure."
+    "message": "无法加载 HWP 渲染器",
+    "description": "HWP viewer: rhwp WASM load failure."
   },
   "archiveLoading": {
-    "message": "Loading archive…",
-    "description": "[needsTranslation] Archive viewer loading text."
+    "message": "正在加载存档...",
+    "description": "Archive viewer loading text."
   },
   "archiveLoadFailed": {
-    "message": "Failed to load archive: $1",
-    "description": "[needsTranslation] Archive viewer load-failure. $1 = error."
+    "message": "无法加载存档：$1",
+    "description": "Archive viewer load-failure. $1 = error."
   },
   "archiveDmgPartial": {
-    "message": "DMG (HFS+/APFS) is partially supported; some images can't be browsed.",
-    "description": "[needsTranslation] Archive viewer: DMG partial-support note."
+    "message": "部分支持 DMG (HFS+/APFS)；有些图片无法浏览。",
+    "description": "Archive viewer: DMG partial-support note."
   },
   "archiveTooLarge": {
-    "message": "File too large for inline preview",
-    "description": "[needsTranslation] Archive viewer: too-large preview fallback."
+    "message": "文件太大，无法进行内联预览",
+    "description": "Archive viewer: too-large preview fallback."
   },
   "jsonLoading": {
-    "message": "Loading JSON…",
-    "description": "[needsTranslation] JSON viewer loading text."
+    "message": "正在加载 JSON...",
+    "description": "JSON viewer loading text."
   },
   "jsonLoadFailed": {
-    "message": "Failed to load JSON: $1",
-    "description": "[needsTranslation] JSON viewer load-failure. $1 = error."
+    "message": "无法加载 JSON：$1",
+    "description": "JSON viewer load-failure. $1 = error."
   },
   "jsonTreeButton": {
-    "message": "Tree",
-    "description": "[needsTranslation] JSON viewer: tree mode toggle."
+    "message": "树",
+    "description": "JSON viewer: tree mode toggle."
   },
   "jsonSourceButton": {
-    "message": "Source",
-    "description": "[needsTranslation] JSON viewer: source mode toggle."
+    "message": "来源",
+    "description": "JSON viewer: source mode toggle."
   },
   "jsonlLoading": {
-    "message": "Loading JSONL…",
-    "description": "[needsTranslation] JSONL viewer loading text."
+    "message": "正在加载 JSONL...",
+    "description": "JSONL viewer loading text."
   },
   "jsonlLoadFailed": {
-    "message": "Failed to load JSONL: $1",
-    "description": "[needsTranslation] JSONL viewer load-failure. $1 = error."
+    "message": "无法加载 JSONL：$1",
+    "description": "JSONL viewer load-failure. $1 = error."
   },
   "jsonlEditSave": {
-    "message": "Save",
-    "description": "[needsTranslation] JSONL inline editor: save button."
+    "message": "保存",
+    "description": "JSONL inline editor: save button."
   },
   "jsonlEditCancel": {
-    "message": "Cancel",
-    "description": "[needsTranslation] JSONL inline editor: cancel button."
+    "message": "取消",
+    "description": "JSONL inline editor: cancel button."
   },
   "jsonlInvalidJson": {
-    "message": "Invalid JSON",
-    "description": "[needsTranslation] JSONL viewer: indicator for malformed lines."
+    "message": "无效的 JSON",
+    "description": "JSONL viewer: indicator for malformed lines."
   },
   "jsonlLoadMore": {
-    "message": "Load more rows",
-    "description": "[needsTranslation] JSONL viewer: load more rows button."
+    "message": "加载更多行",
+    "description": "JSONL viewer: load more rows button."
   },
   "jsonlEmptyJsonValue": {
-    "message": "Empty JSON value",
-    "description": "[needsTranslation] JSONL editor: empty input error."
+    "message": "空 JSON 值",
+    "description": "JSONL editor: empty input error."
   },
   "yamlLoading": {
-    "message": "Loading YAML…",
-    "description": "[needsTranslation] YAML viewer loading text."
+    "message": "正在加载 YAML...",
+    "description": "YAML viewer loading text."
   },
   "yamlLoadFailed": {
-    "message": "Failed to load YAML: $1",
-    "description": "[needsTranslation] YAML viewer load-failure. $1 = error."
+    "message": "无法加载 YAML：$1",
+    "description": "YAML viewer load-failure. $1 = error."
   },
   "tomlLoading": {
-    "message": "Loading TOML…",
-    "description": "[needsTranslation] TOML viewer loading text."
+    "message": "正在加载 TOML...",
+    "description": "TOML viewer loading text."
   },
   "tomlLoadFailed": {
-    "message": "Failed to load TOML: $1",
-    "description": "[needsTranslation] TOML viewer load-failure. $1 = error."
+    "message": "无法加载 TOML：$1",
+    "description": "TOML viewer load-failure. $1 = error."
   }
 }

@@ -13,8 +13,7 @@ Omni Viewer
 
 ### Short description (max 132 characters)
 
-> Open many file formats locally in Chrome — images, PDF, audio, video,
-> CSV, Excel, Word, PowerPoint, PSD, HWP, archives, and more.
+> Preview documents, media, structured data, and archives locally in Chrome.
 
 ### Long description
 
@@ -23,32 +22,17 @@ deal with every day. Drop a file onto the extension page, or use **Open with
 Omni Viewer** from your file manager, and the right viewer renders instantly
 — no upload, no sign-in, no ads.
 
-**Sixteen viewers in one extension**
+**View files without switching between apps**
 
-- **Image** — JPG, PNG, GIF, BMP, WebP, SVG, with crop, resize, filters,
-  selection tools, and a properties panel.
-- **PDF** — pages, thumbnails, zoom, password-protected files, text and
-  signature annotations, and reordering.
-- **Audio** — MP3, WAV, FLAC, OGG, AAC, M4A, AIFF, AMR, AC3, raw PCM, with a
-  waveform and spectrogram view, loop regions, and playback-speed controls.
-- **Video** — MP4, MKV, WebM, MOV, AVI, WMV, FLV, MTS, OGV, with zoom, loop
-  regions, and a keyboard shortcut layer.
-- **CSV / TSV** — sortable columns, search, delimiter detection, statistics
-  panel.
-- **Excel** — XLSX/XLS workbooks with multi-sheet pagination, raw cell
-  toggle, and CSV export.
-- **Parquet** — schema preview, row inspection.
-- **Word** — DOCX/DOC rendering with charts, embeddings, and zoom.
-- **PowerPoint** — PPTX/PPT slide layout viewer with zoom.
-- **PSD** — Photoshop layer visibility, metadata, and per-layer view modal.
-- **HWP / HWPX** — Korean word processor documents, including newer XML
-  bundles.
-- **Archive** — ZIP, RAR, 7Z, TAR, GZ, BZ2, XZ, DMG, JAR, APK, with entry
-  list, in-archive previews, and signature-based routing.
-- **JSON / JSONL** — tokenized syntax-highlighted tree, popup editor, large
-  file friendly streaming.
-- **YAML** — node-by-node tree.
-- **TOML** — typed parser with section navigation.
+Omni Viewer supports common documents, images, audio, video, tabular and
+structured data, design files, and compressed archives. It automatically
+selects an appropriate viewer after you choose a file.
+
+Depending on the content, you can browse pages or slides, inspect sheets and
+data rows, search structured text, control media playback, inspect image and
+design-file properties, or preview entries inside an archive. Viewer-specific
+tools such as zoom, sorting, filtering, annotations, and export are shown only
+when they apply.
 
 **Privacy by default**
 
@@ -84,7 +68,7 @@ Productivity
 ### Single purpose statement
 
 Omni Viewer opens user-selected local files in Chrome and renders them in a
-local viewer for the supported formats listed above.
+local viewer appropriate for the selected content.
 
 ### Permissions justification (paste verbatim into the Web Store form)
 
@@ -114,8 +98,7 @@ are packaged under the extension directory.
 
 ### 짧은 설명 (최대 132자)
 
-> Chrome 안에서 이미지, PDF, 오디오, 영상, CSV, 엑셀, Word, PPT, PSD, HWP,
-> 압축파일까지 다양한 파일 형식을 로컬로 열어보세요.
+> 문서, 미디어, 구조화 데이터와 압축 파일을 Chrome에서 로컬로 미리보세요.
 
 ### 긴 설명
 
@@ -124,30 +107,17 @@ are packaged under the extension directory.
 드롭하거나, OS의 파일 관리자에서 **Omni Viewer로 열기**를 선택하면
 적절한 뷰어가 즉시 실행됩니다. 업로드도, 로그인도, 광고도 없습니다.
 
-**한 확장에 16개 뷰어**
+**여러 앱을 오가지 않고 파일 보기**
 
-- **이미지** — JPG, PNG, GIF, BMP, WebP, SVG. 자르기, 크기 조정, 필터,
-  선택 도구, 속성 패널 제공.
-- **PDF** — 페이지/썸네일/확대, 비밀번호 보호 파일 지원, 텍스트 및
-  서명 주석, 페이지 재정렬.
-- **오디오** — MP3, WAV, FLAC, OGG, AAC, M4A, AIFF, AMR, AC3, 원시 PCM
-  지원. 파형/스펙트로그램, 루프 영역, 재생 속도 조절.
-- **영상** — MP4, MKV, WebM, MOV, AVI, WMV, FLV, MTS, OGV. 확대, 루프
-  영역, 단축키 지원.
-- **CSV / TSV** — 정렬, 검색, 구분자 자동 감지, 통계 패널.
-- **엑셀** — XLSX/XLS의 다중 시트 페이지네이션, 원시 셀 토글, CSV
-  내보내기.
-- **Parquet** — 스키마 미리보기, 행 단위 조회.
-- **Word** — DOCX/DOC 렌더링, 차트, 임베딩, 확대.
-- **PowerPoint** — PPTX/PPT 슬라이드 레이아웃 뷰어, 확대.
-- **PSD** — Photoshop 레이어 표시 토글, 메타데이터, 레이어별 뷰 모달.
-- **HWP / HWPX** — 한글 문서, 최신 XML 번들 포맷 포함.
-- **압축 파일** — ZIP, RAR, 7Z, TAR, GZ, BZ2, XZ, DMG, JAR, APK. 항목
-  목록, 압축 내부 미리보기, 시그니처 기반 라우팅.
-- **JSON / JSONL** — 토큰 기반 구문 강조 트리, 팝업 편집기, 대용량
-  스트리밍.
-- **YAML** — 노드 단위 트리.
-- **TOML** — 타입을 인식하는 파서와 섹션 탐색.
+옴니 뷰어는 일반 문서, 이미지, 오디오, 영상, 표와 구조화 데이터,
+디자인 파일, 압축 파일을 지원합니다. 사용자가 파일을 선택하면 내용에
+맞는 뷰어를 자동으로 실행합니다.
+
+파일에 따라 페이지나 슬라이드를 탐색하고, 시트와 데이터 행을 살펴보고,
+구조화된 텍스트를 검색하거나 미디어를 재생할 수 있습니다. 이미지와
+디자인 파일의 속성 확인, 압축 파일 내부 미리보기도 지원합니다. 확대,
+정렬, 필터, 주석, 내보내기 같은 도구는 해당 파일에 필요한 경우에만
+표시됩니다.
 
 **기본값이 프라이버시**
 
@@ -184,7 +154,7 @@ are packaged under the extension directory.
 ### 단일 목적 (Single purpose) 진술
 
 옴니 뷰어는 사용자가 선택한 로컬 파일을 Chrome 안에서 열어, 지원되는
-형식을 로컬 뷰어로 렌더링하는 단일 목적의 확장 프로그램입니다.
+콘텐츠에 맞는 로컬 뷰어로 렌더링하는 단일 목적의 확장 프로그램입니다.
 
 ### 권한 정당화 (Web Store 양식에 그대로 사용)
 

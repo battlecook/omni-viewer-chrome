@@ -50,7 +50,8 @@ text is reproduced at the end of this file.
 | Nanum Gothic, Nanum Myeongjo, Nanum Gothic Coding | SIL OFL 1.1 | Naver — https://hangeul.naver.com |
 | D2Coding | SIL OFL 1.1 | Naver — https://github.com/naver/d2codingfont |
 | Pretendard | SIL OFL 1.1 | Kil Hyung-jin — https://github.com/orioncactus/pretendard |
-| Gowun Batang, Gowun Dodum | SIL OFL 1.1 | https://github.com/yangheeryu/Gowun-Batang , https://github.com/sun-typeface/SUITE (Gowun Dodum) |
+| Gowun Batang | SIL OFL 1.1 | Yanghee Ryu — https://github.com/yangheeryu/Gowun-Batang |
+| Gowun Dodum | SIL OFL 1.1 | Yanghee Ryu — https://github.com/yangheeryu/Gowun-Dodum |
 | Spoqa Han Sans | SIL OFL 1.1 | Spoqa — https://github.com/spoqa/spoqa-han-sans |
 | Happiness Sans | SIL OFL 1.1 | https://kdm.kr (Happiness Sans) |
 | Latin Modern Math | GUST Font License (LPPL-compatible) | GUST e-foundry — http://www.gust.org.pl/projects/e-foundry/lm-math |
@@ -139,12 +140,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ### Apache License 2.0 (PDF.js, SheetJS, docx-preview)
 
-These components are licensed under the Apache License, Version 2.0. The full
-text is available at: https://www.apache.org/licenses/LICENSE-2.0
+These components are licensed under the Apache License, Version 2.0. A full
+copy of the license is distributed with this project and release package at
+`THIRD-PARTY-LICENSES/Apache-2.0.txt`.
 
-A copy of the relevant `@licstart`/copyright notices is retained inline within
-the bundled files (`vendor/pdf.min.mjs`, `vendor/pdf.worker.min.mjs`,
-`vendor/docx-preview.min.js`).
+The reviewed upstream distributions do not include separate `NOTICE` files.
+Their applicable attribution notices are retained in the bundled files and
+summarized here:
+
+- PDF.js: Copyright 2024 Mozilla Foundation.
+- SheetJS: Copyright (C) 2013-present SheetJS LLC.
+- docx-preview: Copyright Volodymyr Baydalka.
+
+The original license headers remain in `vendor/pdf.min.mjs`,
+`vendor/pdf.worker.min.mjs`, `vendor/xlsx.full.min.js`, and
+`vendor/docx-preview.min.js`.
 
 ### SIL Open Font License, Version 1.1 (bundled fonts)
 

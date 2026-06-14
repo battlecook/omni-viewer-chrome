@@ -13,6 +13,7 @@ import {
 describe('t', () => {
     afterEach(() => {
         delete (globalThis as any).chrome?.i18n?.getMessage;
+        delete (globalThis as any).__omniLocaleMessages;
     });
 
     it('returns chrome.i18n.getMessage when present', () => {
@@ -45,6 +46,18 @@ describe('t', () => {
         (globalThis as any).chrome.i18n = { getMessage: spy };
         t('greet', 'fallback', 'Alice');
         expect(spy).toHaveBeenCalledWith('greet', 'Alice');
+    });
+
+    it('prefers the user-selected locale and applies substitutions', () => {
+        (globalThis as any).__omniLocaleMessages = {
+            greet: { message: '안녕하세요, $1' },
+        };
+        (globalThis as any).chrome = (globalThis as any).chrome ?? {};
+        (globalThis as any).chrome.i18n = {
+            getMessage: jest.fn().mockReturnValue('Hello, Alice'),
+        };
+        expect(t('greet', 'fallback', 'Alice')).toBe('안녕하세요, Alice');
+        expect((globalThis as any).chrome.i18n.getMessage).not.toHaveBeenCalled();
     });
 });
 

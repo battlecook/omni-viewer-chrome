@@ -51,620 +51,628 @@
     "message": "Download original",
     "description": "Button text for downloading the original file."
   },
+  "languageButtonTitle": {
+    "message": "Language",
+    "description": "Tooltip and accessible label for the language selector."
+  },
+  "languageSystemDefault": {
+    "message": "System default",
+    "description": "Language selector option that follows the Chrome system language."
+  },
   "commonLoading": {
-    "message": "Loading…",
-    "description": "[needsTranslation] Generic loading indicator text."
+    "message": "ਲੋਡ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "Generic loading indicator text."
   },
   "commonError": {
-    "message": "Error",
-    "description": "[needsTranslation] Generic error label."
+    "message": "ਗਲਤੀ",
+    "description": "Generic error label."
   },
   "commonRetry": {
-    "message": "Retry",
-    "description": "[needsTranslation] Generic retry button label."
+    "message": "ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ",
+    "description": "Generic retry button label."
   },
   "commonCancel": {
-    "message": "Cancel",
-    "description": "[needsTranslation] Generic cancel button label."
+    "message": "ਰੱਦ ਕਰੋ",
+    "description": "Generic cancel button label."
   },
   "commonSave": {
-    "message": "Save",
-    "description": "[needsTranslation] Generic save button label."
+    "message": "ਬਚਾਓ",
+    "description": "Generic save button label."
   },
   "commonSaveAs": {
-    "message": "Save As",
-    "description": "[needsTranslation] Generic Save As button label."
+    "message": "ਇਸ ਤਰ੍ਹਾਂ ਸੰਭਾਲੋ",
+    "description": "Generic Save As button label."
   },
   "commonClose": {
-    "message": "Close",
-    "description": "[needsTranslation] Generic close button label."
+    "message": "ਬੰਦ",
+    "description": "Generic close button label."
   },
   "commonSearchPlaceholder": {
-    "message": "Search…",
-    "description": "[needsTranslation] Generic search input placeholder."
+    "message": "ਖੋਜ...",
+    "description": "Generic search input placeholder."
   },
   "commonClear": {
-    "message": "Clear",
-    "description": "[needsTranslation] Generic clear button label."
+    "message": "ਸਾਫ",
+    "description": "Generic clear button label."
   },
   "commonCopy": {
-    "message": "Copy",
-    "description": "[needsTranslation] Generic copy button label."
+    "message": "ਕਾਪੀ",
+    "description": "Generic copy button label."
   },
   "commonCopied": {
-    "message": "Copied!",
-    "description": "[needsTranslation] Toast / button flash when content was copied."
+    "message": "ਕਾਪੀ ਕੀਤਾ!",
+    "description": "Toast / button flash when content was copied."
   },
   "commonDownload": {
     "message": "Download",
-    "description": "[needsTranslation] Generic download button label."
+    "description": "Generic download button label."
   },
   "commonOpen": {
-    "message": "Open",
-    "description": "[needsTranslation] Generic open button label."
+    "message": "ਖੁੱਲਾ",
+    "description": "Generic open button label."
   },
   "commonNext": {
-    "message": "Next",
-    "description": "[needsTranslation] Generic next button label."
+    "message": "ਅੱਗੇ",
+    "description": "Generic next button label."
   },
   "commonPrevious": {
-    "message": "Previous",
-    "description": "[needsTranslation] Generic previous button label."
+    "message": "ਪਿਛਲਾ",
+    "description": "Generic previous button label."
   },
   "commonPage": {
-    "message": "Page",
-    "description": "[needsTranslation] Generic page label."
+    "message": "ਪੰਨਾ",
+    "description": "Generic page label."
   },
   "commonOf": {
-    "message": "of",
-    "description": "[needsTranslation] Generic 'of' connector for X of Y forms (page X of Y)."
+    "message": "ਦਾ",
+    "description": "Generic 'of' connector for X of Y forms (page X of Y)."
   },
   "commonReset": {
-    "message": "Reset",
-    "description": "[needsTranslation] Generic reset button label."
+    "message": "ਰੀਸੈਟ",
+    "description": "Generic reset button label."
   },
   "commonZoomIn": {
-    "message": "Zoom in",
-    "description": "[needsTranslation] Generic zoom-in tooltip."
+    "message": "ਜ਼ੂਮ ਇਨ",
+    "description": "Generic zoom-in tooltip."
   },
   "commonZoomOut": {
-    "message": "Zoom out",
-    "description": "[needsTranslation] Generic zoom-out tooltip."
+    "message": "ਜ਼ੂਮ ਆਉਟ",
+    "description": "Generic zoom-out tooltip."
   },
   "commonFit": {
-    "message": "Fit",
-    "description": "[needsTranslation] Generic fit-to-screen tooltip."
+    "message": "ਫਿੱਟ",
+    "description": "Generic fit-to-screen tooltip."
   },
   "commonFailedToLoad": {
-    "message": "Failed to load file",
-    "description": "[needsTranslation] Generic load-failure heading shown by viewers."
+    "message": "ਫਾਈਲ ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ",
+    "description": "Generic load-failure heading shown by viewers."
   },
   "commonUnsupportedFile": {
-    "message": "No supported viewer matched this file.",
-    "description": "[needsTranslation] Fallback shown when no viewer can handle a file."
+    "message": "ਕੋਈ ਸਮਰਥਿਤ ਦਰਸ਼ਕ ਇਸ ਫ਼ਾਈਲ ਨਾਲ ਮੇਲ ਨਹੀਂ ਖਾਂਦਾ।",
+    "description": "Fallback shown when no viewer can handle a file."
   },
   "imageRotateTitle": {
-    "message": "Rotate 90°",
-    "description": "[needsTranslation] Image viewer rotate button tooltip."
+    "message": "90° ਘੁੰਮਾਓ",
+    "description": "Image viewer rotate button tooltip."
   },
   "imageFlipHorizontalTitle": {
-    "message": "Flip horizontal",
-    "description": "[needsTranslation] Image viewer flip-horizontal button tooltip."
+    "message": "ਖਿਤਿਜੀ ਫਲਿਪ ਕਰੋ",
+    "description": "Image viewer flip-horizontal button tooltip."
   },
   "imageFlipVerticalTitle": {
-    "message": "Flip vertical",
-    "description": "[needsTranslation] Image viewer flip-vertical button tooltip."
+    "message": "ਫਲਿਪ ਵਰਟੀਕਲ",
+    "description": "Image viewer flip-vertical button tooltip."
   },
   "imageResetTitle": {
-    "message": "Reset (R)",
-    "description": "[needsTranslation] Image viewer reset button tooltip."
+    "message": "ਰੀਸੈਟ (ਆਰ)",
+    "description": "Image viewer reset button tooltip."
   },
   "imageFitTitle": {
-    "message": "Fit (0)",
-    "description": "[needsTranslation] Image viewer fit-to-screen button tooltip."
+    "message": "ਫਿੱਟ (0)",
+    "description": "Image viewer fit-to-screen button tooltip."
   },
   "imageInfoSize": {
-    "message": "Size",
-    "description": "[needsTranslation] Image viewer info panel: pixel dimensions label."
+    "message": "ਆਕਾਰ",
+    "description": "Image viewer info panel: pixel dimensions label."
   },
   "imageInfoFormat": {
-    "message": "Format",
-    "description": "[needsTranslation] Image viewer info panel: format label."
+    "message": "ਫਾਰਮੈਟ",
+    "description": "Image viewer info panel: format label."
   },
   "imageInfoFileSize": {
-    "message": "File Size",
-    "description": "[needsTranslation] Image viewer info panel: byte size label."
+    "message": "ਫਾਈਲ ਦਾ ਆਕਾਰ",
+    "description": "Image viewer info panel: byte size label."
   },
   "imageLoading": {
-    "message": "Loading image…",
-    "description": "[needsTranslation] Image viewer loading text."
+    "message": "ਚਿੱਤਰ ਲੋਡ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "Image viewer loading text."
   },
   "imageLoadError": {
-    "message": "Error loading image file",
-    "description": "[needsTranslation] Image viewer load-error message."
+    "message": "ਚਿੱਤਰ ਫਾਈਲ ਨੂੰ ਲੋਡ ਕਰਨ ਵਿੱਚ ਗਲਤੀ",
+    "description": "Image viewer load-error message."
   },
   "imageFilterBrightness": {
-    "message": "Brightness",
-    "description": "[needsTranslation] Image filter slider label: brightness."
+    "message": "ਚਮਕ",
+    "description": "Image filter slider label: brightness."
   },
   "imageFilterContrast": {
-    "message": "Contrast",
-    "description": "[needsTranslation] Image filter slider label: contrast."
+    "message": "ਵਿਪਰੀਤ",
+    "description": "Image filter slider label: contrast."
   },
   "imageFilterSaturation": {
-    "message": "Saturation",
-    "description": "[needsTranslation] Image filter slider label: saturation."
+    "message": "ਸੰਤ੍ਰਿਪਤ",
+    "description": "Image filter slider label: saturation."
   },
   "imageFilterGrayscale": {
-    "message": "Grayscale",
-    "description": "[needsTranslation] Image filter slider label: grayscale."
+    "message": "ਗ੍ਰੇਸਕੇਲ",
+    "description": "Image filter slider label: grayscale."
   },
   "imagePresetOriginal": {
-    "message": "Original",
-    "description": "[needsTranslation] Image filter preset: original / no filter."
+    "message": "ਅਸਲੀ",
+    "description": "Image filter preset: original / no filter."
   },
   "imagePresetBright": {
-    "message": "Bright",
-    "description": "[needsTranslation] Image filter preset: bright."
+    "message": "ਚਮਕੀਲਾ",
+    "description": "Image filter preset: bright."
   },
   "imagePresetDark": {
-    "message": "Dark",
-    "description": "[needsTranslation] Image filter preset: dark."
+    "message": "ਹਨੇਰਾ",
+    "description": "Image filter preset: dark."
   },
   "imagePresetVintage": {
-    "message": "Vintage",
-    "description": "[needsTranslation] Image filter preset: vintage."
+    "message": "ਵਿੰਟੇਜ",
+    "description": "Image filter preset: vintage."
   },
   "imagePresetBw": {
     "message": "B&W",
-    "description": "[needsTranslation] Image filter preset: black and white."
+    "description": "Image filter preset: black and white."
   },
   "imageEditToggle": {
-    "message": "Edit",
-    "description": "[needsTranslation] Image viewer button to enter edit mode."
+    "message": "ਸੰਪਾਦਿਤ ਕਰੋ",
+    "description": "Image viewer button to enter edit mode."
   },
   "imageEditToolText": {
-    "message": "Text",
-    "description": "[needsTranslation] Image edit mode tool: add text."
+    "message": "ਪਾਠ",
+    "description": "Image edit mode tool: add text."
   },
   "imageEditToolCircle": {
-    "message": "Circle",
-    "description": "[needsTranslation] Image edit mode tool: add circle."
+    "message": "ਚੱਕਰ",
+    "description": "Image edit mode tool: add circle."
   },
   "imageEditToolRect": {
-    "message": "Rectangle",
-    "description": "[needsTranslation] Image edit mode tool: add rectangle."
+    "message": "ਆਇਤਕਾਰ",
+    "description": "Image edit mode tool: add rectangle."
   },
   "imageEditToolSelect": {
-    "message": "Select",
-    "description": "[needsTranslation] Image edit mode tool: select."
+    "message": "ਚੁਣੋ",
+    "description": "Image edit mode tool: select."
   },
   "imageEditToolDelete": {
-    "message": "Delete",
-    "description": "[needsTranslation] Image edit mode tool: delete selected."
+    "message": "ਮਿਟਾਓ",
+    "description": "Image edit mode tool: delete selected."
   },
   "imageSelectionInfo": {
-    "message": "$1 selected",
-    "description": "[needsTranslation] Image edit mode: number of currently selected elements. $1 = count."
+    "message": "$1 ਚੁਣਿਆ ਗਿਆ",
+    "description": "Image edit mode: number of currently selected elements. $1 = count."
   },
   "imageSaveCopy": {
-    "message": "Save copy",
-    "description": "[needsTranslation] Image viewer button: save edited copy."
+    "message": "ਕਾਪੀ ਸੰਭਾਲੋ",
+    "description": "Image viewer button: save edited copy."
   },
   "pdfLoading": {
-    "message": "Loading PDF…",
-    "description": "[needsTranslation] PDF viewer loading text."
+    "message": "PDF ਲੋਡ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "PDF viewer loading text."
   },
   "pdfLoadCancelled": {
-    "message": "PDF load was cancelled.",
-    "description": "[needsTranslation] PDF viewer message when the user cancels the password modal."
+    "message": "PDF ਲੋਡ ਰੱਦ ਕੀਤਾ ਗਿਆ ਸੀ।",
+    "description": "PDF viewer message when the user cancels the password modal."
   },
   "pdfLoadFailed": {
-    "message": "Failed to load PDF: $1",
-    "description": "[needsTranslation] PDF viewer load-failure with reason. $1 = error."
+    "message": "PDF ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ: $1",
+    "description": "PDF viewer load-failure with reason. $1 = error."
   },
   "pdfPasswordPromptInitial": {
-    "message": "Enter PDF password:",
-    "description": "[needsTranslation] PDF password modal: initial prompt label."
+    "message": "PDF ਪਾਸਵਰਡ ਦਰਜ ਕਰੋ:",
+    "description": "PDF password modal: initial prompt label."
   },
   "pdfPasswordPromptIncorrect": {
-    "message": "Incorrect password. Try again:",
-    "description": "[needsTranslation] PDF password modal: retry prompt label."
+    "message": "ਗਲਤ ਪਾਸਵਰਡ। ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ:",
+    "description": "PDF password modal: retry prompt label."
   },
   "pdfPasswordHintInitial": {
-    "message": "This PDF is password protected.",
-    "description": "[needsTranslation] PDF password modal: initial hint."
+    "message": "ਇਹ PDF ਪਾਸਵਰਡ ਨਾਲ ਸੁਰੱਖਿਅਤ ਹੈ।",
+    "description": "PDF password modal: initial hint."
   },
   "pdfPasswordHintIncorrect": {
-    "message": "The password did not match this PDF.",
-    "description": "[needsTranslation] PDF password modal: retry hint."
+    "message": "ਪਾਸਵਰਡ ਇਸ PDF ਨਾਲ ਮੇਲ ਨਹੀਂ ਖਾਂਦਾ।",
+    "description": "PDF password modal: retry hint."
   },
   "pdfPasswordEmpty": {
-    "message": "Please enter a password.",
-    "description": "[needsTranslation] PDF password modal: empty input hint."
+    "message": "ਕਿਰਪਾ ਕਰਕੇ ਇੱਕ ਪਾਸਵਰਡ ਦਾਖਲ ਕਰੋ।",
+    "description": "PDF password modal: empty input hint."
   },
   "pdfPasswordPlaceholder": {
-    "message": "Password",
-    "description": "[needsTranslation] PDF password modal: input placeholder."
+    "message": "ਪਾਸਵਰਡ",
+    "description": "PDF password modal: input placeholder."
   },
   "pdfPasswordOpen": {
-    "message": "Open PDF",
-    "description": "[needsTranslation] PDF password modal: confirm button."
+    "message": "PDF ਖੋਲ੍ਹੋ",
+    "description": "PDF password modal: confirm button."
   },
   "pdfTextAnnotationButton": {
-    "message": "Text",
-    "description": "[needsTranslation] PDF toolbar button: add text annotation."
+    "message": "ਪਾਠ",
+    "description": "PDF toolbar button: add text annotation."
   },
   "pdfTextAnnotationTitle": {
-    "message": "Add text annotation",
-    "description": "[needsTranslation] PDF toolbar button tooltip: add text annotation."
+    "message": "ਟੈਕਸਟ ਐਨੋਟੇਸ਼ਨ ਸ਼ਾਮਲ ਕਰੋ",
+    "description": "PDF toolbar button tooltip: add text annotation."
   },
   "pdfTextAnnotationLabel": {
-    "message": "Add text annotation:",
-    "description": "[needsTranslation] PDF text annotation modal label."
+    "message": "ਟੈਕਸਟ ਐਨੋਟੇਸ਼ਨ ਸ਼ਾਮਲ ਕਰੋ:",
+    "description": "PDF text annotation modal label."
   },
   "pdfTextAnnotationPlaceholder": {
-    "message": "Type annotation text",
-    "description": "[needsTranslation] PDF text annotation modal placeholder."
+    "message": "ਐਨੋਟੇਸ਼ਨ ਟੈਕਸਟ ਟਾਈਪ ਕਰੋ",
+    "description": "PDF text annotation modal placeholder."
   },
   "pdfTextAnnotationSizeLabel": {
-    "message": "Size",
-    "description": "[needsTranslation] PDF text annotation modal: size input label."
+    "message": "ਆਕਾਰ",
+    "description": "PDF text annotation modal: size input label."
   },
   "pdfTextAnnotationColorLabel": {
-    "message": "Color",
-    "description": "[needsTranslation] PDF text annotation modal: color input label."
+    "message": "ਰੰਗ",
+    "description": "PDF text annotation modal: color input label."
   },
   "pdfTextAnnotationConfirm": {
-    "message": "Add",
-    "description": "[needsTranslation] PDF text annotation modal: confirm button."
+    "message": "ਜੋੜੋ",
+    "description": "PDF text annotation modal: confirm button."
   },
   "pdfSignatureButton": {
-    "message": "Signature",
-    "description": "[needsTranslation] PDF toolbar button: add signature."
+    "message": "ਦਸਤਖਤ",
+    "description": "PDF toolbar button: add signature."
   },
   "pdfMergeButton": {
-    "message": "Merge PDF",
-    "description": "[needsTranslation] PDF toolbar button: merge another PDF."
+    "message": "PDF ਨੂੰ ਮਿਲਾਓ",
+    "description": "PDF toolbar button: merge another PDF."
   },
   "pdfThumbnailEmpty": {
-    "message": "No thumbnails",
-    "description": "[needsTranslation] PDF thumbnail sidebar empty state."
+    "message": "ਕੋਈ ਥੰਬਨੇਲ ਨਹੀਂ",
+    "description": "PDF thumbnail sidebar empty state."
   },
   "csvDelimiterLabel": {
-    "message": "Delimiter:",
-    "description": "[needsTranslation] CSV viewer: delimiter selector label."
+    "message": "ਹੱਦਬੰਦੀ:",
+    "description": "CSV viewer: delimiter selector label."
   },
   "csvSearchPlaceholder": {
-    "message": "Search rows…",
-    "description": "[needsTranslation] CSV viewer: search input placeholder."
+    "message": "ਕਤਾਰਾਂ ਦੀ ਖੋਜ ਕਰੋ...",
+    "description": "CSV viewer: search input placeholder."
   },
   "csvShowStatistics": {
-    "message": "Show Statistics",
-    "description": "[needsTranslation] CSV viewer: show statistics button."
+    "message": "ਅੰਕੜੇ ਦਿਖਾਓ",
+    "description": "CSV viewer: show statistics button."
   },
   "csvHideStatistics": {
-    "message": "Hide Statistics",
-    "description": "[needsTranslation] CSV viewer: hide statistics button."
+    "message": "ਅੰਕੜੇ ਲੁਕਾਓ",
+    "description": "CSV viewer: hide statistics button."
   },
   "csvLoading": {
-    "message": "Loading CSV…",
-    "description": "[needsTranslation] CSV viewer loading text."
+    "message": "CSV ਲੋਡ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "CSV viewer loading text."
   },
   "csvLoadFailed": {
-    "message": "Failed to load CSV: $1",
-    "description": "[needsTranslation] CSV viewer load-failure with reason. $1 = error."
+    "message": "CSV ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ: $1",
+    "description": "CSV viewer load-failure with reason. $1 = error."
   },
   "csvRowCount": {
-    "message": "$1 rows",
-    "description": "[needsTranslation] CSV viewer: row count label. $1 = number."
+    "message": "$1 ਕਤਾਰਾਂ",
+    "description": "CSV viewer: row count label. $1 = number."
   },
   "csvColumnCount": {
-    "message": "$1 columns",
-    "description": "[needsTranslation] CSV viewer: column count label. $1 = number."
+    "message": "$1 ਕਾਲਮ",
+    "description": "CSV viewer: column count label. $1 = number."
   },
   "audioLoading": {
-    "message": "Loading audio…",
-    "description": "[needsTranslation] Audio viewer loading text."
+    "message": "ਆਡੀਓ ਲੋਡ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "Audio viewer loading text."
   },
   "audioLoadFailed": {
-    "message": "Failed to load audio: $1",
-    "description": "[needsTranslation] Audio viewer load-failure with reason. $1 = error."
+    "message": "ਆਡੀਓ ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ: $1",
+    "description": "Audio viewer load-failure with reason. $1 = error."
   },
   "audioFormatNotSupported": {
-    "message": "$1 files aren't decodable in this build yet.",
-    "description": "[needsTranslation] Audio viewer: friendly message when extension is not yet decoded. $1 = extension."
+    "message": "$1 ਫ਼ਾਈਲਾਂ ਹਾਲੇ ਇਸ ਬਿਲਡ ਵਿੱਚ ਡੀਕੋਡ ਕਰਨ ਯੋਗ ਨਹੀਂ ਹਨ।",
+    "description": "Audio viewer: friendly message when extension is not yet decoded. $1 = extension."
   },
   "audioPlay": {
-    "message": "Play",
-    "description": "[needsTranslation] Audio viewer: play button label."
+    "message": "ਖੇਡੋ",
+    "description": "Audio viewer: play button label."
   },
   "audioPause": {
-    "message": "Pause",
-    "description": "[needsTranslation] Audio viewer: pause button label."
+    "message": "ਵਿਰਾਮ",
+    "description": "Audio viewer: pause button label."
   },
   "audioLoopToggle": {
-    "message": "Loop region",
-    "description": "[needsTranslation] Audio viewer: toggle loop region."
+    "message": "ਪਾਸ਼ ਖੇਤਰ",
+    "description": "Audio viewer: toggle loop region."
   },
   "audioSetA": {
-    "message": "Set A",
-    "description": "[needsTranslation] Audio viewer: set loop A marker."
+    "message": "ਸੈੱਟ ਏ",
+    "description": "Audio viewer: set loop A marker."
   },
   "audioSetB": {
-    "message": "Set B",
-    "description": "[needsTranslation] Audio viewer: set loop B marker."
+    "message": "ਸੈੱਟ ਬੀ",
+    "description": "Audio viewer: set loop B marker."
   },
   "audioClearLoop": {
-    "message": "Clear A-B",
-    "description": "[needsTranslation] Audio viewer: clear loop A-B markers."
+    "message": "A-B ਸਾਫ਼ ਕਰੋ",
+    "description": "Audio viewer: clear loop A-B markers."
   },
   "audioCopyRegion": {
-    "message": "Copy region",
-    "description": "[needsTranslation] Audio viewer context menu: copy current region."
+    "message": "ਨਕਲ ਖੇਤਰ",
+    "description": "Audio viewer context menu: copy current region."
   },
   "audioExportRegion": {
-    "message": "Export region",
-    "description": "[needsTranslation] Audio viewer context menu: export current region."
+    "message": "ਨਿਰਯਾਤ ਖੇਤਰ",
+    "description": "Audio viewer context menu: export current region."
   },
   "audioDeleteRegion": {
-    "message": "Delete region",
-    "description": "[needsTranslation] Audio viewer context menu: delete current region."
+    "message": "ਖੇਤਰ ਨੂੰ ਮਿਟਾਓ",
+    "description": "Audio viewer context menu: delete current region."
   },
   "videoCodecUnsupported": {
-    "message": "$1 files use a codec your browser doesn't decode natively. You can download the file or open it in a media player.",
-    "description": "[needsTranslation] Video viewer: codec-unsupported fallback. $1 = extension."
+    "message": "$1 ਫਾਈਲਾਂ ਇੱਕ ਕੋਡੇਕ ਦੀ ਵਰਤੋਂ ਕਰਦੀਆਂ ਹਨ ਜੋ ਤੁਹਾਡਾ ਬ੍ਰਾਊਜ਼ਰ ਮੂਲ ਰੂਪ ਵਿੱਚ ਡੀਕੋਡ ਨਹੀਂ ਕਰਦਾ ਹੈ। ਤੁਸੀਂ ਫਾਈਲ ਨੂੰ ਡਾਊਨਲੋਡ ਕਰ ਸਕਦੇ ਹੋ ਜਾਂ ਇਸਨੂੰ ਮੀਡੀਆ ਪਲੇਅਰ ਵਿੱਚ ਖੋਲ੍ਹ ਸਕਦੇ ਹੋ।",
+    "description": "Video viewer: codec-unsupported fallback. $1 = extension."
   },
   "videoSetA": {
-    "message": "Set A",
-    "description": "[needsTranslation] Video viewer: set loop A marker."
+    "message": "ਸੈੱਟ ਏ",
+    "description": "Video viewer: set loop A marker."
   },
   "videoSetB": {
-    "message": "Set B",
-    "description": "[needsTranslation] Video viewer: set loop B marker."
+    "message": "ਸੈੱਟ ਬੀ",
+    "description": "Video viewer: set loop B marker."
   },
   "videoClearLoop": {
-    "message": "Clear A-B",
-    "description": "[needsTranslation] Video viewer: clear loop A-B markers."
+    "message": "A-B ਸਾਫ਼ ਕਰੋ",
+    "description": "Video viewer: clear loop A-B markers."
   },
   "videoSkipBackward": {
     "message": "-10s",
-    "description": "[needsTranslation] Video viewer: skip backward 10 seconds."
+    "description": "Video viewer: skip backward 10 seconds."
   },
   "videoSkipForward": {
     "message": "+10s",
-    "description": "[needsTranslation] Video viewer: skip forward 10 seconds."
+    "description": "Video viewer: skip forward 10 seconds."
   },
   "videoPlaybackSpeedLabel": {
-    "message": "Speed",
-    "description": "[needsTranslation] Video viewer: playback speed label."
+    "message": "ਗਤੀ",
+    "description": "Video viewer: playback speed label."
   },
   "excelSearchPlaceholder": {
-    "message": "Search in table…",
-    "description": "[needsTranslation] Excel viewer: search input placeholder."
+    "message": "ਸਾਰਣੀ ਵਿੱਚ ਖੋਜੋ…",
+    "description": "Excel viewer: search input placeholder."
   },
   "excelSheetLabel": {
-    "message": "Sheet:",
-    "description": "[needsTranslation] Excel viewer: sheet selector label."
+    "message": "ਸ਼ੀਟ:",
+    "description": "Excel viewer: sheet selector label."
   },
   "excelLoading": {
-    "message": "Loading Excel file…",
-    "description": "[needsTranslation] Excel viewer loading text."
+    "message": "ਐਕਸਲ ਫਾਈਲ ਲੋਡ ਕੀਤੀ ਜਾ ਰਹੀ ਹੈ...",
+    "description": "Excel viewer loading text."
   },
   "excelLoadFailed": {
-    "message": "Failed to load Excel file: $1",
-    "description": "[needsTranslation] Excel viewer load-failure. $1 = error."
+    "message": "ਐਕਸਲ ਫਾਈਲ ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ: $1",
+    "description": "Excel viewer load-failure. $1 = error."
   },
   "excelCopyTsv": {
-    "message": "Copy",
-    "description": "[needsTranslation] Excel viewer: copy filtered rows as TSV."
+    "message": "ਕਾਪੀ",
+    "description": "Excel viewer: copy filtered rows as TSV."
   },
   "excelCopyJson": {
-    "message": "Copy as JSON",
-    "description": "[needsTranslation] Excel viewer: copy filtered rows as JSON."
+    "message": "JSON ਵਜੋਂ ਕਾਪੀ ਕਰੋ",
+    "description": "Excel viewer: copy filtered rows as JSON."
   },
   "excelToggleView": {
-    "message": "Toggle View",
-    "description": "[needsTranslation] Excel viewer: toggle between table and raw JSON view."
+    "message": "ਟੌਗਲ ਦ੍ਰਿਸ਼",
+    "description": "Excel viewer: toggle between table and raw JSON view."
   },
   "excelTableView": {
-    "message": "Table View",
-    "description": "[needsTranslation] Excel viewer: switch back to table view (button label when in raw view)."
+    "message": "ਟੇਬਲ ਦ੍ਰਿਸ਼",
+    "description": "Excel viewer: switch back to table view (button label when in raw view)."
   },
   "excelRawView": {
-    "message": "Raw View",
-    "description": "[needsTranslation] Excel viewer: switch to raw JSON view."
+    "message": "ਕੱਚਾ ਦ੍ਰਿਸ਼",
+    "description": "Excel viewer: switch to raw JSON view."
   },
   "parquetLoading": {
-    "message": "Loading Parquet…",
-    "description": "[needsTranslation] Parquet viewer loading text."
+    "message": "Parquet ਲੋਡ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "Parquet viewer loading text."
   },
   "parquetLoadFailed": {
-    "message": "Failed to render Parquet: $1",
-    "description": "[needsTranslation] Parquet viewer load-failure. $1 = error."
+    "message": "Parquet ਰੈਂਡਰ ਕਰਨ ਵਿੱਚ ਅਸਫਲ: $1",
+    "description": "Parquet viewer load-failure. $1 = error."
   },
   "parquetReaderLoadFailed": {
-    "message": "Couldn't load Parquet reader",
-    "description": "[needsTranslation] Parquet viewer: failure to load hyparquet bundle."
+    "message": "Parquet ਰੀਡਰ ਨੂੰ ਲੋਡ ਨਹੀਂ ਕੀਤਾ ਜਾ ਸਕਿਆ",
+    "description": "Parquet viewer: failure to load hyparquet bundle."
   },
   "parquetSearchPlaceholder": {
-    "message": "Search rows…",
-    "description": "[needsTranslation] Parquet viewer: search input placeholder."
+    "message": "ਕਤਾਰਾਂ ਦੀ ਖੋਜ ਕਰੋ...",
+    "description": "Parquet viewer: search input placeholder."
   },
   "parquetLoadMore": {
-    "message": "Load Next 10,000 Rows",
-    "description": "[needsTranslation] Parquet viewer: progressive load button label."
+    "message": "ਅੱਗੇ ਲੋਡ ਕਰੋ 10,000 ਕਤਾਰਾਂ",
+    "description": "Parquet viewer: progressive load button label."
   },
   "parquetLoadingMore": {
-    "message": "Loading…",
-    "description": "[needsTranslation] Parquet viewer: progressive load in-flight label."
+    "message": "ਲੋਡ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "Parquet viewer: progressive load in-flight label."
   },
   "parquetLoadMoreFailed": {
-    "message": "Failed to load more rows: $1",
-    "description": "[needsTranslation] Parquet viewer: progressive load failure. $1 = error."
+    "message": "ਹੋਰ ਕਤਾਰਾਂ ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ: $1",
+    "description": "Parquet viewer: progressive load failure. $1 = error."
   },
   "parquetBlockHeadline": {
-    "message": "File too large to open inline",
-    "description": "[needsTranslation] Parquet viewer: block panel headline for >=150MB files."
+    "message": "ਇਨਲਾਈਨ ਖੋਲ੍ਹਣ ਲਈ ਫਾਈਲ ਬਹੁਤ ਵੱਡੀ ਹੈ",
+    "description": "Parquet viewer: block panel headline for >=150MB files."
   },
   "parquetCopyCellValue": {
-    "message": "Copy cell value",
-    "description": "[needsTranslation] Parquet viewer: cell context menu item."
+    "message": "ਸੈੱਲ ਮੁੱਲ ਨੂੰ ਕਾਪੀ ਕਰੋ",
+    "description": "Parquet viewer: cell context menu item."
   },
   "parquetCopyColumn": {
-    "message": "Copy column \"$1\"",
-    "description": "[needsTranslation] Parquet viewer: column context menu item. $1 = header."
+    "message": "ਕਾਲਮ \"$1\" ਨੂੰ ਕਾਪੀ ਕਰੋ",
+    "description": "Parquet viewer: column context menu item. $1 = header."
   },
   "parquetCopyRowAsJson": {
-    "message": "Copy row as JSON",
-    "description": "[needsTranslation] Parquet viewer: row context menu item."
+    "message": "ਕਤਾਰ ਨੂੰ JSON ਵਜੋਂ ਕਾਪੀ ਕਰੋ",
+    "description": "Parquet viewer: row context menu item."
   },
   "wordLoading": {
-    "message": "Loading Word document…",
-    "description": "[needsTranslation] Word viewer loading text."
+    "message": "ਸ਼ਬਦ ਦਸਤਾਵੇਜ਼ ਲੋਡ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "Word viewer loading text."
   },
   "wordLoadFailed": {
-    "message": "Failed to load Word document: $1",
-    "description": "[needsTranslation] Word viewer load-failure. $1 = error."
+    "message": "Word ਦਸਤਾਵੇਜ਼ ਨੂੰ ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ: $1",
+    "description": "Word viewer load-failure. $1 = error."
   },
   "wordPrintButton": {
-    "message": "Print",
-    "description": "[needsTranslation] Word viewer: print button."
+    "message": "ਛਾਪੋ",
+    "description": "Word viewer: print button."
   },
   "wordEmbeddedPanelTitle": {
-    "message": "Embedded objects",
-    "description": "[needsTranslation] Word viewer: embedded workbook / chart panel title."
+    "message": "ਏਮਬੈਡਡ ਆਬਜੈਕਟ",
+    "description": "Word viewer: embedded workbook / chart panel title."
   },
   "pptLoading": {
-    "message": "Loading presentation…",
-    "description": "[needsTranslation] PPT viewer loading text."
+    "message": "ਪੇਸ਼ਕਾਰੀ ਲੋਡ ਕੀਤੀ ਜਾ ਰਹੀ ਹੈ...",
+    "description": "PPT viewer loading text."
   },
   "pptLoadFailed": {
-    "message": "Failed to load presentation: $1",
-    "description": "[needsTranslation] PPT viewer load-failure. $1 = error."
+    "message": "ਪੇਸ਼ਕਾਰੀ ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ: $1",
+    "description": "PPT viewer load-failure. $1 = error."
   },
   "pptSlideJumpLabel": {
-    "message": "Slide:",
-    "description": "[needsTranslation] PPT viewer: slide-jump selector label."
+    "message": "ਸਲਾਈਡ:",
+    "description": "PPT viewer: slide-jump selector label."
   },
   "pptFallbackParserFailed": {
-    "message": "Could not read this presentation. The file may be corrupt or saved in an unsupported format. Try converting it to PDF and opening the PDF in this viewer.",
-    "description": "[needsTranslation] PPT viewer: shown when both the primary parser and the fallback text extractor fail."
+    "message": "ਇਸ ਪੇਸ਼ਕਾਰੀ ਨੂੰ ਪੜ੍ਹਿਆ ਨਹੀਂ ਜਾ ਸਕਿਆ। ਫ਼ਾਈਲ ਖਰਾਬ ਹੋ ਸਕਦੀ ਹੈ ਜਾਂ ਅਸਮਰਥਿਤ ਫਾਰਮੈਟ ਵਿੱਚ ਰੱਖਿਅਤ ਕੀਤੀ ਜਾ ਸਕਦੀ ਹੈ। ਇਸਨੂੰ PDF ਵਿੱਚ ਬਦਲਣ ਅਤੇ ਇਸ ਵਿਊਅਰ ਵਿੱਚ PDF ਨੂੰ ਖੋਲ੍ਹਣ ਦੀ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+    "description": "PPT viewer: shown when both the primary parser and the fallback text extractor fail."
   },
   "pptFallbackNoRenderable": {
-    "message": "This presentation has no renderable content (master-only or template-only deck). The viewer could not extract any slide text.",
-    "description": "[needsTranslation] PPT viewer: shown when the parser succeeded but produced no renderable shapes and the loose-text fallback also found nothing."
+    "message": "ਇਸ ਪੇਸ਼ਕਾਰੀ ਵਿੱਚ ਕੋਈ ਪੇਸ਼ ਕਰਨ ਯੋਗ ਸਮੱਗਰੀ ਨਹੀਂ ਹੈ (ਸਿਰਫ਼-ਮਾਸਟਰ ਜਾਂ ਟੈਂਪਲੇਟ-ਸਿਰਫ਼ ਡੈੱਕ)। ਦਰਸ਼ਕ ਕੋਈ ਸਲਾਈਡ ਟੈਕਸਟ ਨਹੀਂ ਕੱਢ ਸਕਿਆ।",
+    "description": "PPT viewer: shown when the parser succeeded but produced no renderable shapes and the loose-text fallback also found nothing."
   },
   "pptFallbackBrowserFailed": {
-    "message": "Could not load this presentation in the browser. The unzip / decode step failed; please verify the file is not corrupted.",
-    "description": "[needsTranslation] PPT viewer: shown when a browser-side dependency (e.g. JSZip) throws before parsing begins."
+    "message": "ਬ੍ਰਾਊਜ਼ਰ ਵਿੱਚ ਇਸ ਪ੍ਰਸਤੁਤੀ ਨੂੰ ਲੋਡ ਨਹੀਂ ਕੀਤਾ ਜਾ ਸਕਿਆ। ਅਨਜ਼ਿਪ/ਡੀਕੋਡ ਪੜਾਅ ਅਸਫਲ ਰਿਹਾ; ਕਿਰਪਾ ਕਰਕੇ ਪੁਸ਼ਟੀ ਕਰੋ ਕਿ ਫਾਈਲ ਖਰਾਬ ਨਹੀਂ ਹੈ।",
+    "description": "PPT viewer: shown when a browser-side dependency (e.g. JSZip) throws before parsing begins."
   },
   "pptRenderProgress": {
-    "message": "Rendering slides… ($1/$2)",
-    "description": "[needsTranslation] PPT viewer: progress label while the continuous render loop is running. $1 = current slide, $2 = total."
+    "message": "ਰੈਂਡਰਿੰਗ ਸਲਾਈਡਾਂ… ($1/$2)",
+    "description": "PPT viewer: progress label while the continuous render loop is running. $1 = current slide, $2 = total."
   },
   "pptRenderTimeout": {
-    "message": "Rendering took too long and was stopped. Already-rendered slides remain visible.",
-    "description": "[needsTranslation] PPT viewer: shown when the continuous render exceeds the wall-clock budget."
+    "message": "ਰੈਂਡਰਿੰਗ ਵਿੱਚ ਬਹੁਤ ਲੰਮਾ ਸਮਾਂ ਲੱਗਾ ਅਤੇ ਇਸਨੂੰ ਰੋਕ ਦਿੱਤਾ ਗਿਆ। ਪਹਿਲਾਂ ਹੀ-ਰੈਂਡਰ ਕੀਤੀਆਂ ਸਲਾਈਡਾਂ ਦਿਖਾਈ ਦਿੰਦੀਆਂ ਹਨ।",
+    "description": "PPT viewer: shown when the continuous render exceeds the wall-clock budget."
   },
   "psdLoading": {
-    "message": "Loading PSD…",
-    "description": "[needsTranslation] PSD viewer loading text."
+    "message": "PSD ਲੋਡ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "PSD viewer loading text."
   },
   "psdLoadFailed": {
-    "message": "Failed to load PSD: $1",
-    "description": "[needsTranslation] PSD viewer load-failure. $1 = error."
+    "message": "PSD ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ: $1",
+    "description": "PSD viewer load-failure. $1 = error."
   },
   "psdSizeBlocked": {
-    "message": "PSD file is $1; inline preview is disabled for files at or above 200 MB.",
-    "description": "[needsTranslation] PSD viewer: size guard message. $1 = formatted size."
+    "message": "PSD ਫਾਈਲ $1 ਹੈ; ਇਨਲਾਈਨ ਪੂਰਵਦਰਸ਼ਨ 200 MB ਜਾਂ ਇਸ ਤੋਂ ਵੱਧ ਦੀਆਂ ਫਾਈਲਾਂ ਲਈ ਅਸਮਰੱਥ ਹੈ।",
+    "description": "PSD viewer: size guard message. $1 = formatted size."
   },
   "hwpLoading": {
-    "message": "Loading HWP…",
-    "description": "[needsTranslation] HWP viewer loading text."
+    "message": "HWP ਲੋਡ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "HWP viewer loading text."
   },
   "hwpLoadFailed": {
-    "message": "Failed to load HWP: $1",
-    "description": "[needsTranslation] HWP viewer load-failure. $1 = error."
+    "message": "HWP ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ: $1",
+    "description": "HWP viewer load-failure. $1 = error."
   },
   "hwpRendererLoadFailed": {
-    "message": "Couldn't load HWP renderer",
-    "description": "[needsTranslation] HWP viewer: rhwp WASM load failure."
+    "message": "HWP ਰੈਂਡਰਰ ਨੂੰ ਲੋਡ ਨਹੀਂ ਕੀਤਾ ਜਾ ਸਕਿਆ",
+    "description": "HWP viewer: rhwp WASM load failure."
   },
   "archiveLoading": {
-    "message": "Loading archive…",
-    "description": "[needsTranslation] Archive viewer loading text."
+    "message": "ਪੁਰਾਲੇਖ ਲੋਡ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "Archive viewer loading text."
   },
   "archiveLoadFailed": {
-    "message": "Failed to load archive: $1",
-    "description": "[needsTranslation] Archive viewer load-failure. $1 = error."
+    "message": "ਪੁਰਾਲੇਖ ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ: $1",
+    "description": "Archive viewer load-failure. $1 = error."
   },
   "archiveDmgPartial": {
-    "message": "DMG (HFS+/APFS) is partially supported; some images can't be browsed.",
-    "description": "[needsTranslation] Archive viewer: DMG partial-support note."
+    "message": "DMG (HFS+/APFS) ਅੰਸ਼ਕ ਤੌਰ 'ਤੇ ਸਮਰਥਿਤ ਹੈ; ਕੁਝ ਚਿੱਤਰਾਂ ਨੂੰ ਬ੍ਰਾਊਜ਼ ਨਹੀਂ ਕੀਤਾ ਜਾ ਸਕਦਾ।",
+    "description": "Archive viewer: DMG partial-support note."
   },
   "archiveTooLarge": {
-    "message": "File too large for inline preview",
-    "description": "[needsTranslation] Archive viewer: too-large preview fallback."
+    "message": "ਇਨਲਾਈਨ ਪੂਰਵਦਰਸ਼ਨ ਲਈ ਫਾਈਲ ਬਹੁਤ ਵੱਡੀ ਹੈ",
+    "description": "Archive viewer: too-large preview fallback."
   },
   "jsonLoading": {
-    "message": "Loading JSON…",
-    "description": "[needsTranslation] JSON viewer loading text."
+    "message": "JSON ਲੋਡ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "JSON viewer loading text."
   },
   "jsonLoadFailed": {
-    "message": "Failed to load JSON: $1",
-    "description": "[needsTranslation] JSON viewer load-failure. $1 = error."
+    "message": "JSON ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ: $1",
+    "description": "JSON viewer load-failure. $1 = error."
   },
   "jsonTreeButton": {
-    "message": "Tree",
-    "description": "[needsTranslation] JSON viewer: tree mode toggle."
+    "message": "ਰੁੱਖ",
+    "description": "JSON viewer: tree mode toggle."
   },
   "jsonSourceButton": {
-    "message": "Source",
-    "description": "[needsTranslation] JSON viewer: source mode toggle."
+    "message": "ਸਰੋਤ",
+    "description": "JSON viewer: source mode toggle."
   },
   "jsonlLoading": {
-    "message": "Loading JSONL…",
-    "description": "[needsTranslation] JSONL viewer loading text."
+    "message": "JSONL ਲੋਡ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "JSONL viewer loading text."
   },
   "jsonlLoadFailed": {
-    "message": "Failed to load JSONL: $1",
-    "description": "[needsTranslation] JSONL viewer load-failure. $1 = error."
+    "message": "JSONL ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ: $1",
+    "description": "JSONL viewer load-failure. $1 = error."
   },
   "jsonlEditSave": {
-    "message": "Save",
-    "description": "[needsTranslation] JSONL inline editor: save button."
+    "message": "ਬਚਾਓ",
+    "description": "JSONL inline editor: save button."
   },
   "jsonlEditCancel": {
-    "message": "Cancel",
-    "description": "[needsTranslation] JSONL inline editor: cancel button."
+    "message": "ਰੱਦ ਕਰੋ",
+    "description": "JSONL inline editor: cancel button."
   },
   "jsonlInvalidJson": {
-    "message": "Invalid JSON",
-    "description": "[needsTranslation] JSONL viewer: indicator for malformed lines."
+    "message": "ਅਵੈਧ JSON",
+    "description": "JSONL viewer: indicator for malformed lines."
   },
   "jsonlLoadMore": {
-    "message": "Load more rows",
-    "description": "[needsTranslation] JSONL viewer: load more rows button."
+    "message": "ਹੋਰ ਕਤਾਰਾਂ ਲੋਡ ਕਰੋ",
+    "description": "JSONL viewer: load more rows button."
   },
   "jsonlEmptyJsonValue": {
-    "message": "Empty JSON value",
-    "description": "[needsTranslation] JSONL editor: empty input error."
+    "message": "ਖਾਲੀ JSON ਮੁੱਲ",
+    "description": "JSONL editor: empty input error."
   },
   "yamlLoading": {
-    "message": "Loading YAML…",
-    "description": "[needsTranslation] YAML viewer loading text."
+    "message": "YAML ਲੋਡ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "YAML viewer loading text."
   },
   "yamlLoadFailed": {
-    "message": "Failed to load YAML: $1",
-    "description": "[needsTranslation] YAML viewer load-failure. $1 = error."
+    "message": "YAML ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ: $1",
+    "description": "YAML viewer load-failure. $1 = error."
   },
   "tomlLoading": {
-    "message": "Loading TOML…",
-    "description": "[needsTranslation] TOML viewer loading text."
+    "message": "TOML ਲੋਡ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "TOML viewer loading text."
   },
   "tomlLoadFailed": {
-    "message": "Failed to load TOML: $1",
-    "description": "[needsTranslation] TOML viewer load-failure. $1 = error."
+    "message": "TOML ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ: $1",
+    "description": "TOML viewer load-failure. $1 = error."
   }
 }

@@ -57,6 +57,15 @@ export function t(
 
 function readChromeMessage(key: string, substitutions?: string | string[]): string {
     try {
+        const override = (globalThis as any).__omniLocaleMessages?.[key]?.message;
+        if (typeof override === 'string' && override.length > 0) {
+            const values = Array.isArray(substitutions)
+                ? substitutions
+                : substitutions == null ? [] : [substitutions];
+            return override.replace(/\$(\d+)/g, (match: string, index: string) =>
+                values[Number(index) - 1] ?? match
+            );
+        }
         const c: any = (typeof chrome !== 'undefined' ? chrome : undefined);
         if (c && c.i18n && typeof c.i18n.getMessage === 'function') {
             const msg = c.i18n.getMessage(key, substitutions as any);
