@@ -8,7 +8,7 @@
     "description": "Short extension name."
   },
   "appDescription": {
-    "message": "افتح الملفات المحلية في Chrome: الصور وPDF وCSV وJSON وYAML وTOML والصوت والفيديو وOffice وPSD وParquet وHWP/HWPX والأرشيفات.",
+    "message": "Preview user-selected local files in Chrome with content-specific viewing tools.",
     "description": "Extension description shown by Chrome and the Chrome Web Store."
   },
   "actionTitle": {

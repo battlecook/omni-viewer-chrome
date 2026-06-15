@@ -8,7 +8,7 @@
     "description": "Short extension name."
   },
   "appDescription": {
-    "message": "在 Chrome 中打开本地文件：图片、PDF、CSV、JSON、YAML、TOML、音频、视频、Office、PSD、Parquet、HWP/HWPX 和压缩包。",
+    "message": "Preview user-selected local files in Chrome with content-specific viewing tools.",
     "description": "Extension description shown by Chrome and the Chrome Web Store."
   },
   "actionTitle": {

@@ -8,7 +8,7 @@
     "description": "Short extension name."
   },
   "appDescription": {
-    "message": "פתיחת קבצים מקומיים ב-Chrome: תמונות, PDF, CSV, JSON, YAML, TOML, אודיו, וידאו, Office, PSD, Parquet, HWP/HWPX וארכיונים.",
+    "message": "Preview user-selected local files in Chrome with content-specific viewing tools.",
     "description": "Extension description shown by Chrome and the Chrome Web Store."
   },
   "actionTitle": {

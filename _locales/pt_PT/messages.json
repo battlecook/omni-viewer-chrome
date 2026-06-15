@@ -8,7 +8,7 @@
     "description": "Short extension name."
   },
   "appDescription": {
-    "message": "Abra ficheiros locais no Chrome: imagens, PDF, CSV, JSON, YAML, TOML, áudio, vídeo, Office, PSD, Parquet, HWP/HWPX e arquivos.",
+    "message": "Preview user-selected local files in Chrome with content-specific viewing tools.",
     "description": "Extension description shown by Chrome and the Chrome Web Store."
   },
   "actionTitle": {

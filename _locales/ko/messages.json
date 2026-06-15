@@ -8,7 +8,7 @@
     "description": "Short extension name."
   },
   "appDescription": {
-    "message": "Chrome에서 로컬 파일 열기: 이미지, PDF, CSV, JSON, YAML, TOML, 오디오, 비디오, Office, PSD, Parquet, HWP/HWPX 및 압축 파일.",
+    "message": "사용자가 선택한 로컬 파일을 Chrome에서 콘텐츠에 맞는 보기 도구로 미리보세요.",
     "description": "Extension description shown by Chrome and the Chrome Web Store."
   },
   "actionTitle": {

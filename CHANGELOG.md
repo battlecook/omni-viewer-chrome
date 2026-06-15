@@ -2,6 +2,12 @@
 
 All notable changes to the Chrome build of Omni Viewer are documented in this file.
 
+## [0.1.1] - 2026-06-15
+
+### Changed
+- Replaced file-format keyword lists in localized Chrome Web Store package
+  summaries with concise descriptions of the extension's viewing purpose.
+
 ## [0.1.0] - 2026-06-14
 
 ### Added
