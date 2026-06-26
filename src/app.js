@@ -191,7 +191,7 @@ const formats = {
   markdown: ['.md', '.markdown'],
   mermaid: ['.mmd', '.mermaid'],
   plantuml: ['.puml', '.plantuml', '.iuml'],
-  automotive: ['.dbc', '.arxml', '.a2l', '.asc', '.blf', '.mf4', '.mdf'],
+  automotive: ['.dbc', '.arxml', '.a2l', '.asc', '.blf', '.mf4', '.mdf', '.avro', '.bag', '.stp', '.step', '.db3', '.sqlite', '.sqlite3', '.reqif', '.pcap', '.pcapng'],
   audio: ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'],
   video: ['.mp4', '.webm', '.mov', '.m4v', '.ogv'],
   excel: ['.xlsx', '.xls'],
@@ -298,6 +298,11 @@ async function detectType(file) {
   if (hasPrefix(head, [0x50, 0x41, 0x52, 0x31]) && hasPrefix(await readTail(file), [0x50, 0x41, 0x52, 0x31])) return 'parquet';
   if (ascii(head, 0, 4) === 'LOGG') return 'automotive';
   if (/^MDF\s/.test(ascii(head, 0, Math.min(head.length, 64)))) return 'automotive';
+  if (ascii(head, 0, 4) === 'Obj\x01') return 'automotive';
+  if (ascii(head, 0, 11) === '#ROSBAG V2.') return 'automotive';
+  if (ascii(head, 0, 16) === 'SQLite format 3\0') return 'automotive';
+  if (hasPrefix(head, [0xd4, 0xc3, 0xb2, 0xa1]) || hasPrefix(head, [0xa1, 0xb2, 0xc3, 0xd4]) || hasPrefix(head, [0x4d, 0x3c, 0xb2, 0xa1]) || hasPrefix(head, [0xa1, 0xb2, 0x3c, 0x4d])) return 'automotive';
+  if (hasPrefix(head, [0x0a, 0x0d, 0x0d, 0x0a])) return 'automotive';
   if (hasPrefix(head, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])) return byExtension(file);
   if (hasPrefix(head, [0x50, 0x4b])) {
     const text = ascii(head, 0, Math.min(head.length, 65536));
@@ -375,7 +380,6 @@ function panel(title, body = '') {
       <header class="viewer-head">
         <div>
           <div class="viewer-title">${escapeHtml(title)}</div>
-          <span class="badge">${escapeHtml(labels[state.type] || state.type)}</span>
         </div>
         <div class="viewer-head-actions">
           <button id="shareViewerFile" type="button" title="Shared data is stored on the server for 5 minutes only, then discarded.">Share</button>

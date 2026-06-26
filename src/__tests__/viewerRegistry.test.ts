@@ -58,12 +58,19 @@ const ALL_SLUGS: ViewerSlug[] = [
     'markdown',
     'mermaid',
     'plantuml',
-    'automotive'
+    'automotive',
+    'avro',
+    'bag',
+    'stp',
+    'db3',
+    'reqif',
+    'pcap',
+    'pcapng'
 ];
 
 describe('viewerRegistry', () => {
     it('registers all viewers', () => {
-        expect(VIEWER_REGISTRATIONS).toHaveLength(20);
+        expect(VIEWER_REGISTRATIONS).toHaveLength(27);
         const slugs = VIEWER_REGISTRATIONS.map((r) => r.slug).sort();
         expect(slugs).toEqual([...ALL_SLUGS].sort());
     });
@@ -139,6 +146,14 @@ describe('viewerRegistry', () => {
             ['trace.asc', 'automotive'],
             ['trace.blf', 'automotive'],
             ['measurement.mf4', 'automotive'],
+            ['records.avro', 'avro'],
+            ['drive.bag', 'bag'],
+            ['part.stp', 'stp'],
+            ['part.step', 'stp'],
+            ['rosbag.db3', 'db3'],
+            ['requirements.reqif', 'reqif'],
+            ['capture.pcap', 'pcap'],
+            ['capture.pcapng', 'pcapng'],
             ['song.mp3', 'audio'],
             ['voice.pcm', 'audio'],
             ['movie.mp4', 'video'],

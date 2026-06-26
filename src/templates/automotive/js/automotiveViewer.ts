@@ -19,11 +19,20 @@ function createAutomotiveProvider(): ChromeViewerProvider {
     };
 }
 
-const registration = VIEWER_REGISTRATIONS.find(
-    (r) => r.viewType === 'omni-viewer.automotiveViewer'
-);
-if (registration) {
-    registration.createProvider = createAutomotiveProvider;
+for (const viewType of [
+    'omni-viewer.automotiveViewer',
+    'omni-viewer.avroViewer',
+    'omni-viewer.bagViewer',
+    'omni-viewer.stpViewer',
+    'omni-viewer.db3Viewer',
+    'omni-viewer.reqifViewer',
+    'omni-viewer.pcapViewer',
+    'omni-viewer.pcapngViewer'
+] as const) {
+    const registration = VIEWER_REGISTRATIONS.find((r) => r.viewType === viewType);
+    if (registration) {
+        registration.createProvider = createAutomotiveProvider;
+    }
 }
 
 declare global {

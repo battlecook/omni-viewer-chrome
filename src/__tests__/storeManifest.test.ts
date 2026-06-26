@@ -228,6 +228,11 @@ describe('storeManifest invariants', () => {
                 '.psd',  // psd
                 '.parquet', // parquet
                 '.hwp',  // hwp
+                '.avro', // Avro
+                '.bag',  // ROS bag
+                '.stp',  // STEP
+                '.db3',  // SQLite/ROS2 bag database
+                '.reqif', // ReqIF
                 '.zip'   // archive
             ];
             for (const ext of required) {

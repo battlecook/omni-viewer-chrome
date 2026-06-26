@@ -44,6 +44,13 @@ export type OmniViewerViewType =
     | 'omni-viewer.mermaidViewer'
     | 'omni-viewer.plantumlViewer'
     | 'omni-viewer.automotiveViewer'
+    | 'omni-viewer.avroViewer'
+    | 'omni-viewer.bagViewer'
+    | 'omni-viewer.stpViewer'
+    | 'omni-viewer.db3Viewer'
+    | 'omni-viewer.reqifViewer'
+    | 'omni-viewer.pcapViewer'
+    | 'omni-viewer.pcapngViewer'
     | 'omni-viewer.parquetViewer'
     | 'omni-viewer.hwpViewer'
     | 'omni-viewer.psdViewer'
@@ -70,6 +77,13 @@ export type ViewerSlug =
     | 'mermaid'
     | 'plantuml'
     | 'automotive'
+    | 'avro'
+    | 'bag'
+    | 'stp'
+    | 'db3'
+    | 'reqif'
+    | 'pcap'
+    | 'pcapng'
     | 'parquet'
     | 'hwp'
     | 'psd'
@@ -213,6 +227,62 @@ export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
         createProvider: () => createPlaceholderProvider('omni-viewer.automotiveViewer')
     },
     {
+        viewType: 'omni-viewer.avroViewer',
+        slug: 'avro',
+        command: 'omni-viewer.openAvroViewer',
+        missingMessage: 'No Avro file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.avroViewer')
+    },
+    {
+        viewType: 'omni-viewer.bagViewer',
+        slug: 'bag',
+        command: 'omni-viewer.openBagViewer',
+        missingMessage: 'No BAG file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.bagViewer')
+    },
+    {
+        viewType: 'omni-viewer.stpViewer',
+        slug: 'stp',
+        command: 'omni-viewer.openStpViewer',
+        missingMessage: 'No STEP file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.stpViewer')
+    },
+    {
+        viewType: 'omni-viewer.db3Viewer',
+        slug: 'db3',
+        command: 'omni-viewer.openDb3Viewer',
+        missingMessage: 'No DB3 file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.db3Viewer')
+    },
+    {
+        viewType: 'omni-viewer.reqifViewer',
+        slug: 'reqif',
+        command: 'omni-viewer.openReqifViewer',
+        missingMessage: 'No ReqIF file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.reqifViewer')
+    },
+    {
+        viewType: 'omni-viewer.pcapViewer',
+        slug: 'pcap',
+        command: 'omni-viewer.openPcapViewer',
+        missingMessage: 'No PCAP file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.pcapViewer')
+    },
+    {
+        viewType: 'omni-viewer.pcapngViewer',
+        slug: 'pcapng',
+        command: 'omni-viewer.openPcapngViewer',
+        missingMessage: 'No PCAPNG file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.pcapngViewer')
+    },
+    {
         viewType: 'omni-viewer.parquetViewer',
         slug: 'parquet',
         command: 'omni-viewer.openParquetViewer',
@@ -323,6 +393,16 @@ const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
     '.blf': 'automotive',
     '.mf4': 'automotive',
     '.mdf': 'automotive',
+    '.avro': 'avro',
+    '.bag': 'bag',
+    '.stp': 'stp',
+    '.step': 'stp',
+    '.db3': 'db3',
+    '.sqlite': 'db3',
+    '.sqlite3': 'db3',
+    '.reqif': 'reqif',
+    '.pcap': 'pcap',
+    '.pcapng': 'pcapng',
     '.mp3': 'audio',
     '.wav': 'audio',
     '.ogg': 'audio',

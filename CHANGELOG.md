@@ -2,6 +2,38 @@
 
 All notable changes to the Chrome build of Omni Viewer are documented in this file.
 
+## [0.2.0] - 2026-06-26
+
+### Added
+- Added dedicated Chrome viewer registrations and file routing for Avro, ROS
+  bag, STEP/STP, SQLite/DB3, ReqIF, PCAP, and PCAPNG files.
+- Added manifest file-handler coverage for `.avro`, `.bag`, `.stp`, `.step`,
+  `.db3`, `.sqlite`, `.sqlite3`, `.reqif`, `.pcap`, and `.pcapng` files.
+- Added signature detection for Avro object containers, ROS bag files, SQLite 3
+  databases, classic PCAP captures, and PCAPNG captures.
+- Added lightweight Avro, ROS bag, STEP, SQLite/DB3, ReqIF, PCAP, and PCAPNG
+  inspectors through the automotive table viewer.
+- Added packet summaries for PCAP and PCAPNG captures, including Ethernet, ARP,
+  IPv4, IPv6, TCP, UDP, ICMP, DNS, DHCP, NTP, SSDP, CoAP, MQTT, HTTP, and TLS
+  hints where available.
+
+### Changed
+- Reused the automotive viewer provider for the new engineering and capture
+  formats so they share the same tabular summary, preview, and warning layout.
+- Expanded viewer registry and file utility coverage so the new formats can be
+  opened by extension, signature, command, and share/download routing.
+
+### Fixed
+- Added regression coverage for the new format signatures, extension fallbacks,
+  viewer registry entries, manifest file-handler requirements, ReqIF rendering,
+  and PCAP/PCAPNG parsing.
+
+## [0.1.2] - 2026-06-26
+
+### Changed
+- Removed the redundant format badge from the viewer header for a cleaner file
+  viewing layout.
+
 ## [0.1.1] - 2026-06-15
 
 ### Changed

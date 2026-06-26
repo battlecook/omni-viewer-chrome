@@ -1,5 +1,5 @@
 import { mountAutomotiveViewer } from '../templates/automotive/js/automotiveViewerMain';
-import { parseA2l, parseArxml, parseAsc, parseBlf, parseMf4 } from '../templates/automotive/js/automotiveParsers';
+import { parseA2l, parseArxml, parseAsc, parseAvro, parseBag, parseBlf, parseDb3, parseMf4, parsePcap, parsePcapng, parseReqif, parseStp } from '../templates/automotive/js/automotiveParsers';
 import { parseDbc } from '../templates/automotive/js/dbcParser';
 import { AUTOMOTIVE_VIEWER_CSS } from '../templates/automotive/js/automotiveViewerStyles';
 
@@ -26,6 +26,23 @@ describe('automotive viewer', () => {
 
         handle.dispose();
         expect(container.innerHTML).toBe('');
+    });
+
+    it('loads and summarizes ReqIF through the shared table viewer', async () => {
+        const file = new File([
+            '<REQ-IF><THE-HEADER><REQ-IF-HEADER IDENTIFIER="h1">',
+            '<TITLE>Demo requirements</TITLE><SOURCE-TOOL-ID>Tool</SOURCE-TOOL-ID>',
+            '</REQ-IF-HEADER></THE-HEADER><CORE-CONTENT><REQ-IF-CONTENT>',
+            '<SPEC-OBJECTS><SPEC-OBJECT IDENTIFIER="so1" LONG-NAME="Brake requirement"/></SPEC-OBJECTS>',
+            '</REQ-IF-CONTENT></CORE-CONTENT></REQ-IF>'
+        ], 'requirements.reqif', { type: 'application/xml' });
+        const container = document.createElement('div');
+
+        await mountAutomotiveViewer(file, container);
+
+        expect(container.querySelector('.automotive-kind')?.textContent).toBe('REQIF');
+        expect(container.textContent).toContain('Demo requirements');
+        expect(container.textContent).toContain('1Spec objects');
     });
 
     it('gives tabular automotive viewers a full-width, usable workspace', () => {
@@ -79,5 +96,56 @@ describe('automotive parsers', () => {
         expect(parseBlf(blf, '160 B').summary.find((item) => item.label === 'Object count hint')?.value).toBe(3);
         const mf4 = new Uint8Array(Array.from('MDF     4.10    TEST    ##HD##DG##CG##CN', (char) => char.charCodeAt(0)));
         expect(parseMf4(mf4, '40 B').tables[0].rows).toEqual(expect.arrayContaining([['##HD', 1], ['##CN', 1]]));
+    });
+
+    it('inspects Avro, ROS bag, STEP, DB3, and ReqIF files', () => {
+        const avro = new Uint8Array([79, 98, 106, 1, 0]);
+        expect(parseAvro(avro, '5 B').summary.find((item) => item.label === 'Magic')?.value).toBe('Obj\\x01');
+
+        const bag = new Uint8Array(Array.from('#ROSBAG V2.0\nop=\x07op=\x05op=\x02', (char) => char.charCodeAt(0)));
+        expect(parseBag(bag, '32 B').summary.find((item) => item.label === 'Connection records')?.value).toBe(1);
+
+        const stp = parseStp("ISO-10303-21;\nHEADER;\nFILE_NAME('demo','2024',('me'),('org'),'pre','sys','auth');\nFILE_SCHEMA(('AP214'));\nENDSEC;\nDATA;\n#1=CARTESIAN_POINT('',(0.,0.,0.));\nENDSEC;\nEND-ISO-10303-21;", '1 KB');
+        expect(stp.summary.find((item) => item.label === 'Schema')?.value).toBe('AP214');
+        expect(stp.tables[2].rows).toContainEqual(['#1', 'CARTESIAN_POINT', 7]);
+
+        const db3 = new Uint8Array(128);
+        db3.set(Array.from('SQLite format 3\0', (char) => char.charCodeAt(0)));
+        new DataView(db3.buffer).setUint16(16, 4096, false);
+        expect(parseDb3(db3, '128 B').summary.find((item) => item.label === 'Page size')?.value).toBe(4096);
+
+        const reqif = parseReqif('<REQ-IF-HEADER IDENTIFIER="h"><TITLE>Spec</TITLE></REQ-IF-HEADER><SPECIFICATION IDENTIFIER="s1" LONG-NAME="System spec"/>', '1 KB');
+        expect(reqif.summary.find((item) => item.label === 'Specifications')?.value).toBe(1);
+    });
+
+    it('decodes PCAP packet records and the PCAPNG section header', () => {
+        const be16 = (n: number) => [(n >> 8) & 0xff, n & 0xff];
+        const le16 = (n: number) => [n & 0xff, (n >> 8) & 0xff];
+        const le32 = (n: number) => [n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff, (n >>> 24) & 0xff];
+        const str = (s: string) => Array.from(s, (c) => c.charCodeAt(0));
+
+        // Ethernet + IPv4 + UDP + DNS query for example.com
+        const dns = [...be16(0x1234), ...be16(0x0100), ...be16(1), ...be16(0), ...be16(0), ...be16(0), 7, ...str('example'), 3, ...str('com'), 0, ...be16(1), ...be16(1)];
+        const udp = [...be16(40000), ...be16(53), ...be16(8 + dns.length), ...be16(0), ...dns];
+        const ipv4 = [0x45, 0x00, ...be16(20 + udp.length), ...be16(0), ...be16(0), 64, 17, ...be16(0), 192, 168, 0, 10, 8, 8, 8, 8, ...udp];
+        const eth = [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, ...be16(0x0800), ...ipv4];
+        const globalHeader = [0xd4, 0xc3, 0xb2, 0xa1, ...le16(2), ...le16(4), ...le32(0), ...le32(0), ...le32(65535), ...le32(1)];
+        const record = [...le32(0), ...le32(0), ...le32(eth.length), ...le32(eth.length), ...eth];
+        const pcap = new Uint8Array([...globalHeader, ...record]);
+
+        const model = parsePcap(pcap, '1 KB');
+        expect(model.summary.find((item) => item.label === 'Magic')?.value).toBe('0xA1B2C3D4');
+        expect(model.summary.find((item) => item.label === 'Packets parsed')?.value).toBe(1);
+        const packetRow = model.tables[1].rows[0];
+        expect(packetRow[2]).toBe('DNS');
+        expect(packetRow[3]).toBe('192.168.0.10:40000');
+        expect(packetRow[4]).toBe('8.8.8.8:53');
+        expect(String(packetRow[8])).toContain('example.com');
+
+        // PCAPNG: single little-endian Section Header Block (28 bytes)
+        const shb = [...le32(0x0a0d0d0a), ...le32(28), 0x4d, 0x3c, 0x2b, 0x1a, ...le16(1), ...le16(0), ...le32(0xffffffff), ...le32(0xffffffff), ...le32(28)];
+        const ngModel = parsePcapng(new Uint8Array(shb), '28 B');
+        expect(ngModel.summary.find((item) => item.label === 'Sections')?.value).toBe(1);
+        expect(ngModel.summary.find((item) => item.label === 'Byte order')?.value).toBe('little endian');
     });
 });

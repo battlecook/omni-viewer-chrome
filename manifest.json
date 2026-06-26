@@ -48,8 +48,9 @@
         "text/markdown": [".md", ".markdown"],
         "text/vnd.mermaid": [".mmd", ".mermaid"],
         "text/x-plantuml": [".puml", ".plantuml", ".iuml"],
-        "text/plain": [".dbc", ".a2l", ".asc"],
+        "text/plain": [".dbc", ".a2l", ".asc", ".stp", ".step"],
         "application/xml": [".arxml"],
+        "application/reqif+xml": [".reqif"],
         "audio/mpeg": [".mp3"],
         "audio/wav": [".wav"],
         "audio/L16": [".pcm"],
@@ -84,7 +85,8 @@
         "application/gzip": [".gz", ".tgz", ".tar.gz"],
         "application/x-bzip2": [".bz2", ".tbz2", ".tar.bz2"],
         "application/x-xz": [".xz", ".txz", ".tar.xz"],
-        "application/octet-stream": [".parquet", ".hwp", ".hwpx", ".blf", ".mf4", ".mdf"]
+        "application/vnd.tcpdump.pcap": [".pcap", ".pcapng"],
+        "application/octet-stream": [".parquet", ".hwp", ".hwpx", ".blf", ".mf4", ".mdf", ".avro", ".bag", ".db3", ".sqlite", ".sqlite3"]
       },
       "launch_type": "single-client"
     }

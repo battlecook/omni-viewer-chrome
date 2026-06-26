@@ -34,6 +34,13 @@ export type OmniViewerViewType =
     | 'omni-viewer.mermaidViewer'
     | 'omni-viewer.plantumlViewer'
     | 'omni-viewer.automotiveViewer'
+    | 'omni-viewer.avroViewer'
+    | 'omni-viewer.bagViewer'
+    | 'omni-viewer.stpViewer'
+    | 'omni-viewer.db3Viewer'
+    | 'omni-viewer.reqifViewer'
+    | 'omni-viewer.pcapViewer'
+    | 'omni-viewer.pcapngViewer'
     | 'omni-viewer.parquetViewer'
     | 'omni-viewer.hwpViewer'
     | 'omni-viewer.psdViewer'
@@ -86,6 +93,8 @@ const VIDEO_EXTENSION_FALLBACK = new Set([
 ]);
 const AUTOMOTIVE_TEXT_EXTENSIONS = new Set(['.dbc', '.arxml', '.a2l', '.asc']);
 const AUTOMOTIVE_BINARY_EXTENSIONS = new Set(['.blf', '.mf4', '.mdf']);
+const STRUCTURED_DATA_TEXT_EXTENSIONS = new Set(['.stp', '.step', '.reqif']);
+const STRUCTURED_DATA_BINARY_EXTENSIONS = new Set(['.avro', '.bag', '.db3', '.sqlite', '.sqlite3', '.pcap', '.pcapng']);
 
 // Lazy decoders — jest-environment-jsdom 29 does not expose `TextDecoder`
 // as a global at module-load time. Constructing decoders on first use lets
@@ -281,6 +290,26 @@ export class FileUtils {
             return this.signatureMatch('omni-viewer.automotiveViewer', 'Matched the MDF/MF4 file signature.');
         }
 
+        if (this.hasAsciiPrefix(buffer, 'Obj\x01')) {
+            return this.signatureMatch('omni-viewer.avroViewer', 'Matched the Avro object container signature.');
+        }
+
+        if (this.hasAsciiPrefix(buffer, '#ROSBAG V2.')) {
+            return this.signatureMatch('omni-viewer.bagViewer', 'Matched the ROS bag header.');
+        }
+
+        if (this.hasAsciiPrefix(buffer, 'SQLite format 3\0')) {
+            return this.signatureMatch('omni-viewer.db3Viewer', 'Matched the SQLite 3 database header.');
+        }
+
+        if (this.isPcapClassic(buffer)) {
+            return this.signatureMatch('omni-viewer.pcapViewer', 'Matched the PCAP global header magic bytes.');
+        }
+
+        if (this.isPcapng(buffer)) {
+            return this.signatureMatch('omni-viewer.pcapngViewer', 'Matched the PCAPNG section header block.');
+        }
+
         if (this.isCompoundFileBinary(buffer)) {
             if (preferredOfficeViewType) {
                 return this.signatureMatch(
@@ -364,6 +393,14 @@ export class FileUtils {
             return {
                 viewType: 'omni-viewer.automotiveViewer',
                 reason: `Used the automotive binary extension fallback for ${ext}.`,
+                matchedBySignature: false
+            };
+        }
+
+        if (STRUCTURED_DATA_BINARY_EXTENSIONS.has(ext)) {
+            return {
+                viewType: this.viewTypeForStructuredDataExtension(ext),
+                reason: `Used the structured data extension fallback for ${ext}.`,
                 matchedBySignature: false
             };
         }
@@ -695,6 +732,14 @@ export class FileUtils {
             };
         }
 
+        if (STRUCTURED_DATA_TEXT_EXTENSIONS.has(ext)) {
+            return {
+                viewType: this.viewTypeForStructuredDataExtension(ext),
+                reason: `Used the structured data extension fallback for ${ext}.`,
+                matchedBySignature: false
+            };
+        }
+
         if (ext === '.toml' || this.looksLikeToml(lines)) {
             return {
                 viewType: 'omni-viewer.tomlViewer',
@@ -814,6 +859,41 @@ export class FileUtils {
             sampleLines.some((line) => /^(abstract\s+class|class|interface|enum|annotation)\s+/i.test(line)) ||
             sampleLines.some((line) => /^(:.+;|start|stop|if\s*\(.+\)\s*then\b)/i.test(line));
     }
+
+    private static viewTypeForStructuredDataExtension(ext: string): OmniViewerViewType {
+        switch (ext) {
+        case '.avro':
+            return 'omni-viewer.avroViewer';
+        case '.bag':
+            return 'omni-viewer.bagViewer';
+        case '.stp':
+        case '.step':
+            return 'omni-viewer.stpViewer';
+        case '.db3':
+        case '.sqlite':
+        case '.sqlite3':
+            return 'omni-viewer.db3Viewer';
+        case '.reqif':
+            return 'omni-viewer.reqifViewer';
+        case '.pcap':
+            return 'omni-viewer.pcapViewer';
+        case '.pcapng':
+            return 'omni-viewer.pcapngViewer';
+        default:
+            return 'omni-viewer.automotiveViewer';
+        }
+    }
+
+    private static isPcapClassic(buffer: Uint8Array): boolean {
+        return this.matchesBytes(buffer, [0xd4, 0xc3, 0xb2, 0xa1])
+            || this.matchesBytes(buffer, [0xa1, 0xb2, 0xc3, 0xd4])
+            || this.matchesBytes(buffer, [0x4d, 0x3c, 0xb2, 0xa1])
+            || this.matchesBytes(buffer, [0xa1, 0xb2, 0x3c, 0x4d]);
+    }
+
+    private static isPcapng(buffer: Uint8Array): boolean {
+        return this.matchesBytes(buffer, [0x0a, 0x0d, 0x0d, 0x0a]);
+    }
 }
 
 /**
@@ -857,6 +937,13 @@ export function shortNameForViewType(viewType: OmniViewerViewType): string {
     case 'omni-viewer.plantumlViewer':
         return 'plantuml';
     case 'omni-viewer.automotiveViewer':
+    case 'omni-viewer.avroViewer':
+    case 'omni-viewer.bagViewer':
+    case 'omni-viewer.stpViewer':
+    case 'omni-viewer.db3Viewer':
+    case 'omni-viewer.reqifViewer':
+    case 'omni-viewer.pcapViewer':
+    case 'omni-viewer.pcapngViewer':
         return 'automotive';
     case 'omni-viewer.parquetViewer':
         return 'parquet';

@@ -282,6 +282,38 @@ describe('FileUtils.detectViewerType signatures', () => {
         expect(result.matchedBySignature).toBe(true);
     });
 
+    it('detects Avro, ROS bag, and SQLite signatures', async () => {
+        const cases: Array<[File, string]> = [
+            [makeFile(new Uint8Array([79, 98, 106, 1, 0]), 'records.bin'), 'omni-viewer.avroViewer'],
+            [makeFile(asciiBytes('#ROSBAG V2.0\n'), 'drive.bin'), 'omni-viewer.bagViewer'],
+            [makeFile(asciiBytes('SQLite format 3\0'), 'rosbag.bin'), 'omni-viewer.db3Viewer'],
+            [makeFile(new Uint8Array([0xd4, 0xc3, 0xb2, 0xa1, 0, 0, 0, 0]), 'capture.bin'), 'omni-viewer.pcapViewer'],
+            [makeFile(new Uint8Array([0x0a, 0x0d, 0x0d, 0x0a, 0, 0, 0, 0]), 'capture.bin'), 'omni-viewer.pcapngViewer']
+        ];
+        for (const [file, viewType] of cases) {
+            const result = await FileUtils.detectViewerType(file);
+            expect(result.viewType).toBe(viewType);
+            expect(result.matchedBySignature).toBe(true);
+        }
+    });
+
+    it('routes Avro, BAG, STEP, DB3, ReqIF, and PCAP files by extension', async () => {
+        const cases: Array<[File, string]> = [
+            [makeFile(new Uint8Array([0]), 'records.avro'), 'omni-viewer.avroViewer'],
+            [makeFile(new Uint8Array([0]), 'drive.bag'), 'omni-viewer.bagViewer'],
+            [makeFile('ISO-10303-21;\nHEADER;\nENDSEC;', 'part.stp'), 'omni-viewer.stpViewer'],
+            [makeFile(new Uint8Array([0]), 'rosbag.db3'), 'omni-viewer.db3Viewer'],
+            [makeFile('<REQ-IF></REQ-IF>', 'requirements.reqif'), 'omni-viewer.reqifViewer'],
+            [makeFile(new Uint8Array([0]), 'capture.pcap'), 'omni-viewer.pcapViewer'],
+            [makeFile(new Uint8Array([0]), 'capture.pcapng'), 'omni-viewer.pcapngViewer']
+        ];
+        for (const [file, viewType] of cases) {
+            const result = await FileUtils.detectViewerType(file);
+            expect(result.viewType).toBe(viewType);
+            expect(result.matchedBySignature).toBe(false);
+        }
+    });
+
     it('falls back to JSONL content sniffing for text files', async () => {
         const file = makeFile('{"id":1}\n{"id":2}\n', 'records.txt');
         const result = await FileUtils.detectViewerType(file);
@@ -489,5 +521,7 @@ describe('shortNameForViewType', () => {
         expect(shortNameForViewType('omni-viewer.mermaidViewer')).toBe('mermaid');
         expect(shortNameForViewType('omni-viewer.markdownViewer')).toBe('markdown');
         expect(shortNameForViewType('omni-viewer.plantumlViewer')).toBe('plantuml');
+        expect(shortNameForViewType('omni-viewer.avroViewer')).toBe('automotive');
+        expect(shortNameForViewType('omni-viewer.reqifViewer')).toBe('automotive');
     });
 });
