@@ -24,6 +24,7 @@ import {
     ChromeViewerProvider,
     renderUnsupported
 } from './viewerProviderUtils';
+import { createHdf5ViewerProvider } from './hdf5ViewerProvider';
 
 /**
  * Stable view-type identifiers. These are the same strings the VSCode
@@ -43,6 +44,7 @@ export type OmniViewerViewType =
     | 'omni-viewer.markdownViewer'
     | 'omni-viewer.mermaidViewer'
     | 'omni-viewer.plantumlViewer'
+    | 'omni-viewer.protoViewer'
     | 'omni-viewer.automotiveViewer'
     | 'omni-viewer.avroViewer'
     | 'omni-viewer.bagViewer'
@@ -51,6 +53,8 @@ export type OmniViewerViewType =
     | 'omni-viewer.reqifViewer'
     | 'omni-viewer.pcapViewer'
     | 'omni-viewer.pcapngViewer'
+    | 'omni-viewer.matViewer'
+    | 'omni-viewer.hdf5Viewer'
     | 'omni-viewer.parquetViewer'
     | 'omni-viewer.hwpViewer'
     | 'omni-viewer.psdViewer'
@@ -76,6 +80,7 @@ export type ViewerSlug =
     | 'markdown'
     | 'mermaid'
     | 'plantuml'
+    | 'proto'
     | 'automotive'
     | 'avro'
     | 'bag'
@@ -84,6 +89,8 @@ export type ViewerSlug =
     | 'reqif'
     | 'pcap'
     | 'pcapng'
+    | 'mat'
+    | 'hdf5'
     | 'parquet'
     | 'hwp'
     | 'psd'
@@ -219,6 +226,14 @@ export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
         createProvider: () => createPlaceholderProvider('omni-viewer.plantumlViewer')
     },
     {
+        viewType: 'omni-viewer.protoViewer',
+        slug: 'proto',
+        command: 'omni-viewer.openProtoViewer',
+        missingMessage: 'No Protocol Buffers schema selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.protoViewer')
+    },
+    {
         viewType: 'omni-viewer.automotiveViewer',
         slug: 'automotive',
         command: 'omni-viewer.openAutomotiveViewer',
@@ -281,6 +296,22 @@ export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
         missingMessage: 'No PCAPNG file selected',
         retainContextWhenHidden: true,
         createProvider: () => createPlaceholderProvider('omni-viewer.pcapngViewer')
+    },
+    {
+        viewType: 'omni-viewer.matViewer',
+        slug: 'mat',
+        command: 'omni-viewer.openMatViewer',
+        missingMessage: 'No MAT file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.matViewer')
+    },
+    {
+        viewType: 'omni-viewer.hdf5Viewer',
+        slug: 'hdf5',
+        command: 'omni-viewer.openHdf5Viewer',
+        missingMessage: 'No HDF5 file selected',
+        retainContextWhenHidden: true,
+        createProvider: createHdf5ViewerProvider
     },
     {
         viewType: 'omni-viewer.parquetViewer',
@@ -386,6 +417,7 @@ const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
     '.puml': 'plantuml',
     '.plantuml': 'plantuml',
     '.iuml': 'plantuml',
+    '.proto': 'proto',
     '.dbc': 'automotive',
     '.arxml': 'automotive',
     '.a2l': 'automotive',
@@ -403,6 +435,9 @@ const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
     '.reqif': 'reqif',
     '.pcap': 'pcap',
     '.pcapng': 'pcapng',
+    '.mat': 'mat',
+    '.h5': 'hdf5',
+    '.hdf5': 'hdf5',
     '.mp3': 'audio',
     '.wav': 'audio',
     '.ogg': 'audio',

@@ -31,6 +31,7 @@ const VIEWERS: Array<{ slug: string; mountFn: string }> = [
     { slug: 'markdown', mountFn: 'mountMarkdownViewer' },
     { slug: 'mermaid', mountFn: 'mountMermaidViewer' },
     { slug: 'plantuml', mountFn: 'mountPlantUmlViewer' },
+    { slug: 'proto', mountFn: 'mountProtoViewer' },
     { slug: 'automotive', mountFn: 'mountAutomotiveViewer' },
     { slug: 'video', mountFn: 'mountVideoViewer' },
 ];

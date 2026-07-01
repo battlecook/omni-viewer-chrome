@@ -31,6 +31,7 @@ const VIEWERS = [
   'ppt',
   'psd',
   'hwp',
+  'hdf5',
   'archive',
   'json',
   'jsonl',
@@ -39,7 +40,9 @@ const VIEWERS = [
   'markdown',
   'mermaid',
   'plantuml',
-  'automotive'
+  'automotive',
+  'mat',
+  'proto'
 ];
 
 const entries = VIEWERS.reduce((acc, viewer) => {

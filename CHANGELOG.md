@@ -2,6 +2,37 @@
 
 All notable changes to the Chrome build of Omni Viewer are documented in this file.
 
+## [0.3.0] - 2026-07-01
+
+### Added
+- Added Protocol Buffers schema viewing for `.proto` files, including Chrome
+  file-handler coverage, extension routing, and a dedicated viewer bundle.
+- Added a Proto parser that indexes syntax, package declarations, imports,
+  messages, nested messages, enums, services, RPCs, fields, oneofs, reserved
+  declarations, documentation comments, and references.
+- Added Proto diagnostics for duplicate field numbers.
+- Added HDF5 viewer support for `.h5` and `.hdf5` files, including Chrome file
+  handler coverage, extension routing, signature detection, and a dedicated
+  viewer bundle.
+- Added a lightweight HDF5 metadata parser that validates the HDF5 signature,
+  reads superblock metadata, and enumerates decoded groups and datasets without
+  loading dataset payloads.
+- Added MATLAB MAT-file inspection for `.mat` files, including MAT v4,
+  MAT v5/v6/v7, and HDF5-backed MAT v7.3 headers.
+- Added MAT variable summaries with names, classes, dimensions, data types,
+  byte sizes, attributes, and small value previews where available.
+- Added regression coverage for Proto schema indexing, HDF5 superblock
+  traversal, HDF5 signature failures, large trailing HDF5 payloads, MAT
+  v4/v5/v7.3 parsing, viewer registry entries, and bundle exports.
+
+### Changed
+- Updated the home-screen supported-format summary in English and Korean to
+  include Proto files.
+- Reused the tabular automotive-style viewer layout for MAT files while adding
+  a dedicated HDF5 provider and viewer registration for HDF5 files.
+- Expanded the main viewer routing and dynamic bundle configuration for Proto,
+  HDF5, and MAT viewers.
+
 ## [0.2.0] - 2026-06-26
 
 ### Added

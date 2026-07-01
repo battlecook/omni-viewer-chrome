@@ -41,6 +41,7 @@ export type OmniViewerViewType =
     | 'omni-viewer.reqifViewer'
     | 'omni-viewer.pcapViewer'
     | 'omni-viewer.pcapngViewer'
+    | 'omni-viewer.hdf5Viewer'
     | 'omni-viewer.parquetViewer'
     | 'omni-viewer.hwpViewer'
     | 'omni-viewer.psdViewer'
@@ -94,7 +95,7 @@ const VIDEO_EXTENSION_FALLBACK = new Set([
 const AUTOMOTIVE_TEXT_EXTENSIONS = new Set(['.dbc', '.arxml', '.a2l', '.asc']);
 const AUTOMOTIVE_BINARY_EXTENSIONS = new Set(['.blf', '.mf4', '.mdf']);
 const STRUCTURED_DATA_TEXT_EXTENSIONS = new Set(['.stp', '.step', '.reqif']);
-const STRUCTURED_DATA_BINARY_EXTENSIONS = new Set(['.avro', '.bag', '.db3', '.sqlite', '.sqlite3', '.pcap', '.pcapng']);
+const STRUCTURED_DATA_BINARY_EXTENSIONS = new Set(['.avro', '.bag', '.db3', '.sqlite', '.sqlite3', '.pcap', '.pcapng', '.h5', '.hdf5']);
 
 // Lazy decoders — jest-environment-jsdom 29 does not expose `TextDecoder`
 // as a global at module-load time. Constructing decoders on first use lets
@@ -280,6 +281,10 @@ export class FileUtils {
 
         if (await this.isParquet(file, buffer)) {
             return this.signatureMatch('omni-viewer.parquetViewer', 'Matched the Parquet magic bytes.');
+        }
+
+        if (this.matchesBytes(buffer, [0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a])) {
+            return this.signatureMatch('omni-viewer.hdf5Viewer', 'Matched the HDF5 signature.');
         }
 
         if (this.hasAsciiPrefix(buffer, 'LOGG')) {
@@ -879,6 +884,9 @@ export class FileUtils {
             return 'omni-viewer.pcapViewer';
         case '.pcapng':
             return 'omni-viewer.pcapngViewer';
+        case '.h5':
+        case '.hdf5':
+            return 'omni-viewer.hdf5Viewer';
         default:
             return 'omni-viewer.automotiveViewer';
         }
@@ -945,6 +953,8 @@ export function shortNameForViewType(viewType: OmniViewerViewType): string {
     case 'omni-viewer.pcapViewer':
     case 'omni-viewer.pcapngViewer':
         return 'automotive';
+    case 'omni-viewer.hdf5Viewer':
+        return 'hdf5';
     case 'omni-viewer.parquetViewer':
         return 'parquet';
     case 'omni-viewer.hwpViewer':

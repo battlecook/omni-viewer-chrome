@@ -191,7 +191,10 @@ const formats = {
   markdown: ['.md', '.markdown'],
   mermaid: ['.mmd', '.mermaid'],
   plantuml: ['.puml', '.plantuml', '.iuml'],
+  proto: ['.proto'],
   automotive: ['.dbc', '.arxml', '.a2l', '.asc', '.blf', '.mf4', '.mdf', '.avro', '.bag', '.stp', '.step', '.db3', '.sqlite', '.sqlite3', '.reqif', '.pcap', '.pcapng'],
+  hdf5: ['.h5', '.hdf5'],
+  mat: ['.mat'],
   audio: ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'],
   video: ['.mp4', '.webm', '.mov', '.m4v', '.ogv'],
   excel: ['.xlsx', '.xls'],
@@ -214,7 +217,10 @@ const labels = {
   markdown: 'Markdown',
   mermaid: 'Mermaid',
   plantuml: 'PlantUML',
+  proto: 'Protocol Buffers',
   automotive: 'Automotive',
+  hdf5: 'HDF5',
+  mat: 'MAT',
   audio: 'Audio',
   video: 'Video',
   excel: 'Excel',
@@ -296,6 +302,7 @@ async function detectType(file) {
   if (ascii(head, 4, 4) === 'ftyp') return ext === '.m4a' ? 'audio' : 'video';
   if (hasPrefix(head, [0x1a, 0x45, 0xdf, 0xa3])) return 'video';
   if (hasPrefix(head, [0x50, 0x41, 0x52, 0x31]) && hasPrefix(await readTail(file), [0x50, 0x41, 0x52, 0x31])) return 'parquet';
+  if (hasPrefix(head, [0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a])) return 'hdf5';
   if (ascii(head, 0, 4) === 'LOGG') return 'automotive';
   if (/^MDF\s/.test(ascii(head, 0, Math.min(head.length, 64)))) return 'automotive';
   if (ascii(head, 0, 4) === 'Obj\x01') return 'automotive';
@@ -573,7 +580,10 @@ async function renderByType() {
   if (type === 'markdown') return renderMarkdown();
   if (type === 'mermaid') return renderMermaid();
   if (type === 'plantuml') return renderPlantUml();
+  if (type === 'proto') return renderProto();
   if (type === 'automotive') return renderAutomotive();
+  if (type === 'hdf5') return renderHdf5();
+  if (type === 'mat') return renderMat();
   if (type === 'audio') return renderAudio();
   if (type === 'video') return renderMedia('video');
   if (type === 'excel') return renderExcel();
@@ -770,6 +780,17 @@ async function renderPlantUml() {
   }
 }
 
+async function renderProto() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading Protocol Buffers viewer...</p></div>';
+  try {
+    await mountAdvancedViewer('proto', 'mountProtoViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load Protocol Buffers viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
+
 async function renderAutomotive() {
   const body = panel(state.file.name);
   body.innerHTML = '<div class="unsupported"><p>Loading automotive data viewer...</p></div>';
@@ -778,6 +799,28 @@ async function renderAutomotive() {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     body.innerHTML = `<div class="unsupported"><p>Couldn't load automotive data viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
+
+async function renderHdf5() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading HDF5 viewer...</p></div>';
+  try {
+    await mountAdvancedViewer('hdf5', 'mountHdf5Viewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load HDF5 viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
+
+async function renderMat() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading MAT viewer...</p></div>';
+  try {
+    await mountAdvancedViewer('mat', 'mountMatViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load MAT viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
   }
 }
 

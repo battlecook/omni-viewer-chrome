@@ -44,7 +44,7 @@
     "description": "Drag and drop prompt."
   },
   "formatsSummary": {
-    "message": "이미지, PDF, CSV/TSV, JSON/JSONL, YAML/TOML, 미디어, Office, PSD, Parquet, HWP/HWPX, 압축 파일",
+    "message": "이미지, PDF, CSV/TSV, JSON/JSONL, YAML/TOML, Proto, 미디어, Office, PSD, Parquet, HWP/HWPX, 압축 파일",
     "description": "Summary of supported file formats."
   },
   "downloadOriginal": {

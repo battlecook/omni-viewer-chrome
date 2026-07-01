@@ -44,7 +44,7 @@
     "description": "Drag and drop prompt."
   },
   "formatsSummary": {
-    "message": "Images, PDF, CSV/TSV, JSON/JSONL, YAML/TOML, media, Office, PSD, Parquet, HWP/HWPX, archives",
+    "message": "Images, PDF, CSV/TSV, JSON/JSONL, YAML/TOML, Proto, media, Office, PSD, Parquet, HWP/HWPX, archives",
     "description": "Summary of supported file formats."
   },
   "downloadOriginal": {

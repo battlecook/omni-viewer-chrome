@@ -1,7 +1,82 @@
 import { mountAutomotiveViewer } from '../templates/automotive/js/automotiveViewerMain';
-import { parseA2l, parseArxml, parseAsc, parseAvro, parseBag, parseBlf, parseDb3, parseMf4, parsePcap, parsePcapng, parseReqif, parseStp } from '../templates/automotive/js/automotiveParsers';
+import { parseA2l, parseArxml, parseAsc, parseAvro, parseBag, parseBlf, parseDb3, parseMat, parseMf4, parsePcap, parsePcapng, parseReqif, parseStp } from '../templates/automotive/js/automotiveParsers';
 import { parseDbc } from '../templates/automotive/js/dbcParser';
 import { AUTOMOTIVE_VIEWER_CSS } from '../templates/automotive/js/automotiveViewerStyles';
+
+const MI_INT8 = 1;
+const MI_INT32 = 5;
+const MI_UINT32 = 6;
+const MI_DOUBLE = 9;
+const MI_MATRIX = 14;
+const MI_UTF8 = 16;
+
+const MX_CHAR = 4;
+const MX_DOUBLE = 6;
+
+function pad8(bytes: number[]): number[] {
+    const padding = (8 - (bytes.length % 8)) % 8;
+    return padding === 0 ? bytes : [...bytes, ...Array(padding).fill(0)];
+}
+
+function le16(value: number): number[] {
+    return [value & 0xff, (value >> 8) & 0xff];
+}
+
+function le32(value: number): number[] {
+    return [value & 0xff, (value >> 8) & 0xff, (value >> 16) & 0xff, (value >>> 24) & 0xff];
+}
+
+function f64(value: number): number[] {
+    const bytes = new Uint8Array(8);
+    new DataView(bytes.buffer).setFloat64(0, value, true);
+    return Array.from(bytes);
+}
+
+function element(type: number, payload: number[]): number[] {
+    if (payload.length <= 4) {
+        return [...le16(type), ...le16(payload.length), ...payload, ...Array(4 - payload.length).fill(0)];
+    }
+    return [...le32(type), ...le32(payload.length), ...pad8(payload)];
+}
+
+function matrix(name: string, classId: number, dimensions: number[], dataType: number, data: number[]): number[] {
+    const flags = [...le32(classId), ...le32(0)];
+    const dims = dimensions.flatMap(le32);
+    const nameBytes = Array.from(name, (char) => char.charCodeAt(0));
+    return element(MI_MATRIX, [
+        ...element(MI_UINT32, flags),
+        ...element(MI_INT32, dims),
+        ...element(MI_INT8, nameBytes),
+        ...element(dataType, data)
+    ]);
+}
+
+function createLevel5Mat(): Uint8Array {
+    const header = new Uint8Array(128);
+    header.fill(0x20);
+    header.set(Array.from('MATLAB 5.0 MAT-file, Platform: omni-viewer, Created for tests', (char) => char.charCodeAt(0)));
+    new DataView(header.buffer).setUint16(124, 0x0100, true);
+    header.set([0x49, 0x4d], 126);
+    return new Uint8Array([
+        ...Array.from(header),
+        ...matrix('answer', MX_DOUBLE, [1, 3], MI_DOUBLE, [1.5, 2.5, 3.5].flatMap(f64)),
+        ...matrix('label', MX_CHAR, [1, 5], MI_UTF8, Array.from('hello', (char) => char.charCodeAt(0)))
+    ]);
+}
+
+function createLevel4Mat(): Uint8Array {
+    const name = [...Array.from('legacy', (char) => char.charCodeAt(0)), 0];
+    const values = [10, 20, 30, 40].flatMap(f64);
+    return new Uint8Array([
+        ...le32(0),
+        ...le32(2),
+        ...le32(2),
+        ...le32(0),
+        ...le32(name.length),
+        ...name,
+        ...values
+    ]);
+}
 
 describe('automotive viewer', () => {
     it('loads and summarizes an A2L file', async () => {
@@ -116,6 +191,24 @@ describe('automotive parsers', () => {
 
         const reqif = parseReqif('<REQ-IF-HEADER IDENTIFIER="h"><TITLE>Spec</TITLE></REQ-IF-HEADER><SPECIFICATION IDENTIFIER="s1" LONG-NAME="System spec"/>', '1 KB');
         expect(reqif.summary.find((item) => item.label === 'Specifications')?.value).toBe(1);
+    });
+
+    it('parses MATLAB MAT v5, v4, and v7.3 headers', () => {
+        const v5 = createLevel5Mat();
+        const model = parseMat(v5, `${v5.length} bytes`);
+        expect(model.format).toBe('MAT v5/v6/v7');
+        expect(model.summary.find((item) => item.label === 'Variables')?.value).toBe(2);
+        expect(model.tables[0].rows).toContainEqual(['answer', 'double', '1 × 3', 'miDOUBLE', expect.any(Number), '-', '1.5, 2.5, 3.5']);
+        expect(model.tables[0].rows).toContainEqual(['label', 'char', '1 × 5', 'miUTF8', expect.any(Number), '-', '"hello"']);
+
+        const v4 = createLevel4Mat();
+        const legacy = parseMat(v4, `${v4.length} bytes`);
+        expect(legacy.format).toBe('MAT v4');
+        expect(legacy.tables[0].rows[0]).toEqual(['legacy', 'double', '2 × 2', 'MOPT 0', v4.length, '-', '10, 20, 30, 40']);
+
+        const hdf5 = parseMat(new Uint8Array([0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a]), '8 B');
+        expect(hdf5.format).toBe('MAT v7.3');
+        expect(hdf5.warnings.join(' ')).toContain('HDF5 containers');
     });
 
     it('decodes PCAP packet records and the PCAPNG section header', () => {

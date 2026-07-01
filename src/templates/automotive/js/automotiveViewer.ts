@@ -27,7 +27,8 @@ for (const viewType of [
     'omni-viewer.db3Viewer',
     'omni-viewer.reqifViewer',
     'omni-viewer.pcapViewer',
-    'omni-viewer.pcapngViewer'
+    'omni-viewer.pcapngViewer',
+    'omni-viewer.matViewer'
 ] as const) {
     const registration = VIEWER_REGISTRATIONS.find((r) => r.viewType === viewType);
     if (registration) {

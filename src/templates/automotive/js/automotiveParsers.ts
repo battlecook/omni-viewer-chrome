@@ -1,3 +1,7 @@
+import { parseMat } from './matParser';
+import { Hdf5Parser } from '../../../utils/hdf5Parser';
+export { parseMat } from './matParser';
+
 export interface AutomotiveSummaryItem { label: string; value: string | number; }
 export interface AutomotiveTable { title: string; headers: string[]; rows: Array<Array<string | number>>; }
 export interface AutomotiveViewerModel {
@@ -23,6 +27,8 @@ export async function parseAutomotiveFile(file: File): Promise<AutomotiveViewerM
     if (ext === '.stp' || ext === '.step') return parseStp(await readBlobText(file), formatSize(file.size));
     if (ext === '.reqif') return parseReqif(await readBlobText(file), formatSize(file.size));
     const bytes = new Uint8Array(await readBlobBuffer(file));
+    if (ext === '.h5' || ext === '.hdf5') return Hdf5Parser.parse(bytes, formatSize(file.size));
+    if (ext === '.mat') return parseMat(bytes, formatSize(file.size));
     if (ext === '.blf') return parseBlf(bytes, formatSize(file.size));
     if (ext === '.avro') return parseAvro(bytes, formatSize(file.size));
     if (ext === '.bag') return parseBag(bytes, formatSize(file.size));
