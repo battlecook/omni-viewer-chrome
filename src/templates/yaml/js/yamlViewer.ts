@@ -11,38 +11,35 @@
 //      (`src/templates/yaml/yamlViewer.html`) for manual debugging via
 //      "Load unpacked" + chrome://extensions.
 
-import { mountYamlViewer, YamlViewerHandle } from './yamlViewerMain';
-import { VIEWER_REGISTRATIONS } from '../../../viewerRegistry';
-import type { ChromeViewerProvider } from '../../../viewerProviderUtils';
+import { mountYamlViewer as mountCoreYamlViewer } from 'omni-viewer-core/viewers/yaml';
+import { loadYamlParserDeps } from 'omni-viewer-core/parsers/yaml/self-loading';
+import type { ViewerHandle } from 'omni-viewer-core/viewers/types';
+import { resolveCatalogMessage } from 'omni-viewer-core/i18n';
+import { createChromeFileSaveService } from '../../../utils/chromeFileSaveService';
 
-export { mountYamlViewer };
-export type { YamlViewerHandle };
+export type YamlViewerHandle = ViewerHandle;
 
-// --- Provider wiring (side effect on module load) -----------------------
-
-function createYamlProvider(): ChromeViewerProvider {
-    let handle: YamlViewerHandle | undefined;
-    return {
-        async render(file: File, container: HTMLElement): Promise<void> {
-            handle?.dispose();
-            handle = await mountYamlViewer(file, container);
-        },
-        dispose(): void {
-            handle?.dispose();
-            handle = undefined;
-        }
+function context() {
+    const chromeI18n = typeof chrome !== 'undefined' && chrome.i18n?.getMessage ? chrome.i18n : undefined;
+    const ctx = {
+        assets: { resolveAssetUrl: async (path: string) => typeof chrome !== 'undefined' && chrome.runtime?.getURL ? chrome.runtime.getURL(path) : path },
+        i18n: { t: (key: string, args?: Record<string, string | number>) => chromeI18n?.getMessage(key.replace(/[.-]/g, '_')) || resolveCatalogMessage(key, args) },
+        logger: { log: (level: 'info' | 'warn' | 'error', message: string) => console[level === 'info' ? 'info' : level]('[omni-viewer yaml]', message) }
     };
+    if (typeof navigator !== 'undefined' && navigator.clipboard) Object.assign(ctx, { clipboard: { writeText: (text: string) => navigator.clipboard.writeText(text) } });
+    const save = createChromeFileSaveService();
+    if (save) Object.assign(ctx, { save });
+    return ctx;
 }
 
-function installYamlProvider(): void {
-    const entry = VIEWER_REGISTRATIONS.find(
-        (r) => r.viewType === 'omni-viewer.yamlViewer'
+export async function mountYamlViewer(file: File, container: HTMLElement): Promise<YamlViewerHandle> {
+    return mountCoreYamlViewer(
+        { fileName: file.name, data: new Uint8Array(await file.arrayBuffer()), lastModified: file.lastModified },
+        container,
+        context(),
+        { deps: await loadYamlParserDeps() }
     );
-    if (!entry) return;
-    entry.createProvider = createYamlProvider;
 }
-
-installYamlProvider();
 
 // --- Self-bootstrap for the per-viewer HTML shell -----------------------
 

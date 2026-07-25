@@ -2,6 +2,7 @@ const $ = (selector) => document.querySelector(selector);
 
 const state = {
   file: null,
+  fileHandle: null,
   type: 'unknown',
   objectUrl: null,
   pdfScale: 1.1,
@@ -466,7 +467,10 @@ async function mountAdvancedViewer(slug, mountFnName, container) {
   if (typeof mountFn !== 'function') {
     throw new Error(`${slug} bundle missing ${mountFnName}`);
   }
-  const handle = await mountFn(state.file, container);
+  // Pass the writable FileSystemFileHandle (launchQueue path only; null
+  // otherwise) as a third arg. Viewers that don't support in-place writeback
+  // simply ignore it.
+  const handle = await mountFn(state.file, container, state.fileHandle);
   if (handle && typeof handle.dispose === 'function') {
     state.advancedViewerHandle = handle;
   }
@@ -500,10 +504,14 @@ function downloadBlob(blob, fileName) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-async function openFile(file) {
+async function openFile(file, handle = null) {
   releaseAudio();
   releaseAdvancedViewer();
   state.file = file;
+  // Only the file_handlers (launchQueue) path supplies a writable
+  // FileSystemFileHandle; input/drop paths pass none, so writeback stays off
+  // and those viewers fall back to a download save.
+  state.fileHandle = handle ?? null;
   shareCurrentFileButton.disabled = false;
   state.type = await detectType(file);
   setStatus('');
@@ -1849,6 +1857,6 @@ chrome.storage?.local?.get?.(['theme']).then((result) => {
 if ('launchQueue' in window) {
   window.launchQueue.setConsumer(async (launchParams) => {
     const [handle] = launchParams.files || [];
-    if (handle) openFile(await handle.getFile());
+    if (handle) openFile(await handle.getFile(), handle);
   });
 }

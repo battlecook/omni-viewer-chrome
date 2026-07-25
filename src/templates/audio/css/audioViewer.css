@@ -132,7 +132,12 @@
     padding: 10px;
     position: relative;
     min-height: 0;
-    overflow: auto;
+    /* Horizontal scrolling is owned by wavesurfer's internal `.scroll`
+     * element; letting this outer container also scroll horizontally spawns
+     * a redundant second scrollbar in spectrogram mode (issue: duplicate
+     * scrollbar). Keep vertical overflow, drop horizontal. */
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .audio-viewer-host .js-timeline {

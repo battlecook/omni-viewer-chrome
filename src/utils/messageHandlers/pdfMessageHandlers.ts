@@ -103,7 +103,7 @@ export class PdfMessageHandlers {
             }
 
             // TODO(pdf viewer port): integrate pdf-lib to merge cached PDFs,
-            // apply text/signatures, write via chrome.downloads. For now we
+            // apply text/signatures, and start a browser-managed download. For now we
             // simply notify the page so the UI can show a friendly message.
             this.resetMergedPdfCache(documentUri);
 

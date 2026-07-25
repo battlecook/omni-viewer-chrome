@@ -15,21 +15,32 @@
 //      (e.g. integration test pages) can call into the bundle without
 //      re-importing it.
 
-import { VIEWER_REGISTRATIONS } from '../../../viewerRegistry';
-import type { ChromeViewerProvider } from '../../../viewerProviderUtils';
-import { mountTomlViewer, TomlViewerHandle } from './tomlViewerMain';
+import { mountTomlViewer as mountCoreTomlViewer } from 'omni-viewer-core/viewers/toml';
+import type { ViewerHandle } from 'omni-viewer-core/viewers/types';
+import { resolveCatalogMessage } from 'omni-viewer-core/i18n';
+import { createChromeFileSaveService } from '../../../utils/chromeFileSaveService';
 
-export { mountTomlViewer };
-export type { TomlViewerHandle };
+export type TomlViewerHandle = ViewerHandle;
 
-const TARGET_VIEW_TYPE = 'omni-viewer.tomlViewer';
-const registration = VIEWER_REGISTRATIONS.find((r) => r.viewType === TARGET_VIEW_TYPE);
-if (registration) {
-    registration.createProvider = (): ChromeViewerProvider => ({
-        async render(file: File, container: HTMLElement): Promise<void> {
-            await mountTomlViewer(file, container);
-        }
-    });
+function context() {
+    const chromeI18n = typeof chrome !== 'undefined' && chrome.i18n?.getMessage ? chrome.i18n : undefined;
+    const ctx = {
+        assets: { resolveAssetUrl: async (path: string) => typeof chrome !== 'undefined' && chrome.runtime?.getURL ? chrome.runtime.getURL(path) : path },
+        i18n: { t: (key: string, args?: Record<string, string | number>) => chromeI18n?.getMessage(key.replace(/[.-]/g, '_')) || resolveCatalogMessage(key, args) },
+        logger: { log: (level: 'info' | 'warn' | 'error', message: string) => console[level === 'info' ? 'info' : level]('[omni-viewer toml]', message) }
+    };
+    if (typeof navigator !== 'undefined' && navigator.clipboard) Object.assign(ctx, { clipboard: { writeText: (text: string) => navigator.clipboard.writeText(text) } });
+    const save = createChromeFileSaveService();
+    if (save) Object.assign(ctx, { save });
+    return ctx;
+}
+
+export async function mountTomlViewer(file: File, container: HTMLElement): Promise<TomlViewerHandle> {
+    // Keep the Source pane as the stable viewport. Tree expand/collapse then
+    // scrolls inside the right pane instead of resizing both panes.
+    container.style.height = 'min(78vh, 900px)';
+    container.style.minHeight = '560px';
+    return mountCoreTomlViewer({ fileName: file.name, data: new Uint8Array(await file.arrayBuffer()), lastModified: file.lastModified }, container, context());
 }
 
 declare global {

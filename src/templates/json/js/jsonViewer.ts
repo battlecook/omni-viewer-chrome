@@ -11,38 +11,40 @@
 //      (`src/templates/json/jsonViewer.html`) for manual debugging via
 //      "Load unpacked" + chrome://extensions.
 
-import { mountJsonViewer, JsonViewerHandle } from './jsonViewerMain';
-import { VIEWER_REGISTRATIONS } from '../../../viewerRegistry';
-import type { ChromeViewerProvider } from '../../../viewerProviderUtils';
+import { mountJsonViewer as mountCoreJsonViewer } from 'omni-viewer-core/viewers/json';
+import type { JsonViewerContext } from 'omni-viewer-core/viewers/json';
+import { resolveCatalogMessage } from 'omni-viewer-core/i18n';
+import { createChromeFileSaveService } from '../../../utils/chromeFileSaveService';
 
-export { mountJsonViewer };
-export type { JsonViewerHandle };
+export interface JsonViewerHandle { dispose(): void; }
 
-// --- Provider wiring (side effect on module load) -----------------------
-
-function createJsonProvider(): ChromeViewerProvider {
-    let handle: JsonViewerHandle | undefined;
-    return {
-        async render(file: File, container: HTMLElement): Promise<void> {
-            handle?.dispose();
-            handle = await mountJsonViewer(file, container);
-        },
-        dispose(): void {
-            handle?.dispose();
-            handle = undefined;
-        }
+function context(): JsonViewerContext {
+    const chromeI18n = typeof chrome !== 'undefined' && chrome.i18n?.getMessage
+        ? chrome.i18n : undefined;
+    const ctx: JsonViewerContext = {
+        assets: { resolveAssetUrl: async (path) =>
+            typeof chrome !== 'undefined' && chrome.runtime?.getURL ? chrome.runtime.getURL(path) : path },
+        i18n: { t: (key, args) => chromeI18n?.getMessage(key.replace(/[.-]/g, '_')) || resolveCatalogMessage(key, args) },
+        logger: { log: (level, message) => console[level === 'info' ? 'info' : level]('[omni-viewer json]', message) }
     };
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        ctx.clipboard = { writeText: (text) => navigator.clipboard.writeText(text) };
+    }
+    ctx.save = createChromeFileSaveService();
+    return ctx;
 }
 
-function installJsonProvider(): void {
-    const entry = VIEWER_REGISTRATIONS.find(
-        (r) => r.viewType === 'omni-viewer.jsonViewer'
+export async function mountJsonViewer(file: File, container: HTMLElement): Promise<JsonViewerHandle> {
+    // The SPA panel is content-sized by default; establish the viewer viewport
+    // so the core's tree/source panes can manage their own scrolling.
+    container.style.height = 'min(78vh, 900px)';
+    container.style.minHeight = '560px';
+    return mountCoreJsonViewer(
+        { fileName: file.name, data: new Uint8Array(await file.arrayBuffer()), lastModified: file.lastModified },
+        container,
+        context()
     );
-    if (!entry) return;
-    entry.createProvider = createJsonProvider;
 }
-
-installJsonProvider();
 
 // --- Self-bootstrap for the per-viewer HTML shell -----------------------
 

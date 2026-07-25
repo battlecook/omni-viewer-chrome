@@ -59,7 +59,6 @@ interface ViewerDom {
     resultPanel: HTMLElement;
     resultOutput: HTMLPreElement;
     copyResultButton: HTMLButtonElement;
-    replaceResultButton: HTMLButtonElement;
     closeResultButton: HTMLButtonElement;
     editor: HTMLTextAreaElement;
     status: HTMLElement;
@@ -184,17 +183,14 @@ export async function mountJsonViewer(
         }
     };
     const onCopyResult = () => { void navigator.clipboard?.writeText(dom.resultOutput.textContent || ''); };
-    const onReplaceResult = () => { dom.editor.value = dom.resultOutput.textContent || ''; dom.editor.dispatchEvent(new Event('input')); dom.resultPanel.style.display = 'none'; };
     const onCloseResult = () => { dom.resultPanel.style.display = 'none'; };
     dom.actions.addEventListener('click', onAction);
     dom.copyResultButton.addEventListener('click', onCopyResult);
-    dom.replaceResultButton.addEventListener('click', onReplaceResult);
     dom.closeResultButton.addEventListener('click', onCloseResult);
 
     const cleanups: Array<() => void> = [];
     cleanups.push(() => dom.actions.removeEventListener('click', onAction));
     cleanups.push(() => dom.copyResultButton.removeEventListener('click', onCopyResult));
-    cleanups.push(() => dom.replaceResultButton.removeEventListener('click', onReplaceResult));
     cleanups.push(() => dom.closeResultButton.removeEventListener('click', onCloseResult));
     const onEditorInput = () => {
         state.rawText = dom.editor.value;
@@ -366,9 +362,8 @@ function buildShell(container: HTMLElement, fileName: string): ViewerDom {
     const resultTitle = document.createElement('strong'); resultTitle.className = 'jv-result-title';
     const resultActions = document.createElement('div'); resultActions.className = 'jv-result-actions';
     const copyResultButton = document.createElement('button'); copyResultButton.type = 'button'; copyResultButton.className = 'jv-button'; copyResultButton.textContent = 'Copy';
-    const replaceResultButton = document.createElement('button'); replaceResultButton.type = 'button'; replaceResultButton.className = 'jv-button'; replaceResultButton.textContent = 'Replace Editor';
     const closeResultButton = document.createElement('button'); closeResultButton.type = 'button'; closeResultButton.className = 'jv-button'; closeResultButton.textContent = 'Close';
-    resultActions.append(copyResultButton, replaceResultButton, closeResultButton); resultHeader.append(resultTitle, resultActions);
+    resultActions.append(copyResultButton, closeResultButton); resultHeader.append(resultTitle, resultActions);
     const resultOutput = document.createElement('pre'); resultOutput.className = 'jv-result-output';
     resultPanel.append(resultHeader, resultOutput);
 
@@ -392,7 +387,7 @@ function buildShell(container: HTMLElement, fileName: string): ViewerDom {
         sourceButton,
         treeHost,
         sourceHost,
-        actions, resultPanel, resultOutput, copyResultButton, replaceResultButton, closeResultButton, editor, status
+        actions, resultPanel, resultOutput, copyResultButton, closeResultButton, editor, status
     };
 }
 

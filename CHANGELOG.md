@@ -2,6 +2,33 @@
 
 All notable changes to the Chrome build of Omni Viewer are documented in this file.
 
+## [0.4.0] - 2026-07-25
+
+### Added
+- Rendered LaTeX math in Markdown via KaTeX: `katex.min.css` and its fonts are
+  bundled and injected into the viewer's shadow root and the document head so
+  inline (`$…$`) and display (`$$…$$`) math display correctly.
+
+### Changed
+- Migrated supported viewer adapters to `omni-viewer-core` 0.8.0 while keeping
+  the existing Chrome image viewer and its editing workflow.
+- Unified viewer Save/Export actions on browser-managed downloads without the
+  `downloads` permission.
+- Upgraded `puml-canvas-js` to 0.10.0 for PlantUML diagram rendering in
+  Markdown documents.
+- Switched the spreadsheet engine to SheetJS (`xlsx`) 0.20.3.
+- Updated DOMPurify to 3.4.12 or newer and declared the runtime peer
+  dependencies (including `katex` and `buffer`) required by the published core
+  package.
+
+### Fixed
+- Preserved Chrome-specific keyboard, asset, localization, file-picking, and
+  save integration around the shared core viewers.
+- Restored a warning when an archive contains encrypted entries that the
+  current extraction backend cannot extract.
+- Aligned the Web Store permission copy with the packaged manifest and actual
+  download behavior.
+
 ## [0.3.0] - 2026-07-01
 
 ### Added

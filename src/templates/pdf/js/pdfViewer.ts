@@ -1,103 +1,79 @@
-// Webpack entry for the PDF viewer (issue #16).
+// PDF viewer entry — Chrome adapter over omni-viewer-core.
 //
-// Three responsibilities (parallel to `imageViewer.ts` from issue #9):
-//
-//   1. Re-export the public surface (`mountPdfViewer`) so callers that
-//      import the bundled chunk get a stable API.
-//
-//   2. Wire the implementation into the registry as a SIDE EFFECT at
-//      module load time. The registry (`src/viewerRegistry.ts`) ships a
-//      placeholder `createPlaceholderProvider('omni-viewer.pdfViewer')`
-//      because per-viewer code is built in dedicated issues. We override
-//      that placeholder by replacing the registration's `createProvider`
-//      with one that returns a real provider built around
-//      `mountPdfViewer`. The registry array is exported and the override
-//      is harmless if the entry is loaded twice (idempotent property
-//      write). This keeps the change scoped to `src/templates/pdf/**`
-//      per #16 guardrails — no edits to `src/viewerRegistry.ts` or
-//      `src/router.ts`.
-//
-//   3. Self-bootstrap when this script is loaded directly by the
-//      per-viewer page shell (`src/templates/pdf/pdfViewer.html`).
-//      That shell is the manual-debug entry point: the script reads a
-//      `?src=<blob-url>` query param and mounts the viewer into the
-//      `data-viewer="pdf"` host element.
+// Chrome keeps only file/URL/i18n/download integration here. Rendering,
+// zoom, page lifecycle and future PDF editing behavior live in the core.
 
-import { mountPdfViewer, PdfViewerHandle } from './pdfViewerMain';
-import { VIEWER_REGISTRATIONS } from '../../../viewerRegistry';
-import type { ChromeViewerProvider } from '../../../viewerProviderUtils';
+// Static imports on purpose: this entry is already lazy-loaded by app.js's
+// mountAdvancedViewer, and webpack async chunks are one more thing that can
+// 404 inside an extension page. The bundled pdfjs API version is locked to
+// the worker file webpack copies into dist/assets/pdfjs/.
+import * as pdfjsModule from 'pdfjs-dist/build/pdf.mjs';
+import * as pdfLibModule from 'pdf-lib';
+import {
+    mountPdfViewer as mountCorePdfViewer,
+    type PdfJsModule,
+    type PdfViewerContext,
+    type PdfViewerDeps
+} from 'omni-viewer-core/viewers/pdf';
+import { resolveCatalogMessage } from 'omni-viewer-core/i18n';
+import { createChromeFileSaveService } from '../../../utils/chromeFileSaveService';
 
-export { mountPdfViewer };
-export type { PdfViewerHandle };
+const coreDeps: PdfViewerDeps = {
+    loadPdfjs: async () => pdfjsModule as unknown as PdfJsModule,
+    loadPdfLib: async () => pdfLibModule
+};
 
-// --- Provider wiring (side effect on module load) -----------------------
+export interface PdfViewerHandle { dispose(): void; }
 
-function createPdfProvider(): ChromeViewerProvider {
-    let handle: PdfViewerHandle | undefined;
-    return {
-        render(file: File, container: HTMLElement): void {
-            handle?.dispose();
-            handle = mountPdfViewer(file, container);
-        },
-        dispose(): void {
-            handle?.dispose();
-            handle = undefined;
-        }
+function context(): PdfViewerContext {
+    const chromeI18n = typeof chrome !== 'undefined' && chrome.i18n?.getMessage
+        ? chrome.i18n : undefined;
+    const ctx: PdfViewerContext = {
+        assets: { resolveAssetUrl: async (assetPath) =>
+            // dist/assets/pdfjs/* is copied from the same pdfjs-dist install
+            // webpack bundles, so the core's asset path maps straight through.
+            typeof chrome !== 'undefined' && chrome.runtime?.getURL
+                ? chrome.runtime.getURL(assetPath)
+                : assetPath },
+        i18n: { t: (key, args) => chromeI18n?.getMessage(key.replace(/[.-]/g, '_')) || resolveCatalogMessage(key, args) },
+        logger: { log: (level, message) => console[level === 'info' ? 'info' : level]('[omni-viewer pdf]', message) }
     };
-}
-
-function installPdfProvider(): void {
-    const entry = VIEWER_REGISTRATIONS.find(
-        (r) => r.viewType === 'omni-viewer.pdfViewer'
-    );
-    if (!entry) {
-        // The registry shape is fixed at compile time; this branch only
-        // fires if something deeply weird has happened to the bundle.
-        return;
+    if (typeof document !== 'undefined') {
+        ctx.save = createChromeFileSaveService();
+        ctx.filePick = { pickFile: ({ accept, maxBytes }) => new Promise((resolve) => {
+            const picker = document.createElement('input'); picker.type = 'file'; picker.accept = accept.join(',');
+            picker.onchange = async () => { const file = picker.files?.[0]; if (!file || (maxBytes !== undefined && file.size > maxBytes)) return resolve(undefined); resolve({ fileName: file.name, data: new Uint8Array(await file.arrayBuffer()), mimeType: file.type || undefined }); };
+            picker.click();
+        }) };
     }
-    entry.createProvider = createPdfProvider;
+    return ctx;
 }
 
-installPdfProvider();
+async function bytes(file: File): Promise<Uint8Array> { return new Uint8Array(await file.arrayBuffer()); }
 
-// --- Self-bootstrap for the per-viewer HTML shell -----------------------
-
-function isSelfBootstrap(): boolean {
-    if (typeof document === 'undefined') return false;
-    return !!document.querySelector('[data-viewer="pdf"]');
+export async function mountPdfViewer(file: File, container: HTMLElement): Promise<PdfViewerHandle> {
+    // The SPA panel is content-sized by default. Give the core viewer a real
+    // viewport so its page pane (rather than the whole extension document)
+    // owns vertical scrolling.
+    container.style.height = 'min(78vh, 900px)';
+    container.style.minHeight = '560px';
+    const data = await bytes(file);
+    return mountCorePdfViewer(
+        { fileName: file.name, data, lastModified: file.lastModified },
+        container,
+        context(),
+        coreDeps
+    );
 }
+
+declare global { interface Window { __omniMountPdf?: typeof mountPdfViewer; } }
+if (typeof window !== 'undefined') window.__omniMountPdf = mountPdfViewer;
 
 async function selfBootstrap(): Promise<void> {
     const host = document.querySelector<HTMLElement>('[data-viewer="pdf"]');
-    if (!host) return;
-
-    const params = new URLSearchParams(window.location.search);
-    const src = params.get('src');
-    if (!src) {
-        host.textContent = 'No PDF source provided.';
-        return;
-    }
-
-    try {
-        const resp = await fetch(src);
-        const blob = await resp.blob();
-        const name = decodeURIComponent(src.split('/').pop() || 'document.pdf');
-        const file = new File([blob], name, {
-            type: blob.type || 'application/pdf'
-        });
-        mountPdfViewer(file, host);
-    } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        host.textContent = `Failed to load PDF: ${message}`;
-    }
+    const src = new URLSearchParams(window.location.search).get('src');
+    if (!host || !src) return;
+    try { const response = await fetch(src); await mountPdfViewer(new File([await response.blob()], decodeURIComponent(src.split('/').pop() || 'document.pdf'), { type: 'application/pdf' }), host); }
+    catch (error) { host.textContent = `Failed to load PDF: ${String(error)}`; }
 }
-
-if (isSelfBootstrap()) {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            void selfBootstrap();
-        });
-    } else {
-        void selfBootstrap();
-    }
-}
+if (typeof document !== 'undefined' && document.querySelector('[data-viewer="pdf"]')) void selfBootstrap();

@@ -106,8 +106,8 @@ describe('storeManifest invariants', () => {
     });
 
     describe('permissions are minimized', () => {
-        // The store listing justifies exactly `storage`. Anything else
-        // requires a corresponding update in `store/listing.md`.
+        // The store listing justifies exactly `storage`. Save/Export uses a
+        // normal anchor download and must not require the downloads API.
         const ALLOWED_PERMISSIONS = new Set<string>(['storage']);
 
         it('declares only the allow-listed permissions', () => {
@@ -120,6 +120,11 @@ describe('storeManifest invariants', () => {
         it('declares the storage permission (used for UI preferences)', () => {
             const declared = manifest.permissions ?? [];
             expect(declared).toContain('storage');
+        });
+
+        it('does not require the downloads permission', () => {
+            const declared = manifest.permissions ?? [];
+            expect(declared).not.toContain('downloads');
         });
 
         it('does not declare any unexpected permissions', () => {

@@ -35,10 +35,8 @@ export async function mountPlantUmlViewer(file: File, container: HTMLElement): P
     const renderDiagram = () => {
         dom.status.textContent = 'Rendering'; dom.message.hidden = true;
         try {
-            const svg = renderPlantUml(dom.source.value, { document });
-            if (dom.renderMode.value === 'dark') {
-                svg.style.background = '#111827'; svg.style.color = '#f9fafb';
-            }
+            const theme = dom.renderMode.value === 'dark' ? 'dark' : 'light';
+            const svg = renderPlantUml(dom.source.value, { document, theme });
             renderedSvg = new XMLSerializer().serializeToString(svg);
             dom.diagram.replaceChildren(svg); dom.status.textContent = 'Rendered'; dom.status.className = 'plantuml-status is-valid';
         } catch (error) { renderedSvg = ''; dom.diagram.replaceChildren(); showMessage(dom, errorMessage(error)); }

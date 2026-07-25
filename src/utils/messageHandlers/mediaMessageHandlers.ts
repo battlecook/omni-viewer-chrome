@@ -1,4 +1,5 @@
 import { WebviewMessage } from './types';
+import { createChromeFileSaveService } from '../chromeFileSaveService';
 
 /**
  * Browser-only port of VSCode's MediaMessageHandlers.
@@ -6,9 +7,8 @@ import { WebviewMessage } from './types';
  * VSCode original wrote bytes to disk via `vscode.workspace.fs.writeFile`
  * and prompted with `showSaveDialog`. In a Chrome extension we can't write
  * arbitrary local files, so saving is implemented via the standard browser
- * download flow: build a `Blob` and either dispatch it via the
- * `chrome.downloads` API (when present, e.g. inside background) or trigger
- * an `<a download>` click in the viewer page.
+ * download flow through the same permission-free `<a download>` service used
+ * by the core viewer adapters.
  *
  * `documentUri` here is just the original file's URL/path string (or
  * undefined). It is kept as the second parameter to preserve the VSCode
@@ -114,48 +114,9 @@ export class MediaMessageHandlers {
         data: Uint8Array,
         mimeType: string
     ): Promise<void> {
-        const blob = new Blob([data], { type: mimeType });
-
-        // Prefer chrome.downloads.download when available (background context).
-        const downloadsApi: any =
-            typeof chrome !== 'undefined' && (chrome as any).downloads
-                ? (chrome as any).downloads
-                : null;
-        if (downloadsApi && typeof downloadsApi.download === 'function') {
-            const url = URL.createObjectURL(blob);
-            await new Promise<void>((resolve) => {
-                try {
-                    downloadsApi.download(
-                        { url, filename: fileName, saveAs: true },
-                        () => {
-                            // Free the object URL on next tick; we can't know
-                            // exactly when chrome.downloads is finished reading
-                            // it, but a microtask delay is enough in practice.
-                            setTimeout(() => URL.revokeObjectURL(url), 0);
-                            resolve();
-                        }
-                    );
-                } catch {
-                    URL.revokeObjectURL(url);
-                    resolve();
-                }
-            });
-            return;
-        }
-
-        // Fallback: anchor-click in the viewer page.
-        if (typeof document === 'undefined') {
-            throw new Error('No download mechanism available in this context');
-        }
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 0);
+        const save = createChromeFileSaveService();
+        if (!save) throw new Error('No download mechanism available in this context');
+        await save.saveFile(fileName, data, mimeType);
     }
 
     private static guessMimeFromFileName(fileName: string): string | null {

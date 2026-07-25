@@ -1,91 +1,116 @@
-// Webpack entry for the Chrome PPT viewer (issue #46).
-//
-// Same three responsibilities as `wordViewer.ts` / `excelViewer.ts`:
-//   1. Re-export `mountPptViewer` so callers that import the bundled
-//      chunk get a stable API.
-//   2. Self-register as a side effect on module load by replacing the
-//      placeholder `createProvider` in `VIEWER_REGISTRATIONS` for
-//      `omni-viewer.pptViewer`.
-//   3. Self-bootstrap when this script is loaded directly by the
-//      per-viewer page shell (`src/templates/ppt/pptViewer.html`).
+// PowerPoint viewer entry — Chrome adapter over omni-viewer-core.
+import {
+    mountPptViewer as mountCorePptViewer,
+    type PptViewerHandle
+} from 'omni-viewer-core/viewers/ppt';
+import type { HostContext } from 'omni-viewer-core/host';
+import { resolveCatalogMessage } from 'omni-viewer-core/i18n';
 
-import { VIEWER_REGISTRATIONS } from '../../../viewerRegistry';
-import type { ChromeViewerProvider } from '../../../viewerProviderUtils';
-import { mountPptViewer, PptViewerHandle } from './pptViewerMain';
-
-export { mountPptViewer };
-export type { PptViewerHandle };
-
-// --- Provider wiring (side effect on module load) ---------------------
-
-function createPptProvider(): ChromeViewerProvider {
-    let handle: PptViewerHandle | undefined;
+function context(): HostContext {
+    const chromeI18n = typeof chrome !== 'undefined' && chrome.i18n?.getMessage
+        ? chrome.i18n : undefined;
     return {
-        render(file: File, container: HTMLElement): void {
-            handle?.dispose();
-            handle = mountPptViewer(file, container);
-        },
+        assets: { resolveAssetUrl: async (path) =>
+            typeof chrome !== 'undefined' && chrome.runtime?.getURL ? chrome.runtime.getURL(path) : path },
+        i18n: { t: (key, args) => chromeI18n?.getMessage(key.replace(/[.-]/g, '_')) || resolveCatalogMessage(key, args) },
+        logger: { log: (level, message) => console[level === 'info' ? 'info' : level]('[omni-viewer ppt]', message) }
+    };
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+    const element = target as HTMLElement | null;
+    if (!element || typeof element.tagName !== 'string') return false;
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName)) return true;
+    return element.isContentEditable;
+}
+
+/** Restore the Chrome viewer's slide-navigation shortcuts around core's
+ * public controller. Zoom shortcuts remain owned by core. */
+export function installPptKeyboardNavigation(
+    container: HTMLElement,
+    handle: PptViewerHandle
+): () => void {
+    if (handle.mode !== 'slides') return () => undefined;
+
+    const onKeydown = (event: KeyboardEvent): void => {
+        if (isEditableTarget(event.target)) return;
+        if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+        let action: 'previous' | 'next' | undefined;
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowUp' || event.key === 'PageUp') {
+            action = 'previous';
+        } else if (
+            event.key === 'ArrowRight'
+            || event.key === 'ArrowDown'
+            || event.key === 'PageDown'
+            || event.key === ' '
+        ) {
+            action = 'next';
+        }
+        if (!action) return;
+
+        event.preventDefault();
+        handle.controller.dispatch({ type: action });
+        if (handle.controller.state.mode === 'continuous') {
+            const root = container.shadowRoot ?? container;
+            const currentSlide = root.querySelector<HTMLElement>(
+                `[aria-label="Slide ${handle.controller.state.currentSlide}"]`
+            );
+            currentSlide?.scrollIntoView?.({ block: 'start' });
+        }
+    };
+
+    document.addEventListener('keydown', onKeydown);
+    return () => document.removeEventListener('keydown', onKeydown);
+}
+
+export async function mountPptViewer(file: File, container: HTMLElement): Promise<PptViewerHandle> {
+    const handle = await mountCorePptViewer(
+        { fileName: file.name, data: new Uint8Array(await file.arrayBuffer()), lastModified: file.lastModified },
+        container,
+        context()
+    );
+    const removeKeyboardNavigation = installPptKeyboardNavigation(container, handle);
+    let disposed = false;
+    return {
+        controller: handle.controller,
+        mode: handle.mode,
         dispose(): void {
-            handle?.dispose();
-            handle = undefined;
+            if (disposed) return;
+            disposed = true;
+            removeKeyboardNavigation();
+            handle.dispose();
         }
     };
 }
 
-function installPptProvider(): void {
-    const entry = VIEWER_REGISTRATIONS.find(
-        (r) => r.viewType === 'omni-viewer.pptViewer'
-    );
-    if (!entry) {
-        // Registry shape is fixed at compile time; this branch only fires
-        // if something deeply weird has happened to the bundle.
-        return;
-    }
-    entry.createProvider = createPptProvider;
-}
-
-installPptProvider();
-
-// --- Self-bootstrap for the per-viewer HTML shell ---------------------
-
-function isSelfBootstrap(): boolean {
-    if (typeof document === 'undefined') return false;
-    return !!document.querySelector('[data-viewer="ppt"]');
-}
+declare global { interface Window { __omniMountPpt?: typeof mountPptViewer; } }
+if (typeof window !== 'undefined') window.__omniMountPpt = mountPptViewer;
 
 async function selfBootstrap(): Promise<void> {
     const host = document.querySelector<HTMLElement>('[data-viewer="ppt"]');
-    if (!host) return;
-
-    const params = new URLSearchParams(window.location.search);
-    const src = params.get('src');
-    if (!src) {
-        host.textContent = 'No PowerPoint source provided.';
-        return;
-    }
-
+    const src = new URLSearchParams(window.location.search).get('src');
+    if (!host || !src) return;
     try {
-        const resp = await fetch(src);
-        const blob = await resp.blob();
+        const response = await fetch(src);
+        const blob = await response.blob();
         const name = decodeURIComponent(src.split('/').pop() || 'presentation.pptx');
-        const file = new File([blob], name, {
-            type:
-                blob.type ||
-                'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-        });
-        mountPptViewer(file, host);
-    } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        host.textContent = `Failed to load PowerPoint document: ${message}`;
+        await mountPptViewer(new File([blob], name, {
+            type: blob.type || 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        }), host);
+    } catch (error) {
+        host.textContent = `Failed to load PowerPoint document: ${errorMessage(error)}`;
     }
 }
 
-if (isSelfBootstrap()) {
+if (typeof document !== 'undefined' && document.querySelector('[data-viewer="ppt"]')) {
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            void selfBootstrap();
-        });
+        document.addEventListener('DOMContentLoaded', () => void selfBootstrap());
     } else {
         void selfBootstrap();
     }
+}
+
+function errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
 }

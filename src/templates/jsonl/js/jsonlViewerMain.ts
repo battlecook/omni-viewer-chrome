@@ -541,6 +541,12 @@ function createEditorController(
         badge = null;
         saveBtn = null;
         cancelBtn = null;
+        // `placePopupNear()` hides the preview while the editor owns the
+        // popup. Restore it before any later hover: otherwise `show()`
+        // correctly renders fresh tokens into a permanently display:none
+        // `<pre>`, leaving an empty popup after Cancel/Save.
+        const preview = popupEl.querySelector('pre');
+        if (preview) (preview as HTMLElement).style.display = '';
         popupEl.style.pointerEvents = 'none';
     }
 
@@ -590,20 +596,25 @@ function createEditorController(
         const idx = state.edit.editingIndex;
         if (idx === null) return;
         const draft = state.edit.draft;
+        // The editor intentionally presents valid JSON in a readable,
+        // indented form. JSONL itself still requires exactly one physical
+        // line per record, so canonicalise only at the persistence boundary.
+        const serialized = JSON.stringify(JSON.parse(draft));
         // 1. Update the source-of-truth line + invalidate the cached
         //    fragment so the next render re-tokenises with the new
         //    text. (issue #60 step 3)
-        state.lines[idx] = draft;
+        state.lines[idx] = serialized;
         state.fragments[idx] = undefined;
-        const newParsed = parseJsonlLine(draft);
+        const newParsed = parseJsonlLine(serialized);
         state.parsed[idx] = newParsed;
         // 2. Drive the reducer through the save transition.
+        dispatch({ type: 'updateDraft', text: serialized });
         dispatch({ type: 'save' });
         // 3. Re-render the row in place if it is still in the DOM.
         if (editingRow) {
             const content = editingRow.querySelector<HTMLSpanElement>('.jl-line-content');
             if (content) {
-                populateRowContent(state, idx, draft, newParsed, editingRow, content);
+                populateRowContent(state, idx, serialized, newParsed, editingRow, content);
             }
         }
         editingRow = null;
@@ -647,7 +658,11 @@ function createEditorController(
         popup.cancelPending();
         editingRow = row;
         const original = state.lines[index] ?? '';
-        dispatch({ type: 'beginEdit', index, original });
+        const parsed = state.parsed[index] ?? parseJsonlLine(original);
+        // Valid records open as pretty JSON; malformed lines keep their raw
+        // text so the user can repair them without losing information.
+        const draft = parsed.kind === 'valid' ? parsed.formatted : original;
+        dispatch({ type: 'beginEdit', index, original: draft });
         placePopupNear(mouseX, mouseY);
         if (textarea) {
             textarea.focus();

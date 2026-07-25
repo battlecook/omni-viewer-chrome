@@ -82,7 +82,30 @@ module.exports = (env, argv) => {
     },
     devtool: isProd ? false : 'source-map',
     resolve: {
-      extensions: ['.ts', '.tsx', '.js']
+      extensions: ['.ts', '.tsx', '.js'],
+      // Optional peers imported by omni-viewer-core resolve relative to the
+      // core package. Point them at this platform's installed dependency.
+      alias: {
+        yaml: require.resolve('yaml'),
+        marked: require.resolve('marked'),
+        dompurify: require.resolve('dompurify'),
+        'highlight.js': require.resolve('highlight.js'),
+        mermaid: require.resolve('mermaid'),
+        katex: require.resolve('katex'),
+        'docx-preview': require.resolve('docx-preview'),
+        jszip: path.resolve(__dirname, 'node_modules/jszip/dist/jszip.min.js'),
+        // hyparquet exposes only ESM import conditions, so CommonJS
+        // require.resolve() cannot resolve its package root.
+        hyparquet: path.resolve(__dirname, 'node_modules/hyparquet/src/index.js'),
+        'hyparquet-compressors': require.resolve('hyparquet-compressors'),
+        '@rhwp/core': require.resolve('@rhwp/core'),
+        // puml-canvas-js only exposes an ESM import condition, so Node's
+        // CommonJS require.resolve() cannot resolve its package root.
+        'puml-canvas-js': path.resolve(
+          __dirname,
+          'node_modules/puml-canvas-js/dist/puml-canvas-js.js'
+        )
+      }
     },
     module: {
       rules: [
@@ -116,6 +139,24 @@ module.exports = (env, argv) => {
           { from: '_locales', to: '_locales' },
           { from: 'icons', to: 'icons' },
           { from: 'vendor', to: 'vendor' },
+          // PDF.js worker copied from the same npm install that webpack
+          // bundles — keeps the API/worker versions locked together.
+          {
+            from: 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs',
+            to: 'assets/pdfjs/pdf.worker.min.mjs'
+          },
+          // KaTeX stylesheet + fonts. omni-viewer-core renders math into an
+          // isolated shadow root but ships no math CSS by design — the adapter
+          // loads katex.min.css (which references ./fonts/* relatively, so the
+          // fonts dir must sit next to it) into that root.
+          {
+            from: 'node_modules/katex/dist/katex.min.css',
+            to: 'assets/katex/katex.min.css'
+          },
+          {
+            from: 'node_modules/katex/dist/fonts',
+            to: 'assets/katex/fonts'
+          },
           // Legacy SPA + service worker are copied verbatim until follow-up
           // issues split per-viewer logic into the templates/ tree.
           { from: 'src/background.js', to: 'src/background.js' },

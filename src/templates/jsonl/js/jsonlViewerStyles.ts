@@ -130,6 +130,13 @@ export const JSONL_VIEWER_CSS = `
     font-size: 12px;
     line-height: 1.45;
     overflow: auto;
+    /* The editor owns the popup's dimensions. Keeping resize on the popup
+       (instead of its flex child textarea) makes the drag handle effective. */
+    resize: both;
+    min-width: 320px;
+    min-height: 220px;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
     z-index: 1000;
     pointer-events: none;
 }
@@ -228,7 +235,7 @@ export const JSONL_VIEWER_CSS = `
 .jl-edit-textarea {
     flex: 1;
     min-height: 120px;
-    resize: vertical;
+    resize: none;
     box-sizing: border-box;
     padding: 8px;
     border-radius: 4px;

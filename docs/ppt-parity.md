@@ -41,10 +41,9 @@ touched.
   no soffice / LibreOffice conversion pipeline anywhere in the Chrome build
   and there cannot be one (Chrome extensions cannot exec native binaries).
 
-VSCode original reference: `/Users/ukjin/WebstormProjects/vscode-omni-viewer/`
-(read-only outside this worktree). Where the matrix says "Yes" for VSCode, it
-means the corresponding parser / renderer code is known to exist in the
-original; this document does not re-prove that.
+Where the matrix says "Yes" for VSCode, it means the corresponding parser /
+renderer code is known to exist in the original; this document does not
+re-prove that.
 
 ## Support legend
 

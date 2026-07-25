@@ -34,6 +34,10 @@ design-file properties, or preview entries inside an archive. Viewer-specific
 tools such as zoom, sorting, filtering, annotations, and export are shown only
 when they apply.
 
+Save and Export actions start a normal browser-managed download. Whether Chrome
+asks for a destination or saves directly follows the user's Chrome download
+settings.
+
 **Privacy by default**
 
 Files stay on your machine. The extension does not include analytics, does
@@ -118,6 +122,9 @@ are packaged under the extension directory.
 디자인 파일의 속성 확인, 압축 파일 내부 미리보기도 지원합니다. 확대,
 정렬, 필터, 주석, 내보내기 같은 도구는 해당 파일에 필요한 경우에만
 표시됩니다.
+
+Save와 Export는 브라우저가 관리하는 일반 다운로드를 시작합니다. 저장
+위치를 물을지 바로 저장할지는 사용자의 Chrome 다운로드 설정을 따릅니다.
 
 **기본값이 프라이버시**
 
