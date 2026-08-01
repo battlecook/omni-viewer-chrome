@@ -38,6 +38,7 @@ const VIEWERS = [
   'yaml',
   'toml',
   'markdown',
+  'latex',
   'mermaid',
   'plantuml',
   'automotive',

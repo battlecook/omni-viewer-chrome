@@ -29,12 +29,20 @@ function context(): PdfViewerContext {
     const chromeI18n = typeof chrome !== 'undefined' && chrome.i18n?.getMessage
         ? chrome.i18n : undefined;
     const ctx: PdfViewerContext = {
-        assets: { resolveAssetUrl: async (assetPath) =>
+        assets: { resolveAssetUrl: async (assetPath) => {
             // dist/assets/pdfjs/* is copied from the same pdfjs-dist install
             // webpack bundles, so the core's asset path maps straight through.
-            typeof chrome !== 'undefined' && chrome.runtime?.getURL
+            const url = typeof chrome !== 'undefined' && chrome.runtime?.getURL
                 ? chrome.runtime.getURL(assetPath)
-                : assetPath },
+                : assetPath;
+            // The pdfjs worker must actually be reachable, or getDocument falls
+            // back to a fake worker and getAttachments() can silently fail —
+            // which drops the hybrid sidecar and reopens annotated PDFs flat.
+            // Probe once and surface the failure (missing web_accessible_resources
+            // entry, 404, CSP) instead of degrading quietly.
+            if (assetPath.includes('pdf.worker')) void probeWorkerAsset(url);
+            return url;
+        } },
         i18n: { t: (key, args) => chromeI18n?.getMessage(key.replace(/[.-]/g, '_')) || resolveCatalogMessage(key, args) },
         logger: { log: (level, message) => console[level === 'info' ? 'info' : level]('[omni-viewer pdf]', message) }
     };
@@ -50,6 +58,20 @@ function context(): PdfViewerContext {
 }
 
 async function bytes(file: File): Promise<Uint8Array> { return new Uint8Array(await file.arrayBuffer()); }
+
+// Diagnostic only: confirm the worker asset resolves to a fetchable resource.
+// A non-ok/failed fetch here explains missing-annotation-on-reopen reports —
+// the sidecar read (getAttachments) needs a real worker to parse the PDF.
+async function probeWorkerAsset(url: string): Promise<void> {
+    try {
+        const response = await fetch(url, { method: 'GET' });
+        if (!response.ok) {
+            console.error('[omni-viewer pdf] worker asset not reachable', response.status, url);
+        }
+    } catch (error) {
+        console.error('[omni-viewer pdf] worker asset fetch failed', String(error), url);
+    }
+}
 
 export async function mountPdfViewer(file: File, container: HTMLElement): Promise<PdfViewerHandle> {
     // The SPA panel is content-sized by default. Give the core viewer a real

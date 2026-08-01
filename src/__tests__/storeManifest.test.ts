@@ -182,14 +182,17 @@ describe('storeManifest invariants', () => {
     });
 
     describe('web_accessible_resources scope', () => {
-        it('only exposes the extension-bundled vendor and templates dirs', () => {
+        it('only exposes the extension-bundled vendor, templates and assets dirs', () => {
             const groups = manifest.web_accessible_resources ?? [];
             // We allow exactly one block today. If a future block is
             // added, this test will require an explicit update — that is
             // intentional, since broadening WAR is store-relevant.
             expect(groups.length).toBeGreaterThan(0);
             const allResources = groups.flatMap((g) => g.resources);
-            const allowedPrefixes = ['vendor/', 'templates/'];
+            // `assets/` holds the pdf.js worker + KaTeX fonts the viewers load
+            // via chrome.runtime.getURL(); they must be web-accessible so the
+            // worker resolves (missing here reopened annotated PDFs flat).
+            const allowedPrefixes = ['vendor/', 'templates/', 'assets/'];
             for (const resource of allResources) {
                 const ok = allowedPrefixes.some((prefix) =>
                     resource.startsWith(prefix)
@@ -223,6 +226,7 @@ describe('storeManifest invariants', () => {
                 '.jsonl',// jsonl
                 '.yaml', // yaml
                 '.toml', // toml
+                '.tex',  // latex
                 '.mmd',  // mermaid
                 '.puml', // plantuml
                 '.mp3',  // audio

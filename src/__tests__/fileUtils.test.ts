@@ -328,6 +328,45 @@ describe('FileUtils.detectViewerType signatures', () => {
         expect(result.matchedBySignature).toBe(false);
     });
 
+    it('uses LaTeX viewer fallback for .tex, .latex and .ltx extensions', async () => {
+        for (const name of ['paper.tex', 'paper.latex', 'paper.ltx']) {
+            const file = makeFile(
+                '\\documentclass{article}\n\\begin{document}\n\\section{Intro}\n$E = mc^2$\n\\end{document}\n',
+                name
+            );
+            const result = await FileUtils.detectViewerType(file);
+            expect(result.viewType).toBe('omni-viewer.latexViewer');
+            expect(result.reason).toContain('LaTeX extension');
+        }
+    });
+
+    it('keeps .tex on the LaTeX viewer even when the body trips a text heuristic', async () => {
+        // A .tex whose body would otherwise read as delimited text: the
+        // explicit extension has to outrank the content sniffers.
+        const file = makeFile(
+            '\\documentclass{article}\n\\begin{document}\na,b,c\n1,2,3\n4,5,6\n\\end{document}\n',
+            'table.tex'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.latexViewer');
+    });
+
+    it('routes an extensionless file with a \\documentclass preamble to the LaTeX viewer', async () => {
+        const file = makeFile(
+            '% Copyright someone\n% License: LPPL\n\\documentclass[11pt]{article}\n\\begin{document}\nHi\n\\end{document}\n',
+            'thesis'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.latexViewer');
+        expect(result.reason).toContain('documentclass');
+    });
+
+    it('does not re-route a named text file that merely mentions documentclass', async () => {
+        const file = makeFile('key = "\\documentclass"\nother = 1\nthird = 2\n', 'notes.toml');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.tomlViewer');
+    });
+
     it('uses Mermaid viewer fallback for .mmd extension', async () => {
         const file = makeFile('flowchart TD\n  A --> B\n', 'diagram.mmd');
         const result = await FileUtils.detectViewerType(file);
@@ -520,6 +559,7 @@ describe('shortNameForViewType', () => {
         expect(shortNameForViewType('omni-viewer.parquetViewer')).toBe('parquet');
         expect(shortNameForViewType('omni-viewer.mermaidViewer')).toBe('mermaid');
         expect(shortNameForViewType('omni-viewer.markdownViewer')).toBe('markdown');
+        expect(shortNameForViewType('omni-viewer.latexViewer')).toBe('latex');
         expect(shortNameForViewType('omni-viewer.plantumlViewer')).toBe('plantuml');
         expect(shortNameForViewType('omni-viewer.avroViewer')).toBe('automotive');
         expect(shortNameForViewType('omni-viewer.reqifViewer')).toBe('automotive');

@@ -56,6 +56,7 @@ const ALL_SLUGS: ViewerSlug[] = [
     'yaml',
     'toml',
     'markdown',
+    'latex',
     'mermaid',
     'plantuml',
     'proto',
@@ -73,7 +74,7 @@ const ALL_SLUGS: ViewerSlug[] = [
 
 describe('viewerRegistry', () => {
     it('registers all viewers', () => {
-        expect(VIEWER_REGISTRATIONS).toHaveLength(30);
+        expect(VIEWER_REGISTRATIONS).toHaveLength(31);
         const slugs = VIEWER_REGISTRATIONS.map((r) => r.slug).sort();
         expect(slugs).toEqual([...ALL_SLUGS].sort());
     });
@@ -139,6 +140,9 @@ describe('viewerRegistry', () => {
             ['Cargo.toml', 'toml'],
             ['README.md', 'markdown'],
             ['notes.markdown', 'markdown'],
+            ['paper.tex', 'latex'],
+            ['paper.latex', 'latex'],
+            ['paper.ltx', 'latex'],
             ['diagram.mmd', 'mermaid'],
             ['diagram.mermaid', 'mermaid'],
             ['diagram.puml', 'plantuml'],

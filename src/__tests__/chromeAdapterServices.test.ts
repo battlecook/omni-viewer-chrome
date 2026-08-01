@@ -1,4 +1,5 @@
 jest.mock('omni-viewer-core/viewers/ppt', () => ({ mountPptViewer: jest.fn() }));
+jest.mock('omni-viewer-core/viewers/ppt/self-loading', () => ({ renderPptMetafile: jest.fn() }));
 jest.mock('omni-viewer-core/viewers/csv', () => ({ mountCsvViewer: jest.fn() }));
 jest.mock('omni-viewer-core/viewers/yaml', () => ({ mountYamlViewer: jest.fn() }));
 jest.mock('omni-viewer-core/parsers/yaml/self-loading', () => ({

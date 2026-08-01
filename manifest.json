@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "__MSG_appName__",
   "short_name": "__MSG_appShortName__",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "default_locale": "en",
   "description": "__MSG_appDescription__",
   "action": {
@@ -46,6 +46,7 @@
         "application/yaml": [".yaml", ".yml"],
         "application/toml": [".toml"],
         "text/markdown": [".md", ".markdown"],
+        "text/x-tex": [".tex", ".latex", ".ltx"],
         "text/vnd.mermaid": [".mmd", ".mermaid"],
         "text/x-plantuml": [".puml", ".plantuml", ".iuml"],
         "text/x-protobuf": [".proto"],
@@ -100,7 +101,8 @@
     {
       "resources": [
         "vendor/**/*",
-        "templates/**/*"
+        "templates/**/*",
+        "assets/**/*"
       ],
       "matches": [
         "*://*/*"

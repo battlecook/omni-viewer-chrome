@@ -3,6 +3,7 @@ import {
     mountPptViewer as mountCorePptViewer,
     type PptViewerHandle
 } from 'omni-viewer-core/viewers/ppt';
+import { renderPptMetafile } from 'omni-viewer-core/viewers/ppt/self-loading';
 import type { HostContext } from 'omni-viewer-core/host';
 import { resolveCatalogMessage } from 'omni-viewer-core/i18n';
 
@@ -68,7 +69,8 @@ export async function mountPptViewer(file: File, container: HTMLElement): Promis
     const handle = await mountCorePptViewer(
         { fileName: file.name, data: new Uint8Array(await file.arrayBuffer()), lastModified: file.lastModified },
         container,
-        context()
+        context(),
+        { renderMetafile: renderPptMetafile }
     );
     const removeKeyboardNavigation = installPptKeyboardNavigation(container, handle);
     let disposed = false;

@@ -2,6 +2,35 @@
 
 All notable changes to the Chrome build of Omni Viewer are documented in this file.
 
+## [0.5.0] - 2026-08-01
+
+### Added
+- Added a LaTeX viewer for `.tex`, `.latex` and `.ltx` files, backed by
+  `omni-viewer-core`: sectioning outline, prose, lists, tables, theorem
+  environments and KaTeX-rendered math, with a source/split/preview switch,
+  editing, and Save (in-place writeback on the file-handler path, download
+  otherwise). The preview states on screen that it is a partial render —
+  constructs the viewer cannot model, such as TikZ, are shown as their own
+  source with a badge rather than dropped, and `\input`/`\include` are reported
+  as unresolved because the extension is handed a single file with no access to
+  its siblings.
+- Bundled the KaTeX stylesheet and fonts for the LaTeX viewer's shadow root and
+  the document head, so math layout and glyph metrics are correct. Formulas
+  render progressively as they approach the viewport, keeping first paint fast
+  on math-heavy documents.
+- Routed `.tex` files through Chrome's file handlers, the viewer registry and
+  the extension's own detection, including a `\documentclass` text sniff so
+  extensionless LaTeX files still open in the right viewer.
+
+### Changed
+- Upgraded `omni-viewer-core` from 0.8.0 to 0.11.1. For existing viewers this
+  brings a heading outline and split-view scroll sync to Markdown, recovers
+  charts and embedded workbooks that were dropped from DOCX files, resolves
+  in-document anchors in the Word and Markdown viewers, and stops PowerPoint
+  metafile images from being substituted with an unrelated raster.
+- Migrated the PDF, Mermaid, PlantUML, HDF5, MAT and PowerPoint viewers onto the
+  shared core implementations, removing the legacy in-repo renderers.
+
 ## [0.4.0] - 2026-07-25
 
 ### Added

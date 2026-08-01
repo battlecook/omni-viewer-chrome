@@ -24,7 +24,6 @@ import {
     ChromeViewerProvider,
     renderUnsupported
 } from './viewerProviderUtils';
-import { createHdf5ViewerProvider } from './hdf5ViewerProvider';
 
 /**
  * Stable view-type identifiers. These are the same strings the VSCode
@@ -42,6 +41,7 @@ export type OmniViewerViewType =
     | 'omni-viewer.jsonlViewer'
     | 'omni-viewer.tomlViewer'
     | 'omni-viewer.markdownViewer'
+    | 'omni-viewer.latexViewer'
     | 'omni-viewer.mermaidViewer'
     | 'omni-viewer.plantumlViewer'
     | 'omni-viewer.protoViewer'
@@ -78,6 +78,7 @@ export type ViewerSlug =
     | 'jsonl'
     | 'toml'
     | 'markdown'
+    | 'latex'
     | 'mermaid'
     | 'plantuml'
     | 'proto'
@@ -210,6 +211,14 @@ export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
         createProvider: () => createPlaceholderProvider('omni-viewer.markdownViewer')
     },
     {
+        viewType: 'omni-viewer.latexViewer',
+        slug: 'latex',
+        command: 'omni-viewer.openLatexViewer',
+        missingMessage: 'No LaTeX file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.latexViewer')
+    },
+    {
         viewType: 'omni-viewer.mermaidViewer',
         slug: 'mermaid',
         command: 'omni-viewer.openMermaidViewer',
@@ -311,7 +320,7 @@ export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
         command: 'omni-viewer.openHdf5Viewer',
         missingMessage: 'No HDF5 file selected',
         retainContextWhenHidden: true,
-        createProvider: createHdf5ViewerProvider
+        createProvider: () => createPlaceholderProvider('omni-viewer.hdf5Viewer')
     },
     {
         viewType: 'omni-viewer.parquetViewer',
@@ -412,6 +421,9 @@ const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
     '.toml': 'toml',
     '.md': 'markdown',
     '.markdown': 'markdown',
+    '.tex': 'latex',
+    '.latex': 'latex',
+    '.ltx': 'latex',
     '.mmd': 'mermaid',
     '.mermaid': 'mermaid',
     '.puml': 'plantuml',

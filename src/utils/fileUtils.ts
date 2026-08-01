@@ -31,6 +31,7 @@ export type OmniViewerViewType =
     | 'omni-viewer.jsonlViewer'
     | 'omni-viewer.tomlViewer'
     | 'omni-viewer.markdownViewer'
+    | 'omni-viewer.latexViewer'
     | 'omni-viewer.mermaidViewer'
     | 'omni-viewer.plantumlViewer'
     | 'omni-viewer.automotiveViewer'
@@ -95,6 +96,7 @@ const VIDEO_EXTENSION_FALLBACK = new Set([
 const AUTOMOTIVE_TEXT_EXTENSIONS = new Set(['.dbc', '.arxml', '.a2l', '.asc']);
 const AUTOMOTIVE_BINARY_EXTENSIONS = new Set(['.blf', '.mf4', '.mdf']);
 const STRUCTURED_DATA_TEXT_EXTENSIONS = new Set(['.stp', '.step', '.reqif']);
+const LATEX_EXTENSIONS = new Set(['.tex', '.latex', '.ltx']);
 const STRUCTURED_DATA_BINARY_EXTENSIONS = new Set(['.avro', '.bag', '.db3', '.sqlite', '.sqlite3', '.pcap', '.pcapng', '.h5', '.hdf5']);
 
 // Lazy decoders — jest-environment-jsdom 29 does not expose `TextDecoder`
@@ -705,6 +707,19 @@ export class FileUtils {
             return null;
         }
 
+        // LaTeX detection is extension-only in v1 (omni-viewer-core
+        // docs/viewers/latex.md §1), and it runs ahead of the content
+        // heuristics below: `\documentclass` documents carry no signature the
+        // sniffers recognise, so a .tex file would otherwise be at the mercy
+        // of the TOML / PlantUML / delimiter guesses further down.
+        if (LATEX_EXTENSIONS.has(ext)) {
+            return {
+                viewType: 'omni-viewer.latexViewer',
+                reason: `Used the LaTeX extension fallback for ${ext}.`,
+                matchedBySignature: false
+            };
+        }
+
         if (ext === '.jsonl' || ext === '.ndjson' || ext === '.jsonlines' || this.looksLikeJsonl(lines)) {
             return {
                 viewType: 'omni-viewer.jsonlViewer',
@@ -757,6 +772,18 @@ export class FileUtils {
             return {
                 viewType: 'omni-viewer.markdownViewer',
                 reason: 'Used the Markdown extension fallback.',
+                matchedBySignature: false
+            };
+        }
+
+        // Extensionless LaTeX. Kept below the extension-keyed branches above so
+        // a named file is never re-routed by its contents, and matched only on
+        // `\documentclass` — the marker the core's own text sniff uses, and one
+        // no other text format we detect produces.
+        if (this.looksLikeLatex(lines)) {
+            return {
+                viewType: 'omni-viewer.latexViewer',
+                reason: 'Matched a LaTeX \\documentclass preamble.',
                 matchedBySignature: false
             };
         }
@@ -847,6 +874,14 @@ export class FileUtils {
         }
 
         return (tableCount > 0 && assignmentCount > 0) || assignmentCount >= 3;
+    }
+
+    private static looksLikeLatex(lines: string[]): boolean {
+        // `%` starts a LaTeX comment, so a preamble is commonly preceded by a
+        // licence header. Scan past those rather than only checking line one.
+        return lines
+            .slice(0, 30)
+            .some((line) => /^\\documentclass\s*(\[|\{)/.test(line));
     }
 
     private static looksLikeMermaid(lines: string[]): boolean {
@@ -940,6 +975,8 @@ export function shortNameForViewType(viewType: OmniViewerViewType): string {
         return 'toml';
     case 'omni-viewer.markdownViewer':
         return 'markdown';
+    case 'omni-viewer.latexViewer':
+        return 'latex';
     case 'omni-viewer.mermaidViewer':
         return 'mermaid';
     case 'omni-viewer.plantumlViewer':

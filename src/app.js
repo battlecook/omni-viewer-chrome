@@ -190,6 +190,7 @@ const formats = {
   yaml: ['.yaml', '.yml'],
   toml: ['.toml'],
   markdown: ['.md', '.markdown'],
+  latex: ['.tex', '.latex', '.ltx'],
   mermaid: ['.mmd', '.mermaid'],
   plantuml: ['.puml', '.plantuml', '.iuml'],
   proto: ['.proto'],
@@ -216,6 +217,7 @@ const labels = {
   yaml: 'YAML',
   toml: 'TOML',
   markdown: 'Markdown',
+  latex: 'LaTeX',
   mermaid: 'Mermaid',
   plantuml: 'PlantUML',
   proto: 'Protocol Buffers',
@@ -586,6 +588,7 @@ async function renderByType() {
   if (type === 'yaml') return renderYaml();
   if (type === 'toml') return renderToml();
   if (type === 'markdown') return renderMarkdown();
+  if (type === 'latex') return renderLatex();
   if (type === 'mermaid') return renderMermaid();
   if (type === 'plantuml') return renderPlantUml();
   if (type === 'proto') return renderProto();
@@ -763,6 +766,17 @@ async function renderMarkdown() {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     body.innerHTML = `<div class="unsupported"><p>Couldn't load Markdown viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
+
+async function renderLatex() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading LaTeX viewer...</p></div>';
+  try {
+    await mountAdvancedViewer('latex', 'mountLatexViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load LaTeX viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
   }
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "omni-viewer-chrome",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "description": "Chrome Web Store build of Omni Viewer.",
   "scripts": {
@@ -39,7 +39,7 @@
     "katex": "^0.16.9",
     "marked": "^16.4.2",
     "mermaid": "^11.15.0",
-    "omni-viewer-core": "^0.8.0",
+    "omni-viewer-core": "^0.11.1",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.10.38",
     "puml-canvas-js": "^0.10.0",
