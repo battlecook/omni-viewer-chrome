@@ -55,6 +55,14 @@ export type OmniViewerViewType =
     | 'omni-viewer.pcapngViewer'
     | 'omni-viewer.matViewer'
     | 'omni-viewer.hdf5Viewer'
+    | 'omni-viewer.numpyViewer'
+    | 'omni-viewer.ggufViewer'
+    | 'omni-viewer.onnxViewer'
+    | 'omni-viewer.tfliteViewer'
+    | 'omni-viewer.kerasViewer'
+    | 'omni-viewer.coremlViewer'
+    | 'omni-viewer.openvinoViewer'
+    | 'omni-viewer.safetensorsViewer'
     | 'omni-viewer.parquetViewer'
     | 'omni-viewer.hwpViewer'
     | 'omni-viewer.psdViewer'
@@ -92,6 +100,14 @@ export type ViewerSlug =
     | 'pcapng'
     | 'mat'
     | 'hdf5'
+    | 'numpy'
+    | 'gguf'
+    | 'onnx'
+    | 'tflite'
+    | 'keras'
+    | 'coreml'
+    | 'openvino'
+    | 'safetensors'
     | 'parquet'
     | 'hwp'
     | 'psd'
@@ -323,6 +339,70 @@ export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
         createProvider: () => createPlaceholderProvider('omni-viewer.hdf5Viewer')
     },
     {
+        viewType: 'omni-viewer.numpyViewer',
+        slug: 'numpy',
+        command: 'omni-viewer.openNumpyViewer',
+        missingMessage: 'No NumPy file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.numpyViewer')
+    },
+    {
+        viewType: 'omni-viewer.ggufViewer',
+        slug: 'gguf',
+        command: 'omni-viewer.openGgufViewer',
+        missingMessage: 'No GGUF file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.ggufViewer')
+    },
+    {
+        viewType: 'omni-viewer.onnxViewer',
+        slug: 'onnx',
+        command: 'omni-viewer.openOnnxViewer',
+        missingMessage: 'No ONNX file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.onnxViewer')
+    },
+    {
+        viewType: 'omni-viewer.tfliteViewer',
+        slug: 'tflite',
+        command: 'omni-viewer.openTfliteViewer',
+        missingMessage: 'No TFLite file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.tfliteViewer')
+    },
+    {
+        viewType: 'omni-viewer.kerasViewer',
+        slug: 'keras',
+        command: 'omni-viewer.openKerasViewer',
+        missingMessage: 'No Keras file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.kerasViewer')
+    },
+    {
+        viewType: 'omni-viewer.coremlViewer',
+        slug: 'coreml',
+        command: 'omni-viewer.openCoremlViewer',
+        missingMessage: 'No Core ML file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.coremlViewer')
+    },
+    {
+        viewType: 'omni-viewer.openvinoViewer',
+        slug: 'openvino',
+        command: 'omni-viewer.openOpenVinoViewer',
+        missingMessage: 'No OpenVINO IR file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.openvinoViewer')
+    },
+    {
+        viewType: 'omni-viewer.safetensorsViewer',
+        slug: 'safetensors',
+        command: 'omni-viewer.openSafetensorsViewer',
+        missingMessage: 'No safetensors file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.safetensorsViewer')
+    },
+    {
         viewType: 'omni-viewer.parquetViewer',
         slug: 'parquet',
         command: 'omni-viewer.openParquetViewer',
@@ -450,6 +530,19 @@ const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
     '.mat': 'mat',
     '.h5': 'hdf5',
     '.hdf5': 'hdf5',
+    '.npy': 'numpy',
+    '.npz': 'numpy',
+    '.gguf': 'gguf',
+    '.onnx': 'onnx',
+    '.tflite': 'tflite',
+    '.lite': 'tflite',
+    '.keras': 'keras',
+    '.mlmodel': 'coreml',
+    '.mlpackage': 'coreml',
+    // OpenVINO IR is deliberately absent: its `.xml` is shared with every
+    // other XML dialect, so it is routed by content (`<net version>` with
+    // `<layers>`) in `FileUtils.detectViewerType` / app.js `detectType` only.
+    '.safetensors': 'safetensors',
     '.mp3': 'audio',
     '.wav': 'audio',
     '.ogg': 'audio',

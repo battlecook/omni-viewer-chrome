@@ -29,9 +29,9 @@
     <section id="dropZone" class="drop-zone" role="button" tabindex="0">
       <div class="drop-copy">
         <strong data-i18n="dropPrompt">Drop a file here</strong>
-        <span data-i18n="formatsSummary">Images, PDF, CSV/TSV, JSON/JSONL, YAML/TOML, Proto, media, Office, PSD, Parquet, HWP/HWPX, archives</span>
+        <span data-i18n="formatsSummary">Images, PDF, CSV/TSV, JSON/JSONL, YAML/TOML, Proto, NumPy, GGUF, ONNX, TFLite, Keras, Core ML, OpenVINO, Safetensors, media, Office, PSD, Parquet, HWP/HWPX, archives</span>
       </div>
-      <input id="fileInput" type="file" hidden>
+      <input id="fileInput" type="file" multiple hidden>
     </section>
 
     <section id="fileMeta" class="file-meta hidden"></section>
@@ -49,7 +49,6 @@
   <script src="vendor/js-yaml.min.js"></script>
   <script src="vendor/docx-preview.min.js"></script>
   <script src="vendor/mammoth.browser.min.js"></script>
-  <script src="vendor/audio_engine_browser.js"></script>
   <script type="module" src="src/app.js"></script>
 </body>
 </html>

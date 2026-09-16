@@ -13,14 +13,10 @@ const required = [
   'vendor/mammoth.browser.min.js',
   'vendor/pdf.min.mjs',
   'vendor/pdf.worker.min.mjs',
-  'vendor/audio_engine_browser.js',
-  'vendor/audio_engine.wasm',
   'vendor/wavesurfer/wavesurfer.esm.js',
   'vendor/wavesurfer/plugins/spectrogram.js',
   'vendor/wavesurfer/plugins/regions.js',
-  'vendor/wavesurfer/plugins/timeline.js',
-  'vendor/wavesurfer/plugins/minimap.js',
-  'vendor/wavesurfer/plugins/hover.js'
+  'vendor/wavesurfer/plugins/timeline.js'
 ];
 
 let failed = false;

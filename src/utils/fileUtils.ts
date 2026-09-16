@@ -43,6 +43,14 @@ export type OmniViewerViewType =
     | 'omni-viewer.pcapViewer'
     | 'omni-viewer.pcapngViewer'
     | 'omni-viewer.hdf5Viewer'
+    | 'omni-viewer.numpyViewer'
+    | 'omni-viewer.ggufViewer'
+    | 'omni-viewer.onnxViewer'
+    | 'omni-viewer.tfliteViewer'
+    | 'omni-viewer.kerasViewer'
+    | 'omni-viewer.coremlViewer'
+    | 'omni-viewer.openvinoViewer'
+    | 'omni-viewer.safetensorsViewer'
     | 'omni-viewer.parquetViewer'
     | 'omni-viewer.hwpViewer'
     | 'omni-viewer.psdViewer'
@@ -286,7 +294,30 @@ export class FileUtils {
         }
 
         if (this.matchesBytes(buffer, [0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a])) {
+            // Keras 2 wrote its models as plain HDF5, and only the contents
+            // tell such a file apart from any other HDF5 one. So `.h5` stays
+            // with the HDF5 viewer, and only a declared `.keras` name moves it
+            // to the Keras viewer — which reads both save formats.
+            if (ext === '.keras') {
+                return this.signatureMatch('omni-viewer.kerasViewer', 'Matched the HDF5 signature under the Keras extension.');
+            }
             return this.signatureMatch('omni-viewer.hdf5Viewer', 'Matched the HDF5 signature.');
+        }
+
+        if (this.matchesBytes(buffer, [0x93, 0x4e, 0x55, 0x4d, 0x50, 0x59])) {
+            return this.signatureMatch('omni-viewer.numpyViewer', 'Matched the NumPy NPY magic bytes.');
+        }
+
+        if (this.hasAsciiPrefix(buffer, 'GGUF')) {
+            return this.signatureMatch('omni-viewer.ggufViewer', 'Matched the GGUF magic bytes.');
+        }
+
+        if (this.hasAsciiPrefix(buffer.subarray(4), 'TFL3')) {
+            return this.signatureMatch('omni-viewer.tfliteViewer', 'Matched the TFLite TFL3 identifier.');
+        }
+
+        if (this.isSafetensors(file, buffer)) {
+            return this.signatureMatch('omni-viewer.safetensorsViewer', 'Matched the safetensors header layout.');
         }
 
         if (this.hasAsciiPrefix(buffer, 'LOGG')) {
@@ -332,6 +363,28 @@ export class FileUtils {
         }
 
         if (this.matchesBytes(buffer, [0x50, 0x4B, 0x03, 0x04])) {
+            // NPZ is a ZIP container whose members are NPY arrays. The .npz
+            // extension is the only reliable way to distinguish it from a
+            // generic ZIP before the core validates and reads its entries.
+            if (ext === '.npz') {
+                return this.signatureMatch('omni-viewer.numpyViewer', 'Matched a NumPy NPZ ZIP container.');
+            }
+
+            // A Keras 3 model is a ZIP with no distinguishing leading bytes.
+            // The extension settles it here; an extensionless one still lands
+            // in the viewer through the member scan below.
+            if (ext === '.keras') {
+                return this.signatureMatch('omni-viewer.kerasViewer', 'Matched a Keras ZIP container.');
+            }
+
+            // An `.mlpackage` is a directory bundle on disk, so what a browser
+            // can hand over is the zipped bundle. The extension settles it
+            // here; a renamed one still lands in the viewer through the member
+            // scan below.
+            if (ext === '.mlpackage') {
+                return this.signatureMatch('omni-viewer.coremlViewer', 'Matched a Core ML package ZIP container.');
+            }
+
             if (preferredOfficeViewType) {
                 return this.signatureMatch(
                     preferredOfficeViewType,
@@ -408,6 +461,69 @@ export class FileUtils {
             return {
                 viewType: this.viewTypeForStructuredDataExtension(ext),
                 reason: `Used the structured data extension fallback for ${ext}.`,
+                matchedBySignature: false
+            };
+        }
+
+        if (ext === '.npy' || ext === '.npz') {
+            return {
+                viewType: 'omni-viewer.numpyViewer',
+                reason: `Used the NumPy extension fallback for ${ext}.`,
+                matchedBySignature: false
+            };
+        }
+
+        if (ext === '.gguf') {
+            return {
+                viewType: 'omni-viewer.ggufViewer',
+                reason: 'Used the GGUF extension fallback.',
+                matchedBySignature: false
+            };
+        }
+
+        // ONNX models are bare protobuf — no magic bytes to key off, so the
+        // extension is the only reliable signal.
+        if (ext === '.onnx') {
+            return {
+                viewType: 'omni-viewer.onnxViewer',
+                reason: 'Used the ONNX extension fallback.',
+                matchedBySignature: false
+            };
+        }
+
+        if (ext === '.tflite' || ext === '.lite') {
+            return {
+                viewType: 'omni-viewer.tfliteViewer',
+                reason: 'Used the TFLite extension fallback.',
+                matchedBySignature: false
+            };
+        }
+
+        // Reached when a `.keras` file no longer carries its ZIP header — the
+        // viewer reports the damage better than the raw-data fallback does.
+        if (ext === '.keras') {
+            return {
+                viewType: 'omni-viewer.kerasViewer',
+                reason: 'Used the Keras extension fallback.',
+                matchedBySignature: false
+            };
+        }
+
+        // A `.mlmodel` is a bare protobuf with no leading magic, so — as with
+        // ONNX — the extension is the only signal available here. `.mlpackage`
+        // reaches this point only when its ZIP header is gone.
+        if (ext === '.mlmodel' || ext === '.mlpackage') {
+            return {
+                viewType: 'omni-viewer.coremlViewer',
+                reason: `Used the Core ML extension fallback for ${ext}.`,
+                matchedBySignature: false
+            };
+        }
+
+        if (ext === '.safetensors') {
+            return {
+                viewType: 'omni-viewer.safetensorsViewer',
+                reason: 'Used the safetensors extension fallback.',
                 matchedBySignature: false
             };
         }
@@ -605,6 +721,28 @@ export class FileUtils {
         return latin1Decoder().decode(tailBytes) === 'PAR1';
     }
 
+    /**
+     * A safetensors file has no magic bytes: it opens with a little-endian
+     * u64 header length followed by that many bytes of JSON. The shape is
+     * still distinctive enough to claim — the declared header must fit inside
+     * the file and the byte right after the prefix must start a JSON object.
+     */
+    private static isSafetensors(file: File, buffer: Uint8Array): boolean {
+        if (buffer.length < 10) {
+            return false;
+        }
+        const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+        const low = view.getUint32(0, true);
+        const high = view.getUint32(4, true);
+        // A header past 4 GiB is not a real model, so a non-zero high word
+        // means these bytes are something else entirely.
+        if (high !== 0 || low < 2 || low > file.size - 8) {
+            return false;
+        }
+        // `{"` for a header with tensors, `{}` for an empty one.
+        return buffer[8] === 0x7b && (buffer[9] === 0x22 || buffer[9] === 0x7d);
+    }
+
     private static isMdfFile(buffer: Uint8Array): boolean {
         if (!this.hasAsciiPrefix(buffer, 'MDF')) {
             return false;
@@ -689,6 +827,29 @@ export class FileUtils {
                     reason: 'Matched a ZIP container with HWPX package entries.'
                 };
             }
+
+            // Neither member is distinctive on its own, so both have to be
+            // present before a plain ZIP is claimed as a Keras 3 model
+            // (omni-viewer-core registry/probe.ts uses the same pair).
+            if (names.includes('config.json') && names.includes('model.weights.h5')) {
+                return {
+                    viewType: 'omni-viewer.kerasViewer',
+                    reason: 'Matched a ZIP container with Keras model entries.'
+                };
+            }
+
+            // A zipped `.mlpackage` keeps its Manifest.json beside a Data tree
+            // reserved to com.apple.CoreML, optionally under the bundle's own
+            // folder (omni-viewer-core registry/probe.ts uses the same pair).
+            if (
+                names.some((name) => name === 'Manifest.json' || name.endsWith('/Manifest.json'))
+                && names.some((name) => name.includes('Data/com.apple.CoreML/'))
+            ) {
+                return {
+                    viewType: 'omni-viewer.coremlViewer',
+                    reason: 'Matched a ZIP container with Core ML package entries.'
+                };
+            }
         } catch (error) {
             console.warn('Failed to inspect ZIP-based office file:', error);
         }
@@ -732,6 +893,19 @@ export class FileUtils {
             return {
                 viewType: 'omni-viewer.jsonViewer',
                 reason: 'Matched JSON document content.',
+                matchedBySignature: false
+            };
+        }
+
+        // OpenVINO IR. Its `.xml` is shared with every other XML dialect, so
+        // — as in omni-viewer-core's registry — the extension claims nothing
+        // and only the `<net version>` root with a `<layers>` child routes
+        // here. Ahead of the remaining sniffs because an IR's attribute-heavy
+        // lines would otherwise read as delimited text.
+        if (this.looksLikeOpenVinoIr(sample)) {
+            return {
+                viewType: 'omni-viewer.openvinoViewer',
+                reason: 'Matched an OpenVINO IR <net> document.',
                 matchedBySignature: false
             };
         }
@@ -884,6 +1058,29 @@ export class FileUtils {
             .some((line) => /^\\documentclass\s*(\[|\{)/.test(line));
     }
 
+    /**
+     * Mirror of `looksLikeOpenVinoIr` in omni-viewer-core/parsers/openvino:
+     * a lowercase `<net>` root carrying a numeric `version` and holding a
+     * `<layers>` element, after any BOM / declaration / comment prologue.
+     */
+    private static looksLikeOpenVinoIr(sample: string): boolean {
+        let text = sample.charCodeAt(0) === 0xfeff ? sample.slice(1) : sample;
+        for (;;) {
+            text = text.trimStart();
+            let closer: string;
+            if (text.startsWith('<?')) closer = '?>';
+            else if (text.startsWith('<!--')) closer = '-->';
+            else break;
+            const end = text.indexOf(closer, 2);
+            if (end === -1) return false;
+            text = text.slice(end + closer.length);
+        }
+        const root = /^\s*(?:<!DOCTYPE(?:[^[>]|\[[^\]]*\])*>\s*)?<net(?:\s[^>]*)?>/.exec(text);
+        if (!root) return false;
+        const tag = root[0];
+        return /\sversion\s*=\s*["']\d+["']/.test(tag) && /<layers[\s/>]/.test(text.slice(root.index + tag.length));
+    }
+
     private static looksLikeMermaid(lines: string[]): boolean {
         const firstCodeLine = lines.find((line) => !line.startsWith('%%'));
         if (!firstCodeLine) return false;
@@ -992,6 +1189,22 @@ export function shortNameForViewType(viewType: OmniViewerViewType): string {
         return 'automotive';
     case 'omni-viewer.hdf5Viewer':
         return 'hdf5';
+    case 'omni-viewer.numpyViewer':
+        return 'numpy';
+    case 'omni-viewer.ggufViewer':
+        return 'gguf';
+    case 'omni-viewer.onnxViewer':
+        return 'onnx';
+    case 'omni-viewer.tfliteViewer':
+        return 'tflite';
+    case 'omni-viewer.kerasViewer':
+        return 'keras';
+    case 'omni-viewer.coremlViewer':
+        return 'coreml';
+    case 'omni-viewer.openvinoViewer':
+        return 'openvino';
+    case 'omni-viewer.safetensorsViewer':
+        return 'safetensors';
     case 'omni-viewer.parquetViewer':
         return 'parquet';
     case 'omni-viewer.hwpViewer':

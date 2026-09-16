@@ -19,6 +19,14 @@ const VIEWERS: Array<{ slug: string; mountFn: string }> = [
     { slug: 'csv', mountFn: 'mountCsvViewer' },
     { slug: 'excel', mountFn: 'mountExcelViewer' },
     { slug: 'parquet', mountFn: 'mountParquetViewer' },
+    { slug: 'numpy', mountFn: 'mountNumpyViewer' },
+    { slug: 'gguf', mountFn: 'mountGgufViewer' },
+    { slug: 'onnx', mountFn: 'mountOnnxViewer' },
+    { slug: 'tflite', mountFn: 'mountTfliteViewer' },
+    { slug: 'keras', mountFn: 'mountKerasViewer' },
+    { slug: 'coreml', mountFn: 'mountCoremlViewer' },
+    { slug: 'openvino', mountFn: 'mountOpenVinoViewer' },
+    { slug: 'safetensors', mountFn: 'mountSafetensorsViewer' },
     { slug: 'word', mountFn: 'mountWordViewer' },
     { slug: 'ppt', mountFn: 'mountPptViewer' },
     { slug: 'psd', mountFn: 'mountPsdViewer' },
@@ -35,6 +43,7 @@ const VIEWERS: Array<{ slug: string; mountFn: string }> = [
     { slug: 'proto', mountFn: 'mountProtoViewer' },
     { slug: 'automotive', mountFn: 'mountAutomotiveViewer' },
     { slug: 'video', mountFn: 'mountVideoViewer' },
+    { slug: 'audio', mountFn: 'mountAudioViewer' },
 ];
 
 describe('viewer bundle named exports (#73)', () => {

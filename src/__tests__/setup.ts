@@ -143,6 +143,23 @@ const fetchMock = jest.fn(async (_input: unknown, _init?: unknown): Promise<Resp
 
 (globalThis as unknown as { fetch: typeof fetchMock }).fetch = fetchMock;
 
+// --- Blob.prototype.arrayBuffer ----------------------------------------
+//
+// jsdom does not implement it, so viewer adapters that read a picked File's
+// bytes (`new Uint8Array(await file.arrayBuffer())`) throw under Jest while
+// working fine in Chrome. File extends Blob, so patching Blob covers both.
+
+if (typeof Blob !== 'undefined' && typeof Blob.prototype.arrayBuffer !== 'function') {
+    Blob.prototype.arrayBuffer = function arrayBuffer(this: Blob): Promise<ArrayBuffer> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as ArrayBuffer);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsArrayBuffer(this);
+        });
+    };
+}
+
 // Reset mocks between tests so leak-y state doesn't bleed across tests.
 afterEach(() => {
     fetchMock.mockClear();

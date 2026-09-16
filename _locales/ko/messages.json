@@ -44,8 +44,28 @@
     "description": "Drag and drop prompt."
   },
   "formatsSummary": {
-    "message": "이미지, PDF, CSV/TSV, JSON/JSONL, YAML/TOML, Proto, 미디어, Office, PSD, Parquet, HWP/HWPX, 압축 파일",
+    "message": "이미지, PDF, CSV/TSV, JSON/JSONL, YAML/TOML, Proto, NumPy, GGUF, ONNX, TFLite, Keras, Core ML, OpenVINO, Safetensors, 미디어, Office, PSD, Parquet, HWP/HWPX, 압축 파일",
     "description": "Summary of supported file formats."
+  },
+  "openvinoNoBin": {
+    "message": ".bin이 없습니다 — 상수는 바이트 범위만 표시됩니다. 모델 옆의 $1 파일을 기대합니다.",
+    "description": "OpenVINO IR viewer bar when the weights sidecar is missing. $1 = expected .bin file name."
+  },
+  "openvinoBinAttached": {
+    "message": "가중치: $1 ($2)",
+    "description": "OpenVINO IR viewer bar naming the attached .bin. $1 = file name, $2 = size."
+  },
+  "openvinoAttachBin": {
+    "message": ".bin 첨부…",
+    "description": "Button that opens a picker for the OpenVINO weights file."
+  },
+  "openvinoReplaceBin": {
+    "message": ".bin 교체…",
+    "description": "Button that opens a picker to swap the attached OpenVINO weights file."
+  },
+  "openvinoBinFailed": {
+    "message": "$1을(를) 적용할 수 없습니다: $2",
+    "description": "OpenVINO IR viewer bar after a picked .bin could not be used. $1 = file name, $2 = error."
   },
   "downloadOriginal": {
     "message": "원본 다운로드",

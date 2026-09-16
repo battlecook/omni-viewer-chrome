@@ -1,0 +1,16 @@
+<!doctype html>
+<!-- No `lang` here on purpose: the adapter reads
+     `document.documentElement.lang` first and only falls back to
+     `chrome.i18n.getUILanguage()` when it is empty, so pinning a language
+     would force this standalone page into English for every user. -->
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Safetensors Viewer</title>
+</head>
+<body>
+    <main data-viewer="safetensors"></main>
+    <script type="module" src="./safetensorsViewer.js"></script>
+</body>
+</html>

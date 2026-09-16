@@ -44,8 +44,28 @@
     "description": "Drag and drop prompt."
   },
   "formatsSummary": {
-    "message": "Images, PDF, CSV/TSV, JSON/JSONL, YAML/TOML, media, Office, PSD, Parquet, HWP/HWPX, archives",
+    "message": "Images, PDF, CSV/TSV, JSON/JSONL, YAML/TOML, NumPy, OpenVINO, media, Office, PSD, Parquet, HWP/HWPX, archives",
     "description": "Summary of supported file formats."
+  },
+  "openvinoNoBin": {
+    "message": "No .bin attached — constants show byte ranges only. Expected $1 beside the model.",
+    "description": "[needsTranslation] OpenVINO IR viewer bar when the weights sidecar is missing. $1 = expected .bin file name."
+  },
+  "openvinoBinAttached": {
+    "message": "Weights: $1 ($2)",
+    "description": "[needsTranslation] OpenVINO IR viewer bar naming the attached .bin. $1 = file name, $2 = size."
+  },
+  "openvinoAttachBin": {
+    "message": "Attach .bin…",
+    "description": "[needsTranslation] Button that opens a picker for the OpenVINO weights file."
+  },
+  "openvinoReplaceBin": {
+    "message": "Replace .bin…",
+    "description": "[needsTranslation] Button that opens a picker to swap the attached OpenVINO weights file."
+  },
+  "openvinoBinFailed": {
+    "message": "Couldn't apply $1: $2",
+    "description": "[needsTranslation] OpenVINO IR viewer bar after a picked .bin could not be used. $1 = file name, $2 = error."
   },
   "downloadOriginal": {
     "message": "元ファイルをダウンロード",

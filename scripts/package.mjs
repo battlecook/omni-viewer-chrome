@@ -70,10 +70,13 @@ function ensureDistReady() {
  * vendor additions aren't accidentally excluded.
  */
 const PRUNE_RELATIVE_PATHS = new Set([
-  // Non-ESM wavesurfer build; app.js uses the .esm.js entry.
+  // Non-ESM wavesurfer build; the audio viewer uses the .esm.js entry.
   'vendor/wavesurfer/wavesurfer.js',
-  // Plugins not registered by app.js.
+  // Plugins the audio viewer does not register (see
+  // src/templates/audio/js/audioViewer.ts).
   'vendor/wavesurfer/plugins/envelope.js',
+  'vendor/wavesurfer/plugins/hover.js',
+  'vendor/wavesurfer/plugins/minimap.js',
   'vendor/wavesurfer/plugins/record.js',
   'vendor/wavesurfer/plugins/spectrogram-windowed.js',
   'vendor/wavesurfer/plugins/spectrogram-worker.js',

@@ -70,9 +70,13 @@ import {
 import {
     ChromeViewerProvider,
     disposeAllMountedViewers,
+    disposeMountedViewer,
+    isMountedViewer,
     registerMountedViewer,
     renderUnsupportedFallback
 } from './viewerProviderUtils';
+
+let mountGeneration = 0;
 
 export interface RouteResult {
     viewType: OmniViewerViewType;
@@ -117,6 +121,7 @@ export async function mountViewerForFile(
     container: HTMLElement,
     options: { forceViewType?: OmniViewerViewType } = {}
 ): Promise<RouteResult | undefined> {
+    const generation = ++mountGeneration;
     disposeAllMountedViewers();
     container.innerHTML = '';
 
@@ -134,21 +139,32 @@ export async function mountViewerForFile(
     }
 
     const provider = registration.createProvider();
-
-    try {
-        await provider.render(file, container);
-    } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        renderUnsupportedFallback(container, file.name, `Render failed: ${message}`);
-        return undefined;
-    }
-
     registerMountedViewer({
         viewType: registration.viewType,
         file,
         container,
         provider
     });
+
+    try {
+        await provider.render(file, container);
+    } catch (err) {
+        if (
+            generation !== mountGeneration
+            || !isMountedViewer(registration.viewType, file, provider)
+        ) return undefined;
+        disposeMountedViewer(registration.viewType, file);
+        const message = err instanceof Error ? err.message : String(err);
+        renderUnsupportedFallback(container, file.name, `Render failed: ${message}`);
+        return undefined;
+    }
+
+    if (
+        generation !== mountGeneration
+        || !isMountedViewer(registration.viewType, file, provider)
+    ) {
+        return undefined;
+    }
 
     return {
         viewType: registration.viewType,

@@ -24,16 +24,24 @@ licenses.
 | JSZip | `jszip.min.js` | MIT | Copyright (c) 2009-2016 Stuart Knightley and contributors — https://github.com/Stuk/jszip |
 | hyparquet | `hyparquet/**` | MIT | Copyright (c) Hyperparam — https://github.com/hyparam/hyparquet |
 | libarchive.js | `libarchive-worker-bundle.js`, `libarchive.wasm` | MIT | Copyright (c) 2018 Nika Begiashvili — https://github.com/nika-begiashvili/libarchivejs |
-| audio_engine | `audio_engine.wasm`, `audio_engine_browser.js` | Public Domain / MIT | Bundles stb_vorbis (Sean T. Barrett) and dr_libs: dr_mp3/dr_flac/dr_wav (David Reid). See below. |
 
-### audio_engine components
+## Audio engine (`assets/audio-engine/`)
 
-The audio decoder WASM bundles the following public-domain / MIT libraries:
+The WebAssembly audio decode/analysis engine is provided by `omni-viewer-core`
+and copied into the build from that package's `dist/assets/audio-engine/`. It
+includes the following software:
 
-- **stb_vorbis** — Sean T. Barrett. Dual-licensed: Public Domain (Unlicense)
-  or MIT. https://github.com/nothings/stb
-- **dr_libs (dr_mp3, dr_flac, dr_wav)** — David Reid. Dual-licensed: Public
-  Domain (Unlicense) or MIT-0. https://github.com/mackron/dr_libs
+- **KISS FFT** — Copyright (c) 2003-2010 Mark Borgerding. BSD 3-Clause.
+- **dr_libs (dr_wav, dr_mp3, dr_flac)** — David Reid, under the MIT No
+  Attribution (MIT-0) option. https://github.com/mackron/dr_libs
+- **stb_vorbis** — Copyright (c) 2017 Sean Barrett, under the MIT option.
+  https://github.com/nothings/stb
+- **Emscripten runtime** — Copyright the Emscripten authors. MIT. The
+  generated `audio_engine.mjs` embeds Emscripten's JavaScript runtime support
+  code. https://github.com/emscripten-core/emscripten
+
+The upstream license statements remain embedded in the shipped artifacts; see
+`omni-viewer-core`'s `THIRD_PARTY_NOTICES.md` for the full text locations.
 
 ---
 

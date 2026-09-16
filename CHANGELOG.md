@@ -2,6 +2,92 @@
 
 All notable changes to the Chrome build of Omni Viewer are documented in this file.
 
+## [0.6.0] - 2026-09-16
+
+### Added
+- Added an OpenVINO IR model viewer backed by `omni-viewer-core` for the
+  `.xml` + `.bin` pair. Routing is by content only — `.xml` belongs to every
+  XML dialect, so the `<net version>` root with a `<layers>` child is what
+  selects the viewer, both in `app.js` and in `FileUtils.detectViewerType`.
+  The `.bin` is a sidecar the browser cannot read off disk by itself: the
+  picker and drop zone now accept several files and pair a `.bin` with its
+  same-stem `.xml` (multi-file launches from the OS do the same), and the
+  viewer carries an "Attach .bin…" bar for a model opened on its own. The
+  topology, layer, constant, input/output and model-information panels render
+  without the weights; with them, constant byte ranges are checked and their
+  leading values previewed while the rest of the `.bin` is never decoded.
+
+- Added a NumPy array viewer backed by `omni-viewer-core` for `.npy` and
+  ZIP-backed `.npz` files. It shows array metadata and bounded value grids,
+  supports multidimensional slice selection and NPZ array switching, and
+  refuses unsafe pickle-backed object arrays while preserving diagnostics.
+
+- Added a Core ML model viewer backed by `omni-viewer-core`, including
+  `.mlmodel` / `.mlpackage` file-handler routing and detection of a zipped
+  `.mlpackage` from its `Manifest.json` + `Data/com.apple.CoreML/` layout.
+  The viewer exposes the per-graph computation graph for both ML Programs and
+  the older neural-network encoding, with operation, value, weight,
+  input/output, package and model-information panels. Weight payloads are
+  never decoded — blob references resolve to a file, an offset and a byte
+  count — so a multi-gigabyte model costs nothing to open.
+
+- Added a TFLite / LiteRT model viewer backed by `omni-viewer-core`, including
+  `.tflite` / `.lite` file-handler routing and `TFL3` identifier detection.
+  The viewer exposes subgraph topology, operators, tensors, inputs/outputs,
+  buffers, quantization, sparsity, signatures, metadata and model warnings
+  without decoding model weight payloads.
+
+- Added a GGUF metadata and tensor-index viewer backed by
+  `omni-viewer-core`, including `.gguf` file-handler routing and `GGUF`
+  magic-byte detection. The Chrome adapter parses through a temporary Blob
+  URL, so tensor payloads are not decoded or duplicated in memory.
+
+- Added an ONNX model viewer backed by `omni-viewer-core`, covering the model
+  info, graph, node, tensor and input/output panes, with `.onnx` file-handler
+  routing. ONNX is bare protobuf with no magic bytes, so routing is
+  extension-driven by design. The core parser reads graph topology, types,
+  shapes and attributes without materializing tensor payloads, so weights are
+  never decoded into memory.
+
+- Added a safetensors model viewer backed by `omni-viewer-core`, covering the
+  header summary, tensor table with search, and raw header preview, with
+  `.safetensors` file-handler routing. The format carries no magic bytes — a
+  little-endian u64 header length is followed by that many bytes of JSON — so
+  detection accepts only a declared header that fits inside the file and opens
+  a JSON object, with the extension as the fallback. The Chrome adapter hands
+  the core a lazy `Blob.slice()` source, so only the header is ever read and
+  multi-gigabyte tensor payloads never enter memory.
+
+- Added a Keras model viewer backed by `omni-viewer-core`, covering the layer
+  table, weight index, model config, compile/training settings and archive
+  members, with `.keras` file-handler routing. A `.keras` file is a ZIP with no
+  distinguishing leading bytes, so the extension claims it; a renamed one is
+  still recognized when `config.json` and `model.weights.h5` both sit at the
+  root of the archive. The weight store is walked for shapes and datatypes
+  only, so parameter payloads are never decoded.
+- Read the older Keras 2 save format too: a model named `.keras` opens in the
+  Keras viewer whether it holds the archive or plain HDF5. A file named `.h5`
+  stays with the HDF5 viewer, since nothing short of reading it tells a Keras
+  model apart from any other HDF5 file.
+
+### Changed
+- Upgraded `omni-viewer-core` from 0.11.1 to 0.18.0, which supplies the model
+  viewers above and the shared audio viewer.
+- Migrated the audio viewer onto `omni-viewer-core`, replacing both the legacy
+  SPA renderer in `src/app.js` and the in-repo `AudioController` (~1,600 lines
+  total). Chrome now supplies only the platform bindings: the vendored
+  WaveSurfer modules, the core's WASM decode/analysis engine (copied to
+  `assets/audio-engine/` and run in a Worker so a stalled decode cannot freeze
+  the page), and i18n. Large files still render from WASM-computed peaks
+  instead of a full browser decode, and files the browser cannot decode are
+  remuxed to WAV by the engine rather than failing.
+- Dropped features the shared viewer does not (yet) have: playback speed,
+  region export to WAV, the mel/linear/bark/ERB spectrogram scale selector,
+  the simultaneous waveform+spectrogram view, the minimap and hover overlays,
+  and the keyboard shortcuts.
+- Removed `vendor/audio_engine_browser.js` and `vendor/audio_engine.wasm`; the
+  engine now ships from `omni-viewer-core`.
+
 ## [0.5.0] - 2026-08-01
 
 ### Added

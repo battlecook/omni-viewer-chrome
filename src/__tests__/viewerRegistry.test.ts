@@ -46,6 +46,14 @@ const ALL_SLUGS: ViewerSlug[] = [
     'csv',
     'excel',
     'parquet',
+    'numpy',
+    'gguf',
+    'onnx',
+    'tflite',
+    'keras',
+    'coreml',
+    'openvino',
+    'safetensors',
     'word',
     'ppt',
     'psd',
@@ -74,7 +82,7 @@ const ALL_SLUGS: ViewerSlug[] = [
 
 describe('viewerRegistry', () => {
     it('registers all viewers', () => {
-        expect(VIEWER_REGISTRATIONS).toHaveLength(31);
+        expect(VIEWER_REGISTRATIONS).toHaveLength(39);
         const slugs = VIEWER_REGISTRATIONS.map((r) => r.slug).sort();
         expect(slugs).toEqual([...ALL_SLUGS].sort());
     });
@@ -172,6 +180,18 @@ describe('viewerRegistry', () => {
             ['deck.pptx', 'ppt'],
             ['layered.psd', 'psd'],
             ['data.parquet', 'parquet'],
+            ['array.npy', 'numpy'],
+            ['arrays.npz', 'numpy'],
+            ['model.gguf', 'gguf'],
+            ['model.onnx', 'onnx'],
+            ['model.tflite', 'tflite'],
+            ['model.lite', 'tflite'],
+            ['model.keras', 'keras'],
+            ['model.mlmodel', 'coreml'],
+            ['model.mlpackage', 'coreml'],
+            // OpenVINO IR is routed by content, never by its shared `.xml`.
+            ['model.xml', undefined],
+            ['model.safetensors', 'safetensors'],
             ['report.hwpx', 'hwp'],
             ['archive.zip', 'archive'],
             ['archive.tar.gz', 'archive'],

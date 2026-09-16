@@ -43,6 +43,7 @@ interface ChromeManifest {
 const REPO_ROOT = process.cwd();
 const MANIFEST_PATH = path.join(REPO_ROOT, 'manifest.json');
 const PACKAGE_PATH = path.join(REPO_ROOT, 'package.json');
+const LOCALES_PATH = path.join(REPO_ROOT, '_locales');
 
 function loadManifest(): ChromeManifest {
     const raw = fs.readFileSync(MANIFEST_PATH, 'utf8');
@@ -203,6 +204,19 @@ describe('storeManifest invariants', () => {
     });
 
     describe('file_handlers cover the documented viewer formats', () => {
+        it.each(['NumPy', 'OpenVINO'])('advertises %s support in every shipped locale', (label) => {
+            const locales = fs.readdirSync(LOCALES_PATH, { withFileTypes: true })
+                .filter((entry) => entry.isDirectory())
+                .map((entry) => entry.name);
+            for (const locale of locales) {
+                const messagesPath = path.join(LOCALES_PATH, locale, 'messages.json');
+                const messages = JSON.parse(fs.readFileSync(messagesPath, 'utf8')) as {
+                    formatsSummary?: { message?: string };
+                };
+                expect(messages.formatsSummary?.message).toContain(label);
+            }
+        });
+
         it('declares at least one file_handlers entry', () => {
             expect(Array.isArray(manifest.file_handlers)).toBe(true);
             expect((manifest.file_handlers as FileHandlerEntry[]).length).toBeGreaterThan(0);
@@ -236,6 +250,13 @@ describe('storeManifest invariants', () => {
                 '.pptx', // ppt
                 '.psd',  // psd
                 '.parquet', // parquet
+                '.npy', // NumPy NPY
+                '.npz', // NumPy NPZ
+                '.gguf', // GGUF
+                '.onnx', // ONNX
+                '.tflite', // TFLite / LiteRT
+                '.keras', // Keras
+                '.safetensors', // safetensors
                 '.hwp',  // hwp
                 '.avro', // Avro
                 '.bag',  // ROS bag

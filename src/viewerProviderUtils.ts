@@ -70,6 +70,15 @@ export function registerMountedViewer(mounted: MountedViewer): void {
     mountedViewers.set(getMountKey(mounted.viewType, mounted.file), mounted);
 }
 
+/** True only while this exact provider is still the active record. */
+export function isMountedViewer(
+    viewType: OmniViewerViewType,
+    file: File,
+    provider: ChromeViewerProvider
+): boolean {
+    return mountedViewers.get(getMountKey(viewType, file))?.provider === provider;
+}
+
 export function disposeMountedViewer(viewType: OmniViewerViewType, file: File): void {
     const key = getMountKey(viewType, file);
     const mounted = mountedViewers.get(key);

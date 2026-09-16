@@ -4,24 +4,14 @@ const state = {
   file: null,
   fileHandle: null,
   type: 'unknown',
-  objectUrl: null,
   pdfScale: 1.1,
   table: { rows: [], headers: [], page: 1, pageSize: 80, query: '' },
-  audio: {
-    wavesurfer: null,
-    regions: null,
-    spectrogram: null,
-    timeline: null,
-    minimap: null,
-    mode: 'default',
-    loop: false,
-    selectedRegion: null,
-    audioEngine: null,
-    blobUrl: null,
-    zoomMin: 1,
-    regionOverlays: [],
-    eventCleanups: []
-  }
+  // Files that arrived together with `file` (multi-select or multi-drop).
+  // Only viewers with a sidecar — OpenVINO's `.bin` — look here.
+  companions: [],
+  openFileGeneration: 0,
+  advancedViewerGeneration: 0,
+  advancedViewerAbortController: null
 };
 
 const fileInput = $('#fileInput');
@@ -197,6 +187,15 @@ const formats = {
   automotive: ['.dbc', '.arxml', '.a2l', '.asc', '.blf', '.mf4', '.mdf', '.avro', '.bag', '.stp', '.step', '.db3', '.sqlite', '.sqlite3', '.reqif', '.pcap', '.pcapng'],
   hdf5: ['.h5', '.hdf5'],
   mat: ['.mat'],
+  numpy: ['.npy', '.npz'],
+  gguf: ['.gguf'],
+  onnx: ['.onnx'],
+  tflite: ['.tflite', '.lite'],
+  keras: ['.keras'],
+  coreml: ['.mlmodel', '.mlpackage'],
+  // Routed by content only: `.xml` belongs to every XML dialect.
+  openvino: [],
+  safetensors: ['.safetensors'],
   audio: ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'],
   video: ['.mp4', '.webm', '.mov', '.m4v', '.ogv'],
   excel: ['.xlsx', '.xls'],
@@ -224,6 +223,14 @@ const labels = {
   automotive: 'Automotive',
   hdf5: 'HDF5',
   mat: 'MAT',
+  numpy: 'NumPy',
+  gguf: 'GGUF',
+  onnx: 'ONNX',
+  tflite: 'TFLite',
+  keras: 'Keras',
+  coreml: 'Core ML',
+  openvino: 'OpenVINO IR',
+  safetensors: 'Safetensors',
   audio: 'Audio',
   video: 'Video',
   excel: 'Excel',
@@ -236,21 +243,7 @@ const labels = {
   unknown: 'Raw Data'
 };
 
-const LARGE_AUDIO_THRESHOLD = 50 * 1024 * 1024;
-const LONG_AUDIO_THRESHOLD = 300;
-const AUDIO_PEAKS_WIDTH = 32000;
-const AUDIO_FFT_SIZE = 2048;
-const AUDIO_MAX_SPEC_WIDTH = 3500;
 const RAW_TEXT_PREVIEW_LIMIT = 2 * 1024 * 1024;
-const AUDIO_BITRATE_ESTIMATES = {
-  '.mp3': 16000,
-  '.ogg': 16000,
-  '.aac': 16000,
-  '.m4a': 16000,
-  '.flac': 100000,
-  '.wav': 176400
-};
-const UNRELIABLE_AUDIO_DURATION_EXTS = new Set(['.ogg']);
 
 function formatSize(bytes) {
   if (!bytes) return '0 B';
@@ -278,8 +271,91 @@ function hasPrefix(bytes, values, offset = 0) {
   return values.every((value, index) => bytes[offset + index] === value);
 }
 
+// Safetensors carries no magic bytes — a little-endian u64 header length is
+// followed by that many bytes of JSON. The declared header has to fit inside
+// the file and the byte after the prefix has to open a JSON object.
+function isSafetensorsHead(head, fileSize) {
+  if (head.length < 10) return false;
+  const view = new DataView(head.buffer, head.byteOffset, head.byteLength);
+  if (view.getUint32(4, true) !== 0) return false;
+  const headerLength = view.getUint32(0, true);
+  if (headerLength < 2 || headerLength > fileSize - 8) return false;
+  return head[8] === 0x7b && (head[9] === 0x22 || head[9] === 0x7d);
+}
+
 function ascii(bytes, start = 0, length = bytes.length - start) {
   return Array.from(bytes.slice(start, start + length), (value) => String.fromCharCode(value)).join('');
+}
+
+// Entry names read from the ZIP local file headers that fit inside `head`.
+// Comparing names beats scanning the raw bytes for a string: an entry called
+// `notes/config.json` must not read as the root `config.json` a format spec
+// asks for. The walk needs each entry's size to find the next header, so it
+// stops at the first one that runs past the bytes we read — callers get a
+// short list, never a wrong one. That bound has a price: a *renamed* model
+// whose leading members already fill the head window is left to the archive
+// viewer, which lists it rather than getting it wrong. A file that still
+// carries its own extension is claimed before this runs.
+function zipEntryNames(head) {
+  const names = [];
+  const view = new DataView(head.buffer, head.byteOffset, head.byteLength);
+  let offset = 0;
+  while (offset + 30 <= head.length && view.getUint32(offset, true) === 0x04034b50) {
+    const flags = view.getUint16(offset + 6, true);
+    const compressedSize = view.getUint32(offset + 18, true);
+    const nameLength = view.getUint16(offset + 26, true);
+    const extraLength = view.getUint16(offset + 28, true);
+    const nameEnd = offset + 30 + nameLength;
+    if (nameEnd > head.length) break;
+    names.push(ascii(head, offset + 30, nameLength));
+    // Bit 3 defers the sizes to a descriptor after the data, leaving nothing
+    // here to advance by.
+    if (flags & 0x08) break;
+    offset = nameEnd + extraLength + compressedSize;
+  }
+  return names;
+}
+
+// Mirror of `looksLikeOpenVinoIr` in omni-viewer-core/parsers/openvino: a
+// lowercase `<net>` root carrying a numeric `version` and holding `<layers>`,
+// after any BOM / declaration / comment prologue.
+function looksLikeOpenVinoIr(text) {
+  let sample = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+  for (;;) {
+    sample = sample.trimStart();
+    let closer;
+    if (sample.startsWith('<?')) closer = '?>';
+    else if (sample.startsWith('<!--')) closer = '-->';
+    else break;
+    const end = sample.indexOf(closer, 2);
+    if (end === -1) return false;
+    sample = sample.slice(end + closer.length);
+  }
+  const root = /^\s*(?:<!DOCTYPE(?:[^[>]|\[[^\]]*\])*>\s*)?<net(?:\s[^>]*)?>/.exec(sample);
+  if (!root) return false;
+  const tag = root[0];
+  return /\sversion\s*=\s*["']\d+["']/.test(tag) && /<layers[\s/>]/.test(sample.slice(root.index + tag.length));
+}
+
+// `model.xml` -> `model.bin`, the pair OpenVINO's serializer writes. Picks the
+// matching `.bin` out of the files that arrived with the model, or the only
+// `.bin` when there is just one — a user who dropped exactly one weights file
+// meant it for this model.
+function companionBinFor(file, companions) {
+  const bins = companions.filter((other) => other !== file && /\.bin$/i.test(other.name));
+  const expected = `${file.name.replace(/\.xml$/i, '')}.bin`.toLowerCase();
+  return bins.find((other) => other.name.toLowerCase() === expected) || (bins.length === 1 ? bins[0] : null);
+}
+
+// Which of several files opened together is the one to show. An IR pair is
+// the only case where the answer isn't "the first": its `.xml` leads and the
+// `.bin` rides along, whichever order the picker or the drop delivered them.
+function pickPrimaryFile(files) {
+  if (files.length > 1) {
+    const xml = files.find((file) => /\.xml$/i.test(file.name));
+    if (xml && companionBinFor(xml, files)) return xml;
+  }
+  return files[0];
 }
 
 function byExtension(file) {
@@ -305,7 +381,14 @@ async function detectType(file) {
   if (ascii(head, 4, 4) === 'ftyp') return ext === '.m4a' ? 'audio' : 'video';
   if (hasPrefix(head, [0x1a, 0x45, 0xdf, 0xa3])) return 'video';
   if (hasPrefix(head, [0x50, 0x41, 0x52, 0x31]) && hasPrefix(await readTail(file), [0x50, 0x41, 0x52, 0x31])) return 'parquet';
-  if (hasPrefix(head, [0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a])) return 'hdf5';
+  // Keras 2 saved models are plain HDF5. Only the contents tell them apart
+  // from any other HDF5 file, so `.h5` stays with the HDF5 viewer and just the
+  // declared `.keras` name moves it to the Keras viewer, which reads both.
+  if (hasPrefix(head, [0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a])) return ext === '.keras' ? 'keras' : 'hdf5';
+  if (hasPrefix(head, [0x93, 0x4e, 0x55, 0x4d, 0x50, 0x59])) return 'numpy';
+  if (ascii(head, 0, 4) === 'GGUF') return 'gguf';
+  if (ascii(head, 4, 4) === 'TFL3') return 'tflite';
+  if (isSafetensorsHead(head, file.size)) return 'safetensors';
   if (ascii(head, 0, 4) === 'LOGG') return 'automotive';
   if (/^MDF\s/.test(ascii(head, 0, Math.min(head.length, 64)))) return 'automotive';
   if (ascii(head, 0, 4) === 'Obj\x01') return 'automotive';
@@ -315,13 +398,29 @@ async function detectType(file) {
   if (hasPrefix(head, [0x0a, 0x0d, 0x0d, 0x0a])) return 'automotive';
   if (hasPrefix(head, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])) return byExtension(file);
   if (hasPrefix(head, [0x50, 0x4b])) {
+    if (ext === '.npz') return 'numpy';
+    if (ext === '.keras') return 'keras';
+    // An .mlpackage is a directory bundle on disk, so the browser only ever
+    // sees the zipped form.
+    if (ext === '.mlpackage') return 'coreml';
     const text = ascii(head, 0, Math.min(head.length, 65536));
+    // Likewise for a renamed .mlpackage: only Core ML reserves this Data tree.
+    if (text.includes('Data/com.apple.CoreML/')) return 'coreml';
     if (text.includes('word/')) return 'word';
     if (text.includes('xl/')) return 'excel';
     if (text.includes('ppt/')) return 'ppt';
     if (text.includes('Contents/content.hpf') || text.includes('version.xml')) return 'hwp';
+    // A mislabeled Keras 3 archive. Neither member is distinctive on its own —
+    // an ordinary archive can hold a `model.weights.h5` — so both have to sit
+    // at the root, which is where the core resolves them (and an unpacked
+    // model re-zipped under a folder is an archive, not a model). The
+    // structured containers above get first refusal.
+    const rootNames = zipEntryNames(head);
+    if (rootNames.includes('config.json') && rootNames.includes('model.weights.h5')) return 'keras';
     return formats.archive.includes(ext) ? 'archive' : byExtension(file);
   }
+  // The `<net>` root is what identifies an IR — `.xml` on its own says nothing.
+  if (looksLikeOpenVinoIr(new TextDecoder().decode(head))) return 'openvino';
   const textHead = ascii(head, 0, Math.min(head.length, 4096)).trimStart();
   if (/^@start(?:uml|plantuml|mindmap|wbs|gantt|json|yaml|salt|ditaa)?\b/i.test(textHead)) return 'plantuml';
   return byExtension(file);
@@ -410,12 +509,6 @@ function escapeHtml(value) {
   }[char]));
 }
 
-function objectUrl(file) {
-  if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
-  state.objectUrl = URL.createObjectURL(file);
-  return state.objectUrl;
-}
-
 // Cache + loader for the per-viewer ESM bundles produced by webpack.
 // `src/app.js` is the legacy SPA entry; the new per-viewer bundles
 // (e.g. `templates/hwp/hwpViewer.js`) self-register their providers via
@@ -443,7 +536,7 @@ async function loadAdvancedViewerBundle(slug) {
     try {
       const url = (typeof chrome !== 'undefined' && chrome.runtime?.getURL)
         ? chrome.runtime.getURL(rel)
-        : rel;
+        : new URL(rel, globalThis.location.href).href;
       // eslint-disable-next-line no-await-in-loop
       const mod = await import(/* @vite-ignore */ url);
       advancedViewerModules.set(slug, mod);
@@ -456,15 +549,24 @@ async function loadAdvancedViewerBundle(slug) {
 }
 
 function releaseAdvancedViewer() {
+  state.advancedViewerGeneration += 1;
+  state.advancedViewerAbortController?.abort();
+  state.advancedViewerAbortController = null;
   if (state.advancedViewerHandle) {
     try { state.advancedViewerHandle.dispose?.(); } catch {}
     state.advancedViewerHandle = null;
   }
 }
 
-async function mountAdvancedViewer(slug, mountFnName, container) {
+async function mountAdvancedViewer(slug, mountFnName, container, mountOptions) {
   releaseAdvancedViewer();
+  const generation = state.advancedViewerGeneration;
+  const file = state.file;
+  const fileHandle = state.fileHandle;
+  const controller = new AbortController();
+  state.advancedViewerAbortController = controller;
   const mod = await loadAdvancedViewerBundle(slug);
+  if (generation !== state.advancedViewerGeneration || controller.signal.aborted) return;
   const mountFn = mod[mountFnName];
   if (typeof mountFn !== 'function') {
     throw new Error(`${slug} bundle missing ${mountFnName}`);
@@ -472,28 +574,20 @@ async function mountAdvancedViewer(slug, mountFnName, container) {
   // Pass the writable FileSystemFileHandle (launchQueue path only; null
   // otherwise) as a third arg. Viewers that don't support in-place writeback
   // simply ignore it.
-  const handle = await mountFn(state.file, container, state.fileHandle);
+  let handle;
+  try {
+    handle = await mountFn(file, container, fileHandle, controller.signal, mountOptions);
+  } catch (error) {
+    if (generation !== state.advancedViewerGeneration || controller.signal.aborted) return;
+    throw error;
+  }
+  if (generation !== state.advancedViewerGeneration || controller.signal.aborted) {
+    handle?.dispose?.();
+    return;
+  }
+  state.advancedViewerAbortController = null;
   if (handle && typeof handle.dispose === 'function') {
     state.advancedViewerHandle = handle;
-  }
-}
-
-function releaseAudio() {
-  const audio = state.audio;
-  document.removeEventListener('keydown', audioSpaceHandler);
-  audio.eventCleanups.forEach((cleanup) => cleanup());
-  audio.eventCleanups = [];
-  removeRegionOverlays();
-  try { audio.wavesurfer?.destroy?.(); } catch {}
-  audio.wavesurfer = null;
-  audio.regions = null;
-  audio.spectrogram = null;
-  audio.timeline = null;
-  audio.minimap = null;
-  audio.selectedRegion = null;
-  if (audio.blobUrl) {
-    URL.revokeObjectURL(audio.blobUrl);
-    audio.blobUrl = null;
   }
 }
 
@@ -506,16 +600,24 @@ function downloadBlob(blob, fileName) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-async function openFile(file, handle = null) {
-  releaseAudio();
+function claimOpenFileIntent() {
+  return ++state.openFileGeneration;
+}
+
+async function openFile(file, handle = null, generation = claimOpenFileIntent(), companions = []) {
+  await languageReady;
+  if (generation !== state.openFileGeneration) return;
   releaseAdvancedViewer();
   state.file = file;
+  state.companions = companions.filter((other) => other !== file);
   // Only the file_handlers (launchQueue) path supplies a writable
   // FileSystemFileHandle; input/drop paths pass none, so writeback stays off
   // and those viewers fall back to a download save.
   state.fileHandle = handle ?? null;
   shareCurrentFileButton.disabled = false;
-  state.type = await detectType(file);
+  const detectedType = await detectType(file);
+  if (generation !== state.openFileGeneration) return;
+  state.type = detectedType;
   setStatus('');
   fileMeta.classList.remove('hidden');
   fileMeta.innerHTML = `<div class="meta-grid">
@@ -528,6 +630,7 @@ async function openFile(file, handle = null) {
   try {
     await renderByType();
   } catch (error) {
+    if (generation !== state.openFileGeneration) return;
     console.error(error);
     setStatus(error instanceof Error ? error.message : String(error), true);
   }
@@ -564,13 +667,17 @@ async function shareCurrentFile() {
 async function openSharedLinkPrompt() {
   const input = window.prompt('Enter Omni Viewer share URL or share ID');
   if (!input) return;
+  const generation = claimOpenFileIntent();
   openSharedLinkButton.disabled = true;
   setStatus('Downloading shared file...');
   try {
     const { openSharedLink } = await loadShareModule();
+    if (generation !== state.openFileGeneration) return;
     const file = await openSharedLink(input, { downloadImpl: downloadSharedFileViaBackground });
-    await openFile(file);
+    if (generation !== state.openFileGeneration) return;
+    await openFile(file, null, generation);
   } catch (error) {
+    if (generation !== state.openFileGeneration) return;
     console.error(error);
     setStatus(`Download failed: ${error instanceof Error ? error.message : String(error)}`, true);
   } finally {
@@ -595,8 +702,16 @@ async function renderByType() {
   if (type === 'automotive') return renderAutomotive();
   if (type === 'hdf5') return renderHdf5();
   if (type === 'mat') return renderMat();
+  if (type === 'numpy') return renderNumpy();
+  if (type === 'gguf') return renderGguf();
+  if (type === 'onnx') return renderOnnx();
+  if (type === 'tflite') return renderTflite();
+  if (type === 'keras') return renderKeras();
+  if (type === 'coreml') return renderCoreml();
+  if (type === 'openvino') return renderOpenvino();
+  if (type === 'safetensors') return renderSafetensors();
   if (type === 'audio') return renderAudio();
-  if (type === 'video') return renderMedia('video');
+  if (type === 'video') return renderVideo();
   if (type === 'excel') return renderExcel();
   if (type === 'word') return renderWord();
   if (type === 'ppt') return renderPpt();
@@ -846,892 +961,118 @@ async function renderMat() {
   }
 }
 
-async function renderMedia(kind) {
-  if (kind === 'video') {
-    const body = panel(state.file.name);
-    body.innerHTML = '<div class="unsupported"><p>Loading video viewer…</p></div>';
-    try {
-      await mountAdvancedViewer('video', 'mountVideoViewer', body);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      body.innerHTML = `<div class="unsupported"><p>Couldn't load video viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
-    }
-    return;
-  }
-  // Audio: keep the legacy renderAudio path — it has a comprehensive
-  // WaveSurfer + WASM peaks integration that isn't yet replicated 1:1
-  // by the template/audio bundle. The advanced bundle exists but the
-  // legacy SPA's audio impl is feature-richer today; #72's audio leg
-  // is intentionally deferred for a separate audit pass.
-  const tag = `<audio class="media-player" controls src="${objectUrl(state.file)}"></audio>`;
-  panel(state.file.name, tag);
-}
-
-function estimateAudioDuration(file, metadataDuration = 0) {
-  const ext = extOf(file.name);
-  if (metadataDuration > 0 && !UNRELIABLE_AUDIO_DURATION_EXTS.has(ext)) return metadataDuration;
-  const bytesPerSecond = AUDIO_BITRATE_ESTIMATES[ext];
-  return bytesPerSecond ? file.size / bytesPerSecond : 0;
-}
-
-function audioFormat(file) {
-  const ext = extOf(file.name).replace('.', '').toUpperCase();
-  return ext || (file.type || 'audio').replace('audio/', '').toUpperCase();
-}
-
-function audioFrequencyToScale(frequency, scale) {
-  switch (scale) {
-    case 'mel': return 2595 * Math.log10(1 + frequency / 700);
-    case 'bark': {
-      let value = 26.81 * frequency / (1960 + frequency) - 0.53;
-      if (value < 2) value += 0.15 * (2 - value);
-      if (value > 20.1) value += 0.22 * (value - 20.1);
-      return value;
-    }
-    case 'erb': return (1000 * Math.log(10) / 107.939) * Math.log10(1 + 0.00437 * frequency);
-    default: return frequency;
-  }
-}
-
-function audioScaleToFrequency(value, scale) {
-  switch (scale) {
-    case 'mel': return 700 * (10 ** (value / 2595) - 1);
-    case 'bark': {
-      let adjusted = value;
-      if (adjusted < 2) adjusted = (adjusted - 0.3) / 0.85;
-      if (adjusted > 20.1) adjusted = (adjusted + 4.422) / 1.22;
-      return (adjusted + 0.53) / (26.28 - adjusted) * 1960;
-    }
-    case 'erb': return (10 ** (value / (1000 * Math.log(10) / 107.939)) - 1) / 0.00437;
-    default: return value;
-  }
-}
-
-function remapPrecomputedSpectrogram(columns, sampleRate, targetScale) {
-  if (!columns?.length || targetScale === 'mel') return columns;
-  const binCount = columns[0]?.length || 0;
-  if (binCount < 2) return columns;
-  const nyquist = sampleRate / 2;
-  const sourceMax = audioFrequencyToScale(nyquist, 'mel');
-  const targetMax = audioFrequencyToScale(nyquist, targetScale);
-
-  return columns.map((column) => {
-    const remapped = new Uint8Array(binCount);
-    for (let index = 0; index < binCount; index += 1) {
-      const targetValue = targetMax * index / (binCount - 1);
-      const frequency = audioScaleToFrequency(targetValue, targetScale);
-      const sourcePosition = audioFrequencyToScale(frequency, 'mel') / sourceMax * (binCount - 1);
-      const lower = Math.max(0, Math.min(binCount - 1, Math.floor(sourcePosition)));
-      const upper = Math.max(0, Math.min(binCount - 1, lower + 1));
-      const fraction = sourcePosition - lower;
-      remapped[index] = Math.round(column[lower] * (1 - fraction) + column[upper] * fraction);
-    }
-    return remapped;
-  });
-}
-
-function parseWavFmt(arrayBuffer) {
-  if (!arrayBuffer || arrayBuffer.byteLength < 44) return null;
+async function renderNumpy() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading NumPy viewer...</p></div>';
   try {
-    const view = new DataView(arrayBuffer);
-    const tag = (offset) => String.fromCharCode(
-      view.getUint8(offset),
-      view.getUint8(offset + 1),
-      view.getUint8(offset + 2),
-      view.getUint8(offset + 3)
-    );
-    if (tag(0) !== 'RIFF' || tag(8) !== 'WAVE') return null;
-
-    let offset = 12;
-    const max = view.byteLength - 8;
-    while (offset <= max) {
-      const id = tag(offset);
-      const size = view.getUint32(offset + 4, true);
-      if (id === 'fmt ') {
-        if (offset + 24 > view.byteLength) return null;
-        const channels = view.getUint16(offset + 10, true);
-        const sampleRate = view.getUint32(offset + 12, true);
-        const bitsPerSample = view.getUint16(offset + 22, true);
-        if (channels <= 0 || sampleRate <= 0 || bitsPerSample <= 0) return null;
-        return { channels, sampleRate, bitsPerSample };
-      }
-      offset += 8 + size + (size & 1);
-    }
-  } catch (error) {
-    console.warn('[AudioViewer] WAV metadata parse failed:', error);
+    await mountAdvancedViewer('numpy', 'mountNumpyViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load NumPy viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
   }
-  return null;
 }
 
-async function getAudioMetadata(file) {
-  const url = URL.createObjectURL(file);
+async function renderGguf() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading GGUF viewer...</p></div>';
   try {
-    const audio = new Audio();
-    audio.preload = 'metadata';
-    audio.src = url;
-    const duration = await new Promise((resolve) => {
-      let settled = false;
-      let timer = null;
-      const done = (value) => {
-        if (settled) return;
-        settled = true;
-        if (timer) clearTimeout(timer);
-        audio.removeAttribute('src');
-        audio.load();
-        resolve(value);
-      };
-      audio.addEventListener('loadedmetadata', () => done(Number.isFinite(audio.duration) ? audio.duration : 0), { once: true });
-      audio.addEventListener('error', () => done(0), { once: true });
-      timer = setTimeout(() => done(0), 5000);
-    });
-    const metadata = { duration, fileSize: formatSize(file.size), format: audioFormat(file) };
-    if (metadata.format === 'WAV') {
-      const wavFmt = parseWavFmt(await file.slice(0, 65536).arrayBuffer());
-      if (wavFmt) Object.assign(metadata, wavFmt);
-    }
-    return metadata;
-  } finally {
-    URL.revokeObjectURL(url);
+    await mountAdvancedViewer('gguf', 'mountGgufViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load GGUF viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
   }
 }
 
-function formatTime(seconds) {
-  if (!Number.isFinite(seconds) || seconds < 0) return '0:00.000';
-  const minutes = Math.floor(seconds / 60);
-  const sec = (seconds % 60).toFixed(3).padStart(6, '0');
-  return `${minutes}:${sec}`;
-}
-
-async function initAudioEngine() {
-  if (state.audio.audioEngine) return state.audio.audioEngine;
-  if (typeof window.AudioEngineModule !== 'function') {
-    throw new Error('Audio WASM glue is not loaded.');
-  }
-  state.audio.audioEngine = await window.AudioEngineModule({
-    locateFile: (file) => chrome.runtime.getURL(`vendor/${file}`)
-  });
-  return state.audio.audioEngine;
-}
-
-async function analyzeAudioWithWasm(file) {
-  const module = await initAudioEngine();
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const inputPtr = module._malloc(bytes.length);
-  if (!inputPtr) throw new Error(`WASM malloc failed for ${(bytes.length / 1024 / 1024).toFixed(1)}MB audio file.`);
-  module.HEAPU8.set(bytes, inputPtr);
-  const audioPtr = module._decode_audio(inputPtr, bytes.length);
-  module._free(inputPtr);
-  if (!audioPtr) throw new Error(`WASM audio decode failed for ${extOf(file.name) || file.type || 'audio file'}.`);
-
+async function renderOnnx() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading ONNX viewer...</p></div>';
   try {
-    const channels = module._audio_get_channels(audioPtr);
-    const sampleRate = module._audio_get_sample_rate(audioPtr);
-    const framesLow = module._audio_get_total_frames(audioPtr);
-    const framesHigh = module._audio_get_total_frames_high(audioPtr);
-    const totalFrames = framesLow + framesHigh * 0x100000000;
-    const duration = totalFrames / sampleRate;
+    await mountAdvancedViewer('onnx', 'mountOnnxViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load ONNX viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
 
-    const peaksPtr = module._generate_peaks(audioPtr, AUDIO_PEAKS_WIDTH);
-    if (!peaksPtr) throw new Error('WASM peak generation failed.');
-    const peaks = new Float32Array(module.HEAPF32.buffer, peaksPtr, AUDIO_PEAKS_WIDTH).slice();
-    module._free_buffer(peaksPtr);
+async function renderTflite() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading TFLite viewer...</p></div>';
+  try {
+    await mountAdvancedViewer('tflite', 'mountTfliteViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load TFLite viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
 
-    const hopSize = Math.max(512, Math.ceil(totalFrames / AUDIO_MAX_SPEC_WIDTH));
-    const outWidthPtr = module._malloc(4);
-    const outHeightPtr = module._malloc(4);
-    const specPtr = module._generate_spectrogram(audioPtr, AUDIO_FFT_SIZE, hopSize, outWidthPtr, outHeightPtr);
-    const specWidth = module.getValue(outWidthPtr, 'i32');
-    const specHeight = module.getValue(outHeightPtr, 'i32');
-    module._free(outWidthPtr);
-    module._free(outHeightPtr);
+async function renderKeras() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading Keras viewer...</p></div>';
+  try {
+    await mountAdvancedViewer('keras', 'mountKerasViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load Keras viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
 
-    const spectrogram = [];
-    if (specPtr && specWidth > 0 && specHeight > 0) {
-      for (let t = 0; t < specWidth; t += 1) {
-        const column = new Uint8Array(specHeight);
-        for (let f = 0; f < specHeight; f += 1) {
-          column[f] = module.HEAPU8[specPtr + t * specHeight + f];
-        }
-        spectrogram.push(column);
-      }
-      module._free_buffer(specPtr);
-    }
+async function renderCoreml() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading Core ML viewer...</p></div>';
+  try {
+    await mountAdvancedViewer('coreml', 'mountCoremlViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load Core ML viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
 
-    return { peaks: [Array.from(peaks)], duration, sampleRate, channels, spectrogram };
-  } finally {
-    module._free_audio(audioPtr);
+async function renderOpenvino() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading OpenVINO IR viewer...</p></div>';
+  try {
+    // The `.bin` is a sidecar the core never sees on its own; hand over the
+    // one that arrived with the `.xml`, if any. The adapter lets the user
+    // attach one later either way.
+    const bin = companionBinFor(state.file, state.companions);
+    await mountAdvancedViewer('openvino', 'mountOpenVinoViewer', body, { sidecars: { bin } });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load OpenVINO IR viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
+
+async function renderSafetensors() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading safetensors viewer...</p></div>';
+  try {
+    await mountAdvancedViewer('safetensors', 'mountSafetensorsViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load safetensors viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
+
+async function renderVideo() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading video viewer…</p></div>';
+  try {
+    await mountAdvancedViewer('video', 'mountVideoViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load video viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
   }
 }
 
 async function renderAudio() {
-  const [
-    { default: WaveSurfer },
-    { default: HoverPlugin },
-    { default: MinimapPlugin },
-    { default: RegionsPlugin },
-    { default: SpectrogramPlugin },
-    { default: TimelinePlugin }
-  ] = await Promise.all([
-    import('../vendor/wavesurfer/wavesurfer.esm.js'),
-    import('../vendor/wavesurfer/plugins/hover.js'),
-    import('../vendor/wavesurfer/plugins/minimap.js'),
-    import('../vendor/wavesurfer/plugins/regions.js'),
-    import('../vendor/wavesurfer/plugins/spectrogram.js'),
-    import('../vendor/wavesurfer/plugins/timeline.js')
-  ]);
-
-  const body = panel(state.file.name, `
-    <div class="audio-viewer">
-      <div id="audioInfo" class="audio-info"></div>
-      <div class="audio-controls">
-        <button id="audioPlay" class="audio-icon-button" type="button" aria-label="Play" title="Play">
-          <svg class="audio-control-icon audio-play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
-          <svg class="audio-control-icon audio-pause-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h4v16H6zM14 4h4v16h-4z"></path></svg>
-        </button>
-        <button id="audioStop" class="audio-icon-button" type="button" aria-label="Stop" title="Stop">
-          <svg class="audio-control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6z"></path></svg>
-        </button>
-        <label class="audio-slider" aria-label="Volume" title="Volume"><input id="audioVolume" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume"></label>
-        <label id="audioLoopControl" class="audio-check" hidden><input id="audioLoop" type="checkbox"> Loop</label>
-        <button id="audioZoomOut" type="button">-</button>
-        <span id="audioZoomLabel">fit</span>
-        <button id="audioZoomIn" type="button">+</button>
-        <div class="segmented">
-          <button class="audio-mode active" data-mode="waveform" type="button">Wave</button>
-          <button class="audio-mode" data-mode="spectrogram" type="button">Spec</button>
-          <button class="audio-mode" data-mode="both" type="button">Both</button>
-        </div>
-        <select id="audioSpecScale">
-          <option value="mel" selected>Mel</option>
-          <option value="linear">Linear</option>
-          <option value="bark">Bark</option>
-          <option value="erb">ERB</option>
-        </select>
-        <button id="audioDownload" type="button">Download</button>
-      </div>
-      <div id="audioStatus" class="audio-status">Loading audio...</div>
-      <div id="audioMinimap" class="audio-minimap"></div>
-      <div id="audioTimeline" class="audio-timeline"></div>
-      <div id="audioWaveform" class="audio-waveform"></div>
-      <div id="audioSpectrogram" class="audio-spectrogram"></div>
-      <div id="audioSpecProgress" class="audio-spec-progress" role="slider" aria-label="Playback position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
-        <div id="audioSpecProgressFill" class="audio-spec-progress-fill"></div>
-      </div>
-      <div id="audioContextMenu" class="audio-context-menu" role="menu">
-        <button id="audioSaveRegion" type="button" role="menuitem">Save Selected Region as New File</button>
-      </div>
-    </div>
-  `);
-
-  const metadata = await getAudioMetadata(state.file);
-  const estimatedDuration = estimateAudioDuration(state.file, metadata.duration);
-  const useWasm = state.file.size > LARGE_AUDIO_THRESHOLD || estimatedDuration > LONG_AUDIO_THRESHOLD;
-  const directUrl = objectUrl(state.file);
-  const audioInfo = $('#audioInfo');
-  const audioStatus = $('#audioStatus');
-  const setAudioStatus = (message, isError = false) => {
-    audioStatus.textContent = message;
-    audioStatus.classList.toggle('error', isError);
-  };
-
-  let analysis = null;
-  let mode = 'default';
-  if (useWasm) {
-    mode = 'precomputed';
-    setAudioStatus('Large/long audio detected. Analyzing waveform with WASM...');
-    try {
-      analysis = await analyzeAudioWithWasm(state.file);
-      if (estimatedDuration > 60 && analysis.duration < estimatedDuration * 0.5) {
-        throw new Error(`WASM decoded ${analysis.duration.toFixed(1)}s but estimated ~${estimatedDuration.toFixed(1)}s.`);
-      }
-    } catch (error) {
-      console.warn('[AudioViewer] WASM analysis failed, falling back to streaming mode:', error);
-      mode = 'streaming';
-      setAudioStatus(`WASM analysis failed. Falling back to streaming WaveSurfer. ${error.message}`, true);
-    }
-  }
-  state.audio.mode = mode;
-
-  const updateAudioInfo = () => {
-    const decoded = (() => {
-      try { return wavesurfer?.getDecodedData?.() || null; } catch { return null; }
-    })();
-    const sampleRate = analysis?.sampleRate || metadata.sampleRate || decoded?.sampleRate || null;
-    const channels = analysis?.channels || metadata.channels || decoded?.numberOfChannels || null;
-    const duration = analysis?.duration || metadata.duration || wavesurfer?.getDuration?.() || estimatedDuration;
-    audioInfo.innerHTML = `
-      <span><strong>Mode</strong> ${mode}</span>
-      <span><strong>Duration</strong> ${formatTime(duration)}</span>
-      <span><strong>Sample Rate</strong> ${sampleRate ? sampleRate.toLocaleString() + ' Hz' : '--'}</span>
-      <span><strong>Channels</strong> ${channels || '--'}</span>
-      <span><strong>Bit Depth</strong> ${metadata.bitsPerSample ? metadata.bitsPerSample + '-bit' : '--'}</span>
-      <span><strong>File Size</strong> ${formatSize(state.file.size)}</span>
-      <span><strong>Format</strong> ${escapeHtml(metadata.format)}</span>
-    `;
-  };
-
-  const splitChannelOptions = [
-    { overlay: false, waveColor: '#4F4A85', progressColor: '#383351' },
-    { overlay: false, waveColor: '#2f7d8c', progressColor: '#245867' }
-  ];
-  const knownChannels = analysis?.channels || metadata.channels || null;
-  const shouldSplitChannels = mode === 'default' && knownChannels === 2;
-
-  const commonPlugins = [
-    HoverPlugin.create({
-      lineWidth: 2,
-      labelBackground: '#000',
-      labelColor: '#fff',
-      formatTimeCallback: formatTime
-    })
-  ];
-
-  const wsOptions = {
-    container: '#audioWaveform',
-    waveColor: '#4F4A85',
-    progressColor: '#383351',
-    cursorColor: '#fff',
-    barWidth: mode === 'precomputed' ? 1 : 2,
-    barRadius: 2,
-    barGap: mode === 'precomputed' ? 1 : 3,
-    normalize: true,
-    interact: true,
-    hideScrollbar: false,
-    plugins: commonPlugins
-  };
-  if (shouldSplitChannels) wsOptions.splitChannels = splitChannelOptions;
-
-  if (mode === 'precomputed' && analysis) {
-    const containerWidth = $('#audioWaveform')?.offsetWidth || 1000;
-    const visibleSeconds = Math.min(30, analysis.duration);
-    const minPxPerSec = containerWidth / visibleSeconds;
-    state.audio.zoomMin = Math.max(containerWidth / analysis.duration, minPxPerSec);
-    wsOptions.url = directUrl;
-    wsOptions.backend = 'MediaElement';
-    wsOptions.peaks = analysis.peaks;
-    wsOptions.duration = analysis.duration;
-    wsOptions.minPxPerSec = minPxPerSec;
-    wsOptions.autoScroll = true;
-    wsOptions.autoCenter = true;
-    wsOptions.plugins.push(MinimapPlugin.create({
-      height: 42,
-      waveColor: '#3a366e',
-      progressColor: '#2a2546',
-      overlayColor: 'rgba(100, 100, 200, 0.15)',
-      container: '#audioMinimap'
-    }));
-  } else if (mode === 'streaming') {
-    wsOptions.url = directUrl;
-    wsOptions.backend = 'MediaElement';
-  } else {
-    wsOptions.url = directUrl;
-    wsOptions.backend = 'WebAudio';
-    wsOptions.sampleRate = 44100;
-  }
-
-  const wavesurfer = WaveSurfer.create(wsOptions);
-  state.audio.wavesurfer = wavesurfer;
-  updateAudioInfo();
-
-  const setupPlugins = async () => {
-    if (!state.audio.wavesurfer || state.audio.wavesurfer !== wavesurfer) return;
-    if (state.audio.timeline || state.audio.regions) return;
-    const decoded = wavesurfer.getDecodedData?.();
-    const splitChannels = mode === 'default' && decoded?.numberOfChannels === 2;
-    if (splitChannels && !wavesurfer.options.splitChannels) {
-      wavesurfer.setOptions({ splitChannels: splitChannelOptions });
-    }
-    updateAudioInfo();
-    state.audio.timeline = wavesurfer.registerPlugin(TimelinePlugin.create({
-      container: '#audioTimeline',
-      formatTimeCallback: formatTime
-    }));
-    state.audio.regions = wavesurfer.registerPlugin(RegionsPlugin.create({}));
-    state.audio.regions.enableDragSelection({ color: 'rgba(47, 111, 237, 0.18)' });
-    state.audio.regions.on('region-created', (region) => {
-      state.audio.regions.getRegions().forEach((item) => {
-        if (item.id !== region.id) item.remove();
-      });
-      state.audio.selectedRegion = region;
-      createRegionOverlays(region);
-      $('#audioLoopControl').hidden = false;
-    });
-    state.audio.regions.on('region-update', updateRegionOverlays);
-    state.audio.regions.on('region-updated', updateRegionOverlays);
-    state.audio.regions.on('region-removed', (region) => {
-      if (state.audio.selectedRegion?.id !== region.id) return;
-      state.audio.selectedRegion = null;
-      removeRegionOverlays();
-      wavesurfer.stop();
-      $('#audioLoopControl').hidden = true;
-    });
-
-    if (mode === 'precomputed' && analysis?.spectrogram?.length) {
-      state.audio.spectrogram = wavesurfer.registerPlugin(SpectrogramPlugin.create({
-        container: '#audioSpectrogram',
-        labels: true,
-        scale: $('#audioSpecScale').value,
-        height: 250,
-        sampleRate: analysis.sampleRate,
-        splitChannels
-      }));
-      const plugin = state.audio.spectrogram;
-      plugin.wrapper?.classList?.add('audio-spectrogram-wrapper');
-      plugin.frequencyMax = analysis.sampleRate / 2;
-      plugin.cachedFrequencies = [remapPrecomputedSpectrogram(
-        analysis.spectrogram,
-        analysis.sampleRate,
-        $('#audioSpecScale').value
-      )];
-      plugin.render = async function renderPrecomputedSpectrogram() {
-        if (this.isRendering) return;
-        this.isRendering = true;
-        try {
-          this.drawSpectrogram(this.cachedFrequencies);
-          this.lastZoomLevel = this.wavesurfer?.options.minPxPerSec || 0;
-        } finally {
-          this.isRendering = false;
-        }
-      };
-      setTimeout(() => plugin.render(), 150);
-    } else {
-      state.audio.spectrogram = wavesurfer.registerPlugin(SpectrogramPlugin.create({
-        container: '#audioSpectrogram',
-        labels: true,
-        scale: $('#audioSpecScale').value,
-        fftSize: 4096,
-        noverlap: 2048,
-        height: 250,
-        splitChannels
-      }));
-      state.audio.spectrogram.wrapper?.classList?.add('audio-spectrogram-wrapper');
-    }
-
-    setAudioViewMode('waveform');
-    setAudioStatus('Ready');
-  };
-
-  wavesurfer.on('ready', setupPlugins);
-  wavesurfer.on('decode', setupPlugins);
-  const setAudioPlayState = (playing) => {
-    const button = $('#audioPlay');
-    button.classList.toggle('playing', playing);
-    button.setAttribute('aria-label', playing ? 'Pause' : 'Play');
-    button.setAttribute('title', playing ? 'Pause' : 'Play');
-  };
-  const updateSpecProgress = (currentTime = wavesurfer.getCurrentTime()) => {
-    const duration = wavesurfer.getDuration();
-    const percent = Number.isFinite(duration) && duration > 0
-      ? Math.max(0, Math.min(100, currentTime / duration * 100))
-      : 0;
-    $('#audioSpecProgressFill').style.width = `${percent}%`;
-    $('#audioSpecProgress').setAttribute('aria-valuenow', String(Math.round(percent)));
-  };
-  const seekSpecProgress = (time) => {
-    const duration = wavesurfer.getDuration();
-    if (!Number.isFinite(duration) || duration <= 0) return;
-    const nextTime = Math.max(0, Math.min(duration, time));
-    if (typeof wavesurfer.setTime === 'function') wavesurfer.setTime(nextTime);
-    else wavesurfer.seekTo?.(nextTime / duration);
-    updateSpecProgress(nextTime);
-  };
-  wavesurfer.on('play', () => setAudioPlayState(true));
-  wavesurfer.on('pause', () => setAudioPlayState(false));
-  wavesurfer.on('stop', () => {
-    setAudioPlayState(false);
-    updateSpecProgress(0);
-  });
-  wavesurfer.on('timeupdate', updateSpecProgress);
-  wavesurfer.on('seeking', updateSpecProgress);
-  wavesurfer.on('finish', () => {
-    if (state.audio.loop) {
-      const region = state.audio.selectedRegion;
-      if (region) wavesurfer.play(region.start, region.end);
-      else wavesurfer.play();
-    } else {
-      setAudioPlayState(false);
-      updateSpecProgress(wavesurfer.getDuration());
-    }
-  });
-  wavesurfer.on('error', (error) => setAudioStatus(`Audio error: ${error?.message || error}`, true));
-
-  $('#audioPlay').onclick = async () => {
-    const region = state.audio.selectedRegion;
-    if (wavesurfer.isPlaying()) {
-      wavesurfer.pause();
-    } else if (region) {
-      await wavesurfer.play(region.start, region.end);
-    } else {
-      await wavesurfer.play();
-    }
-  };
-  $('#audioStop').onclick = () => wavesurfer.stop();
-  $('#audioSpecProgress').onclick = (event) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    if (rect.width <= 0) return;
-    const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-    seekSpecProgress(ratio * wavesurfer.getDuration());
-  };
-  $('#audioSpecProgress').onkeydown = (event) => {
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-    event.preventDefault();
-    seekSpecProgress(wavesurfer.getCurrentTime() + (event.key === 'ArrowRight' ? 5 : -5));
-  };
-  $('#audioVolume').oninput = (event) => wavesurfer.setVolume(Number(event.target.value));
-  $('#audioLoop').onchange = (event) => { state.audio.loop = event.target.checked; };
-  $('#audioDownload').onclick = () => downloadBlob(state.file, state.file.name);
-  $('#audioSaveRegion').onclick = async () => {
-    hideAudioContextMenu();
-    await downloadAudioRegion(state.audio.selectedRegion, setAudioStatus);
-  };
-  $('#audioZoomIn').onclick = () => updateAudioZoom(2);
-  $('#audioZoomOut').onclick = () => updateAudioZoom(0.5);
-  $('#audioSpecScale').onchange = async () => {
-    if (!state.audio.spectrogram) return;
-    const scale = $('#audioSpecScale').value;
-    const activeMode = document.querySelector('.audio-mode.active')?.dataset.mode || 'waveform';
-    wavesurfer.unregisterPlugin?.(state.audio.spectrogram);
-    state.audio.spectrogram = null;
-    $('#audioSpectrogram').replaceChildren();
-
-    if (mode === 'precomputed' && analysis?.spectrogram?.length) {
-      state.audio.spectrogram = wavesurfer.registerPlugin(SpectrogramPlugin.create({
-        container: '#audioSpectrogram', labels: true, scale, height: 250, sampleRate: analysis.sampleRate,
-        splitChannels: mode === 'default' && wavesurfer.getDecodedData?.()?.numberOfChannels === 2
-      }));
-      const plugin = state.audio.spectrogram;
-      plugin.wrapper?.classList?.add('audio-spectrogram-wrapper');
-      plugin.frequencyMax = analysis.sampleRate / 2;
-      plugin.cachedFrequencies = [remapPrecomputedSpectrogram(analysis.spectrogram, analysis.sampleRate, scale)];
-      plugin.render = async function renderPrecomputedSpectrogram() {
-        if (this.isRendering) return;
-        this.isRendering = true;
-        try {
-          this.drawSpectrogram(this.cachedFrequencies);
-          this.lastZoomLevel = this.wavesurfer?.options.minPxPerSec || 0;
-        } finally {
-          this.isRendering = false;
-        }
-      };
-      setTimeout(() => void plugin.render(), 120);
-    } else {
-      state.audio.spectrogram = wavesurfer.registerPlugin(SpectrogramPlugin.create({
-        container: '#audioSpectrogram', labels: true, scale, fftSize: 4096, noverlap: 2048, height: 250,
-        splitChannels: mode === 'default' && wavesurfer.getDecodedData?.()?.numberOfChannels === 2
-      }));
-      state.audio.spectrogram.wrapper?.classList?.add('audio-spectrogram-wrapper');
-      setTimeout(() => void state.audio.spectrogram?.render?.(), 120);
-    }
-    setAudioViewMode(activeMode);
-  };
-  document.querySelectorAll('.audio-mode').forEach((button) => {
-    button.onclick = () => setAudioViewMode(button.dataset.mode);
-  });
-  document.addEventListener('keydown', audioSpaceHandler);
-  setupAudioRegionInteractions();
-
-  if (mode !== 'precomputed') {
-    setAudioStatus(mode === 'streaming' ? 'Streaming through WaveSurfer...' : 'Decoding with WaveSurfer...');
-  }
-
-  return body;
-}
-
-function hideAudioContextMenu() {
-  const menu = $('#audioContextMenu');
-  if (menu) menu.style.display = 'none';
-}
-
-function audioEventPath(event) {
-  return typeof event.composedPath === 'function' ? event.composedPath() : [event.target];
-}
-
-function isAudioRegionInteraction(event) {
-  const region = state.audio.selectedRegion;
-  return audioEventPath(event).some((element) => {
-    if (element === region?.element) return true;
-    if (!(element instanceof Element)) return false;
-    if (element.closest?.('.audio-region-overlay')) return true;
-    return element.getAttribute?.('part')?.split(/\s+/).includes('region') || false;
-  });
-}
-
-function clearSelectedAudioRegion() {
-  const region = state.audio.selectedRegion;
-  if (region) region.remove();
-}
-
-function setupAudioRegionInteractions() {
-  const waveform = $('#audioWaveform');
-  const spectrogram = $('#audioSpectrogram');
-  const menu = $('#audioContextMenu');
-  if (!waveform || !menu) return;
-
-  const showMenu = (event) => {
-    event.preventDefault();
-    const clickedOverlay = audioEventPath(event).some(
-      (element) => element instanceof Element && element.closest?.('.audio-region-overlay')
-    );
-    if (!state.audio.selectedRegion || clickedOverlay) {
-      hideAudioContextMenu();
-      return;
-    }
-    menu.style.display = 'block';
-    const rect = menu.getBoundingClientRect();
-    const left = Math.max(8, Math.min(event.clientX, window.innerWidth - rect.width - 8));
-    const top = Math.max(8, Math.min(event.clientY, window.innerHeight - rect.height - 8));
-    menu.style.left = `${left}px`;
-    menu.style.top = `${top}px`;
-  };
-  const clearFromWaveform = (event) => {
-    hideAudioContextMenu();
-    if (!isAudioRegionInteraction(event)) clearSelectedAudioRegion();
-  };
-  const clearFromSpectrogram = () => {
-    hideAudioContextMenu();
-    clearSelectedAudioRegion();
-  };
-  const hideFromDocument = (event) => {
-    if (!menu.contains(event.target)) hideAudioContextMenu();
-  };
-  const hideOnEscape = (event) => {
-    if (event.key === 'Escape') hideAudioContextMenu();
-  };
-
-  waveform.addEventListener('contextmenu', showMenu);
-  waveform.addEventListener('click', clearFromWaveform);
-  spectrogram?.addEventListener('contextmenu', showMenu);
-  spectrogram?.addEventListener('click', clearFromSpectrogram);
-  document.addEventListener('click', hideFromDocument);
-  document.addEventListener('keydown', hideOnEscape);
-  state.audio.eventCleanups.push(
-    () => waveform.removeEventListener('contextmenu', showMenu),
-    () => waveform.removeEventListener('click', clearFromWaveform),
-    () => spectrogram?.removeEventListener('contextmenu', showMenu),
-    () => spectrogram?.removeEventListener('click', clearFromSpectrogram),
-    () => document.removeEventListener('click', hideFromDocument),
-    () => document.removeEventListener('keydown', hideOnEscape)
-  );
-}
-
-async function getAudioBufferForRegionExport() {
-  if (state.audio.mode === 'default') {
-    const decoded = state.audio.wavesurfer?.getDecodedData?.();
-    if (decoded?.numberOfChannels && decoded?.sampleRate) return decoded;
-  }
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextClass) throw new Error('Web Audio decoding is not supported in this browser.');
-  const context = new AudioContextClass();
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading audio viewer…</p></div>';
   try {
-    return await context.decodeAudioData(await state.file.arrayBuffer());
-  } finally {
-    await context.close?.();
+    await mountAdvancedViewer('audio', 'mountAudioViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load audio viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
   }
-}
-
-function audioRegionToWav(buffer, startTime, endTime) {
-  const sampleRate = buffer.sampleRate;
-  const channelCount = buffer.numberOfChannels;
-  const startSample = Math.max(0, Math.min(buffer.length, Math.floor(startTime * sampleRate)));
-  const endSample = Math.max(startSample, Math.min(buffer.length, Math.floor(endTime * sampleRate)));
-  const frameCount = endSample - startSample;
-  if (frameCount <= 0) throw new Error('The selected region is empty.');
-
-  const bytesPerSample = 2;
-  const blockAlign = channelCount * bytesPerSample;
-  const dataSize = frameCount * blockAlign;
-  const wav = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(wav);
-  const writeString = (offset, value) => {
-    for (let index = 0; index < value.length; index += 1) view.setUint8(offset + index, value.charCodeAt(index));
-  };
-  writeString(0, 'RIFF');
-  view.setUint32(4, wav.byteLength - 8, true);
-  writeString(8, 'WAVE');
-  writeString(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, channelCount, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * blockAlign, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, 16, true);
-  writeString(36, 'data');
-  view.setUint32(40, dataSize, true);
-
-  let offset = 44;
-  const channels = Array.from({ length: channelCount }, (_, channel) => buffer.getChannelData(channel));
-  for (let frame = startSample; frame < endSample; frame += 1) {
-    for (let channel = 0; channel < channelCount; channel += 1) {
-      const sample = Math.max(-1, Math.min(1, channels[channel][frame]));
-      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
-      offset += bytesPerSample;
-    }
-  }
-  return wav;
-}
-
-async function downloadAudioRegion(region, setAudioStatus) {
-  if (!region) {
-    setAudioStatus('No region selected.', true);
-    return;
-  }
-  try {
-    setAudioStatus('Extracting selected audio region...');
-    const buffer = await getAudioBufferForRegionExport();
-    const wav = audioRegionToWav(buffer, region.start, region.end);
-    const baseName = state.file.name.replace(/\.[^/.]+$/, '') || 'audio_file';
-    const fileName = `${baseName}_${region.start.toFixed(2)}s-${region.end.toFixed(2)}s.wav`;
-    const blob = new Blob([wav], { type: 'audio/wav' });
-    downloadBlob(blob, fileName);
-    setAudioStatus(`Downloaded ${fileName} (${formatSize(blob.size)})`);
-  } catch (error) {
-    console.error('[AudioViewer] Region export failed:', error);
-    setAudioStatus(`Region export failed: ${error?.message || error}`, true);
-  }
-}
-
-function audioSpaceHandler(event) {
-  if (event.code !== 'Space' || event.target.matches('input, textarea, select, button')) return;
-  if (!state.audio.wavesurfer) return;
-  event.preventDefault();
-  $('#audioPlay')?.click();
-}
-
-function setAudioViewMode(mode) {
-  const waveform = $('#audioWaveform');
-  const spectrogram = $('#audioSpectrogram');
-  const showWave = mode === 'waveform' || mode === 'both';
-  const showSpec = mode === 'spectrogram' || mode === 'both';
-  const wrapper = state.audio.wavesurfer?.getWrapper?.();
-  const specWrapper = state.audio.spectrogram?.wrapper;
-  const specProgress = $('#audioSpecProgress');
-  if (waveform) waveform.style.display = (showWave || showSpec) ? 'block' : 'none';
-  if (spectrogram) spectrogram.style.display = showSpec && !specWrapper ? 'block' : 'none';
-  if (wrapper) {
-    wrapper.querySelectorAll('.canvases, .progress, .cursor').forEach((element) => {
-      element.style.display = showWave ? '' : 'none';
-    });
-  }
-  if (specWrapper) specWrapper.style.display = showSpec ? 'block' : 'none';
-  if (specProgress) specProgress.style.display = mode === 'spectrogram' ? 'block' : 'none';
-  document.querySelectorAll('.audio-mode').forEach((button) => {
-    button.classList.toggle('active', button.dataset.mode === mode);
-  });
-  requestAnimationFrame(() => updateRegionOverlays(state.audio.selectedRegion));
-  if (showSpec) setTimeout(() => state.audio.spectrogram?.render?.(), 80);
-}
-
-function updateAudioZoom(factor) {
-  const wavesurfer = state.audio.wavesurfer;
-  if (!wavesurfer) return;
-  const duration = wavesurfer.getDuration() || 1;
-  const containerWidth = $('#audioWaveform')?.offsetWidth || 1000;
-  const fit = containerWidth / duration;
-  const current = wavesurfer.options.minPxPerSec || fit;
-  const next = Math.max(fit, Math.min(containerWidth / 2, current * factor));
-  wavesurfer.zoom(next);
-  const visibleSec = containerWidth / next;
-  $('#audioZoomLabel').textContent = visibleSec >= 60 ? `${Math.round(visibleSec / 60)}m` : `${Math.round(visibleSec)}s`;
-  requestAnimationFrame(() => updateRegionOverlays(state.audio.selectedRegion));
-  setTimeout(() => state.audio.spectrogram?.render?.(), 80);
-}
-
-function removeRegionOverlays() {
-  const waveform = $('#audioWaveform');
-  if (waveform) waveform.onscroll = null;
-  state.audio.regionOverlays.forEach((element) => element.remove());
-  state.audio.regionOverlays = [];
-}
-
-function createRegionOverlays(region) {
-  removeRegionOverlays();
-  const waveform = $('#audioWaveform');
-  if (!waveform || !region?.element) return;
-
-  const createOverlay = (className, label, value) => {
-    const overlay = document.createElement('label');
-    overlay.className = `audio-region-overlay ${className}`;
-    overlay.innerHTML = `${label}<input type="number" min="0" step="0.001" value="${value.toFixed(3)}">`;
-    waveform.appendChild(overlay);
-    return overlay;
-  };
-
-  const startOverlay = createOverlay('audio-region-start', 'Start', region.start);
-  const endOverlay = createOverlay('audio-region-end', 'End', region.end);
-  const durationOverlay = createOverlay('audio-region-duration', 'Duration', region.end - region.start);
-  state.audio.regionOverlays = [startOverlay, endOverlay, durationOverlay];
-  waveform.onscroll = () => updateRegionOverlays(region);
-
-  const startInput = startOverlay.querySelector('input');
-  const endInput = endOverlay.querySelector('input');
-  const durationInput = durationOverlay.querySelector('input');
-  const normalizeBounds = (startValue, endValue, preserveStart = false) => {
-    const total = state.audio.wavesurfer?.getDuration?.() || region.end;
-    const minDuration = Math.min(0.1, total);
-    let start = Number.isFinite(startValue) ? startValue : region.start;
-    let end = Number.isFinite(endValue) ? endValue : region.end;
-    if (!preserveStart && start > end) [start, end] = [end, start];
-    start = Math.max(0, Math.min(total, start));
-    end = Math.max(0, Math.min(total, end));
-    if (end < start + minDuration) {
-      end = Math.min(total, start + minDuration);
-      start = Math.max(0, Math.min(start, end - minDuration));
-    }
-    return { start, end };
-  };
-  const applyBounds = () => {
-    const { start, end } = normalizeBounds(Number(startInput.value), Number(endInput.value));
-    region.setOptions({ start, end });
-    updateRegionOverlays(region);
-  };
-  startInput.onchange = applyBounds;
-  endInput.onchange = applyBounds;
-  durationInput.onchange = () => {
-    const length = Math.max(0.1, Number(durationInput.value) || (region.end - region.start));
-    const { start, end } = normalizeBounds(region.start, region.start + length, true);
-    region.setOptions({ start, end });
-    updateRegionOverlays(region);
-  };
-  [startInput, endInput, durationInput].forEach((input) => {
-    input.onkeydown = (event) => {
-      if (event.key === 'Enter') input.blur();
-    };
-  });
-  updateRegionOverlays(region);
-}
-
-function updateRegionOverlays(region) {
-  if (!region || state.audio.regionOverlays.length !== 3 || !region.element) return;
-  const waveform = $('#audioWaveform');
-  if (!waveform) return;
-  const [startOverlay, endOverlay, durationOverlay] = state.audio.regionOverlays;
-  startOverlay.querySelector('input').value = region.start.toFixed(3);
-  endOverlay.querySelector('input').value = region.end.toFixed(3);
-  durationOverlay.querySelector('input').value = (region.end - region.start).toFixed(3);
-
-  const parentRect = waveform.getBoundingClientRect();
-  const regionRect = region.element.getBoundingClientRect();
-  const startLeft = regionRect.left - parentRect.left + waveform.scrollLeft;
-  const endLeft = regionRect.right - parentRect.left + waveform.scrollLeft;
-  const centerLeft = startLeft + regionRect.width / 2;
-  const top = regionRect.top - parentRect.top + waveform.scrollTop;
-  const bottom = regionRect.bottom - parentRect.top + waveform.scrollTop;
-  const viewportLeft = waveform.scrollLeft + 4;
-  const viewportRight = waveform.scrollLeft + waveform.clientWidth - 4;
-  const startPosition = Math.max(viewportLeft, startLeft - startOverlay.offsetWidth - 8);
-  const endPosition = Math.min(viewportRight - endOverlay.offsetWidth, endLeft + 8);
-  const durationPosition = Math.max(
-    viewportLeft,
-    Math.min(viewportRight - durationOverlay.offsetWidth, centerLeft - durationOverlay.offsetWidth / 2)
-  );
-  const inputTop = Math.max(top + 8, bottom - startOverlay.offsetHeight - 8);
-  startOverlay.style.left = `${startPosition}px`;
-  startOverlay.style.top = `${inputTop}px`;
-  endOverlay.style.left = `${endPosition}px`;
-  endOverlay.style.top = `${inputTop}px`;
-  durationOverlay.style.left = `${durationPosition}px`;
-  durationOverlay.style.top = `${top + 8}px`;
 }
 
 async function renderExcel() {
@@ -1831,15 +1172,22 @@ async function renderRawData() {
   `;
 }
 
-initializeLanguagePreference().then(localizeDocument);
+const languageReady = initializeLanguagePreference().then(localizeDocument);
 
 shareCurrentFileButton.addEventListener('click', shareCurrentFile);
 openSharedLinkButton.addEventListener('click', openSharedLinkPrompt);
 languageSelect?.addEventListener('change', () => saveLocalePreference(languageSelect.value));
 
+// Several files at once (multi-select, multi-drop, or a multi-file launch)
+// open as one: the primary is shown, the rest travel as its companions.
+function openFiles(files, handle = null, generation = claimOpenFileIntent()) {
+  const list = Array.from(files || []);
+  if (list.length === 0) return Promise.resolve();
+  return openFile(pickPrimaryFile(list), handle, generation, list);
+}
+
 fileInput.addEventListener('change', () => {
-  const file = fileInput.files?.[0];
-  if (file) openFile(file);
+  openFiles(fileInput.files);
 });
 
 dropZone.addEventListener('dragenter', (event) => {
@@ -1851,8 +1199,7 @@ dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging
 dropZone.addEventListener('drop', (event) => {
   event.preventDefault();
   dropZone.classList.remove('dragging');
-  const file = event.dataTransfer?.files?.[0];
-  if (file) openFile(file);
+  openFiles(event.dataTransfer?.files);
 });
 
 dropZone.addEventListener('click', () => fileInput.click());
@@ -1870,7 +1217,20 @@ chrome.storage?.local?.get?.(['theme']).then((result) => {
 
 if ('launchQueue' in window) {
   window.launchQueue.setConsumer(async (launchParams) => {
-    const [handle] = launchParams.files || [];
-    if (handle) openFile(await handle.getFile(), handle);
+    const handles = launchParams.files || [];
+    if (handles.length === 0) return;
+    const generation = claimOpenFileIntent();
+    try {
+      const files = await Promise.all(handles.map((handle) => handle.getFile()));
+      if (generation !== state.openFileGeneration) return;
+      const file = pickPrimaryFile(files);
+      // Only the primary's handle matters: it is the one a viewer may write
+      // back to, and companions are read-only sidecars.
+      await openFile(file, handles[files.indexOf(file)], generation, files);
+    } catch (error) {
+      if (generation !== state.openFileGeneration) return;
+      console.error(error);
+      setStatus(error instanceof Error ? error.message : String(error), true);
+    }
   });
 }

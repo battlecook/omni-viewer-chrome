@@ -57,6 +57,20 @@ function asciiBytes(value: string): Uint8Array {
     return out;
 }
 
+/**
+ * A minimal safetensors file: an 8-byte little-endian header length, that
+ * many bytes of JSON, then the tensor payload the header describes.
+ */
+function makeSafetensorsBytes(): Uint8Array {
+    const header = asciiBytes(
+        '{"w":{"dtype":"F32","shape":[1],"data_offsets":[0,4]}}'
+    );
+    const out = new Uint8Array(8 + header.length + 4);
+    new DataView(out.buffer).setUint32(0, header.length, true);
+    out.set(header, 8);
+    return out;
+}
+
 describe('FileUtils.detectViewerType signatures', () => {
     it('detects PDF files by signature even with a misleading extension', async () => {
         const file = makeFile(asciiBytes('%PDF-1.7\n'), 'mislabeled.jpg');
@@ -110,6 +124,151 @@ describe('FileUtils.detectViewerType signatures', () => {
         expect(result.viewType).toBe('omni-viewer.psdViewer');
         expect(result.reason).toContain('PSD');
     });
+
+    it('detects NPY files by magic even with a misleading extension', async () => {
+        const file = makeFile(
+            [0x93, 0x4e, 0x55, 0x4d, 0x50, 0x59, 0x01, 0x00],
+            'array.bin'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.numpyViewer');
+        expect(result.matchedBySignature).toBe(true);
+        expect(result.reason).toContain('NPY');
+    });
+
+    it('routes a ZIP signature with the .npz extension to NumPy', async () => {
+        const file = makeFile([0x50, 0x4b, 0x03, 0x04, 0, 0], 'arrays.npz');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.numpyViewer');
+        expect(result.matchedBySignature).toBe(true);
+        expect(result.reason).toContain('NPZ');
+    });
+
+    it('keeps an HDF5 signature with the HDF5 viewer', async () => {
+        const file = makeFile([0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a], 'dataset.h5');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.hdf5Viewer');
+        expect(result.matchedBySignature).toBe(true);
+    });
+
+    it('routes an HDF5 signature named .keras to the Keras viewer', async () => {
+        // Keras 2 saved models are plain HDF5; the declared name is the only
+        // thing that separates them from any other HDF5 file up front.
+        const file = makeFile([0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a], 'legacy.keras');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.kerasViewer');
+        expect(result.matchedBySignature).toBe(true);
+    });
+
+    it('routes a ZIP signature with the .keras extension to the Keras viewer', async () => {
+        const file = makeFile([0x50, 0x4b, 0x03, 0x04, 0, 0], 'mnist.keras');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.kerasViewer');
+        expect(result.matchedBySignature).toBe(true);
+        expect(result.reason).toContain('Keras');
+    });
+
+    it('uses the Keras extension fallback when the ZIP header is gone', async () => {
+        const file = makeFile([0, 0, 0, 0], 'truncated.keras');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.kerasViewer');
+        expect(result.matchedBySignature).toBe(false);
+    });
+
+    it('routes a ZIP signature with the .mlpackage extension to the Core ML viewer', async () => {
+        const file = makeFile([0x50, 0x4b, 0x03, 0x04, 0, 0], 'resnet.mlpackage');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.coremlViewer');
+        expect(result.matchedBySignature).toBe(true);
+        expect(result.reason).toContain('Core ML');
+    });
+
+    it('uses the Core ML extension fallback for a bare .mlmodel protobuf', async () => {
+        // Field 1 (specificationVersion) = 7 — a .mlmodel has no leading magic.
+        const file = makeFile([0x08, 0x07, 0x12, 0x00], 'sentiment.mlmodel');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.coremlViewer');
+        expect(result.matchedBySignature).toBe(false);
+    });
+
+    it('routes a safetensors header layout to the safetensors viewer', async () => {
+        const file = makeFile(makeSafetensorsBytes(), 'weights.bin');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.safetensorsViewer');
+        expect(result.matchedBySignature).toBe(true);
+        expect(result.reason).toContain('safetensors');
+    });
+
+    it('ignores a safetensors prefix whose header runs past the file', async () => {
+        const bytes = makeSafetensorsBytes();
+        // Claim a header far larger than the bytes that follow.
+        new DataView(bytes.buffer).setUint32(0, 0xffff, true);
+        const result = await FileUtils.detectViewerType(makeFile(bytes, 'mystery.bin'));
+        expect(result.viewType).not.toBe('omni-viewer.safetensorsViewer');
+    });
+
+    it('uses the safetensors extension fallback when the header is gone', async () => {
+        const result = await FileUtils.detectViewerType(makeFile([0, 0, 0, 0], 'truncated.safetensors'));
+        expect(result.viewType).toBe('omni-viewer.safetensorsViewer');
+        expect(result.matchedBySignature).toBe(false);
+    });
+
+    it.each(['truncated.npy', 'truncated.npz'])(
+        'uses the NumPy extension fallback for %s',
+        async (name) => {
+            const result = await FileUtils.detectViewerType(makeFile([0], name));
+            expect(result.viewType).toBe('omni-viewer.numpyViewer');
+            expect(result.matchedBySignature).toBe(false);
+        }
+    );
+
+    it('detects GGUF files by magic even with a misleading extension', async () => {
+        const file = makeFile(asciiBytes('GGUF\x03\x00\x00\x00'), 'model.bin');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.ggufViewer');
+        expect(result.matchedBySignature).toBe(true);
+        expect(result.reason).toContain('GGUF');
+    });
+
+    it('uses the GGUF extension fallback for a truncated file', async () => {
+        const file = makeFile(asciiBytes('GGU'), 'truncated.gguf');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.ggufViewer');
+        expect(result.matchedBySignature).toBe(false);
+    });
+
+    /**
+     * ONNX is bare protobuf with no magic bytes, so detection is
+     * extension-driven by design.
+     */
+    it('routes .onnx files to the ONNX viewer by extension', async () => {
+        const file = makeFile([0x08, 0x07, 0x12, 0x04], 'model.onnx');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.onnxViewer');
+        expect(result.matchedBySignature).toBe(false);
+        expect(result.reason).toContain('ONNX');
+    });
+
+    it('detects TFLite models by the TFL3 identifier at byte offset 4', async () => {
+        const file = makeFile(
+            [0x14, 0, 0, 0, 0x54, 0x46, 0x4c, 0x33],
+            'mislabeled.bin'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.tfliteViewer');
+        expect(result.matchedBySignature).toBe(true);
+        expect(result.reason).toContain('TFL3');
+    });
+
+    it.each(['model.tflite', 'model.lite'])(
+        'routes %s to the TFLite viewer by extension',
+        async (name) => {
+            const file = makeFile([0, 0, 0, 0], name);
+            const result = await FileUtils.detectViewerType(file);
+            expect(result.viewType).toBe('omni-viewer.tfliteViewer');
+            expect(result.matchedBySignature).toBe(false);
+        }
+    );
 
     it('detects WAV files by RIFF/WAVE container', async () => {
         const file = makeFile(
@@ -502,6 +661,86 @@ describe('FileUtils.detectViewerType OOXML / HWPX disambiguation', () => {
         expect(result.viewType).toBe('omni-viewer.hwpViewer');
     });
 
+    it('routes a ZIP container with Keras model entries to the Keras viewer', async () => {
+        const file = makeFile(
+            concatBytes(
+                makeOoxmlZipBytes('config.json'),
+                makeOoxmlZipBytes('model.weights.h5')
+            ),
+            'model.bin'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.kerasViewer');
+        expect(result.reason).toContain('Keras');
+    });
+
+    it('routes a ZIP container with Core ML package entries to the Core ML viewer', async () => {
+        const file = makeFile(
+            concatBytes(
+                makeOoxmlZipBytes('Resnet.mlpackage/Manifest.json'),
+                makeOoxmlZipBytes('Resnet.mlpackage/Data/com.apple.CoreML/model.mlmodel')
+            ),
+            'model.bin'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.coremlViewer');
+        expect(result.reason).toContain('Core ML');
+    });
+
+    describe('OpenVINO IR', () => {
+        const IR = '<?xml version="1.0"?>\n<!-- exported -->\n<net name="tiny" version="11">\n<layers>\n<layer id="0" name="a,b,c" type="Parameter" version="opset1"/>\n</layers>\n<edges/>\n</net>';
+
+        it('routes an IR .xml to the OpenVINO viewer by content', async () => {
+            const result = await FileUtils.detectViewerType(makeFile(IR, 'tiny.xml'));
+            expect(result.viewType).toBe('omni-viewer.openvinoViewer');
+            expect(result.matchedBySignature).toBe(false);
+        });
+
+        it('routes an extensionless IR the same way', async () => {
+            const result = await FileUtils.detectViewerType(makeFile(IR, 'tiny'));
+            expect(result.viewType).toBe('omni-viewer.openvinoViewer');
+        });
+
+        it('reads past a BOM and a DOCTYPE', async () => {
+            const result = await FileUtils.detectViewerType(
+                makeFile('\ufeff<!DOCTYPE net><net version="10"><layers/></net>', 'legacy.xml')
+            );
+            expect(result.viewType).toBe('omni-viewer.openvinoViewer');
+        });
+
+        it('does not claim a <net> root without a numeric version or <layers>', async () => {
+            const noVersion = await FileUtils.detectViewerType(makeFile('<net name="x"><layers/></net>', 'a.xml'));
+            expect(noVersion.viewType).not.toBe('omni-viewer.openvinoViewer');
+            const noLayers = await FileUtils.detectViewerType(makeFile('<net version="11"><nodes/></net>', 'b.xml'));
+            expect(noLayers.viewType).not.toBe('omni-viewer.openvinoViewer');
+            const upperCase = await FileUtils.detectViewerType(makeFile('<NET version="11"><LAYERS/></NET>', 'c.xml'));
+            expect(upperCase.viewType).not.toBe('omni-viewer.openvinoViewer');
+        });
+
+        it('leaves other XML documents alone', async () => {
+            const result = await FileUtils.detectViewerType(
+                makeFile('<?xml version="1.0"?><AUTOSAR><layers/></AUTOSAR>', 'system.xml')
+            );
+            expect(result.viewType).not.toBe('omni-viewer.openvinoViewer');
+        });
+
+        it('maps the view type to its short name', () => {
+            expect(shortNameForViewType('omni-viewer.openvinoViewer')).toBe('openvino');
+        });
+    });
+
+    it('leaves a ZIP holding only Manifest.json with the archive viewer', async () => {
+        const file = makeFile(makeOoxmlZipBytes('Manifest.json'), 'bundle.zip');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.archiveViewer');
+    });
+
+    it('leaves a ZIP holding only config.json with the archive viewer', async () => {
+        const file = makeFile(makeOoxmlZipBytes('config.json'), 'settings.zip');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.archiveViewer');
+    });
+
     it('respects an injected JSZip-like instance over the manual parser', async () => {
         // Manual parser would see only "word/..."; the injected JSZip yields "ppt/...".
         const file = makeFile(makeOoxmlZipBytes('word/document.xml'), 'doc.bin');
@@ -557,6 +796,7 @@ describe('shortNameForViewType', () => {
         expect(shortNameForViewType('omni-viewer.audioViewer')).toBe('audio');
         expect(shortNameForViewType('omni-viewer.archiveViewer')).toBe('archive');
         expect(shortNameForViewType('omni-viewer.parquetViewer')).toBe('parquet');
+        expect(shortNameForViewType('omni-viewer.numpyViewer')).toBe('numpy');
         expect(shortNameForViewType('omni-viewer.mermaidViewer')).toBe('mermaid');
         expect(shortNameForViewType('omni-viewer.markdownViewer')).toBe('markdown');
         expect(shortNameForViewType('omni-viewer.latexViewer')).toBe('latex');

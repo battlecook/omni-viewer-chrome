@@ -50,11 +50,13 @@ image.
   it fits.
 - **Why this shot**: highlights interactive table features.
 
-## 4. Audio viewer with waveform + spectrogram
+## 4. Audio viewer with waveform
 
 - **File**: open a music clip (`song.mp3` or `voice.wav`).
-- **State**: waveform on top, spectrogram below, a loop region selected,
-  playback in progress (cursor mid-track), playback speed control visible.
+- **State**: waveform with a drag-selected loop region, playback in progress
+  (cursor mid-track), the info panel (duration / sample rate / channels)
+  and the zoom + visualization controls visible. The visualization select
+  switches the stage to the spectrogram — worth a second shot if one is needed.
 - **Why this shot**: visually distinctive, signals "real audio tooling".
 
 ## 5. Archive viewer with entries

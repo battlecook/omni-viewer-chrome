@@ -43,6 +43,14 @@ const VIEWERS = [
   'plantuml',
   'automotive',
   'mat',
+  'numpy',
+  'gguf',
+  'onnx',
+  'tflite',
+  'keras',
+  'coreml',
+  'openvino',
+  'safetensors',
   'proto'
 ];
 
@@ -137,6 +145,21 @@ module.exports = (env, argv) => {
           { from: 'THIRD-PARTY-NOTICES.md', to: 'THIRD-PARTY-NOTICES.md' },
           { from: 'THIRD-PARTY-LICENSES', to: 'THIRD-PARTY-LICENSES' },
           { from: 'viewer.html', to: 'viewer.html' },
+          {
+            from: 'src/templates/numpy/numpyViewer.html',
+            to: 'templates/numpy/numpyViewer.html'
+          },
+          // Standalone page shell for the per-viewer debug flow
+          // (`templates/safetensors/safetensorsViewer.html?src=...`). Without
+          // it the bundle's `selfBootstrap` block can never fire.
+          {
+            from: 'src/templates/safetensors/safetensorsViewer.html',
+            to: 'templates/safetensors/safetensorsViewer.html'
+          },
+          {
+            from: 'src/templates/openvino/openvinoViewer.html',
+            to: 'templates/openvino/openvinoViewer.html'
+          },
           { from: '_locales', to: '_locales' },
           { from: 'icons', to: 'icons' },
           { from: 'vendor', to: 'vendor' },
@@ -145,6 +168,18 @@ module.exports = (env, argv) => {
           {
             from: 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs',
             to: 'assets/pdfjs/pdf.worker.min.mjs'
+          },
+          // WASM audio decode/analysis engine shipped by omni-viewer-core.
+          // The core's audio viewer resolves `audio-engine/*` through
+          // AssetService; the adapter maps that onto dist/assets/ (which is
+          // web-accessible), so worker + module + wasm must land together.
+          {
+            from: 'node_modules/omni-viewer-core/dist/assets/audio-engine',
+            to: 'assets/audio-engine',
+            // Ship the Emscripten glue + worker shell exactly as the core
+            // built them; re-minifying generated wasm glue buys nothing and
+            // is one more thing between a decode bug and its source.
+            info: { minimized: true }
           },
           // KaTeX stylesheet + fonts. omni-viewer-core renders math into an
           // isolated shadow root but ships no math CSS by design — the adapter

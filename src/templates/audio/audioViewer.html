@@ -3,9 +3,11 @@
   Per-viewer entry shell for the audio viewer. See templates/image/imageViewer.html
   for the rationale; this file is the same shape, parameterized by the slug.
 
-  The bundled audioViewer.js mounts the real controller into the
+  The bundled audioViewer.js mounts the core audio viewer into the
   data-viewer="audio" host on DOMContentLoaded when a `?src=` query
   parameter is present (see src/templates/audio/js/audioViewer.ts).
+  The viewer renders inside a shadow root with the core's own stylesheet,
+  so no per-viewer CSS is loaded here.
 -->
 <html lang="en">
 <head>
@@ -13,7 +15,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Omni Viewer — Audio</title>
   <link rel="stylesheet" href="../../styles.css">
-  <link rel="stylesheet" href="css/audioViewer.css">
 </head>
 <body>
   <main class="app">
