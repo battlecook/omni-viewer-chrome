@@ -204,7 +204,11 @@ describe('storeManifest invariants', () => {
     });
 
     describe('file_handlers cover the documented viewer formats', () => {
-        it.each(['NumPy', 'OpenVINO'])('advertises %s support in every shipped locale', (label) => {
+        // Every format whose label the drop-zone copy claims has to be in all
+        // 69 locale files, not just `en`/`ko` — the summary is the one place
+        // in the UI that names what the extension opens. Add the new label
+        // here whenever a viewer lands, or it ships advertised to two locales.
+        it.each(['NumPy', 'OpenVINO', 'Jupyter'])('advertises %s support in every shipped locale', (label) => {
             const locales = fs.readdirSync(LOCALES_PATH, { withFileTypes: true })
                 .filter((entry) => entry.isDirectory())
                 .map((entry) => entry.name);
@@ -238,8 +242,10 @@ describe('storeManifest invariants', () => {
                 '.csv',  // csv
                 '.json', // json
                 '.jsonl',// jsonl
+                '.har',  // HAR network log
                 '.yaml', // yaml
                 '.toml', // toml
+                '.ipynb',// Jupyter Notebook
                 '.tex',  // latex
                 '.mmd',  // mermaid
                 '.puml', // plantuml
@@ -255,6 +261,7 @@ describe('storeManifest invariants', () => {
                 '.gguf', // GGUF
                 '.onnx', // ONNX
                 '.tflite', // TFLite / LiteRT
+                '.pte', // ExecuTorch
                 '.keras', // Keras
                 '.safetensors', // safetensors
                 '.hwp',  // hwp

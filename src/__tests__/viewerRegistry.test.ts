@@ -50,6 +50,7 @@ const ALL_SLUGS: ViewerSlug[] = [
     'gguf',
     'onnx',
     'tflite',
+    'pte',
     'keras',
     'coreml',
     'openvino',
@@ -61,9 +62,11 @@ const ALL_SLUGS: ViewerSlug[] = [
     'archive',
     'json',
     'jsonl',
+    'har',
     'yaml',
     'toml',
     'markdown',
+    'notebook',
     'latex',
     'mermaid',
     'plantuml',
@@ -82,7 +85,7 @@ const ALL_SLUGS: ViewerSlug[] = [
 
 describe('viewerRegistry', () => {
     it('registers all viewers', () => {
-        expect(VIEWER_REGISTRATIONS).toHaveLength(39);
+        expect(VIEWER_REGISTRATIONS).toHaveLength(42);
         const slugs = VIEWER_REGISTRATIONS.map((r) => r.slug).sort();
         expect(slugs).toEqual([...ALL_SLUGS].sort());
     });
@@ -143,6 +146,8 @@ describe('viewerRegistry', () => {
             ['data.tsv', 'csv'],
             ['log.jsonl', 'jsonl'],
             ['log.ndjson', 'jsonl'],
+            ['network.har', 'har'],
+            ['analysis.ipynb', 'notebook'],
             ['config.yaml', 'yaml'],
             ['config.yml', 'yaml'],
             ['Cargo.toml', 'toml'],
@@ -186,6 +191,7 @@ describe('viewerRegistry', () => {
             ['model.onnx', 'onnx'],
             ['model.tflite', 'tflite'],
             ['model.lite', 'tflite'],
+            ['model.pte', 'pte'],
             ['model.keras', 'keras'],
             ['model.mlmodel', 'coreml'],
             ['model.mlpackage', 'coreml'],

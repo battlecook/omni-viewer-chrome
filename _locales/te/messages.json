@@ -44,7 +44,7 @@
     "description": "Drag and drop prompt."
   },
   "formatsSummary": {
-    "message": "Images, PDF, CSV/TSV, JSON/JSONL, YAML/TOML, NumPy, OpenVINO, media, Office, PSD, Parquet, HWP/HWPX, archives",
+    "message": "Images, PDF, CSV/TSV, JSON/JSONL, Jupyter, YAML/TOML, NumPy, OpenVINO, media, Office, PSD, Parquet, HWP/HWPX, archives",
     "description": "Summary of supported file formats."
   },
   "openvinoNoBin": {

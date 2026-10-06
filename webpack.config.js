@@ -35,9 +35,11 @@ const VIEWERS = [
   'archive',
   'json',
   'jsonl',
+  'har',
   'yaml',
   'toml',
   'markdown',
+  'notebook',
   'latex',
   'mermaid',
   'plantuml',
@@ -47,6 +49,7 @@ const VIEWERS = [
   'gguf',
   'onnx',
   'tflite',
+  'pte',
   'keras',
   'coreml',
   'openvino',
@@ -159,6 +162,20 @@ module.exports = (env, argv) => {
           {
             from: 'src/templates/openvino/openvinoViewer.html',
             to: 'templates/openvino/openvinoViewer.html'
+          },
+          // ... and for a notebook, whose cell/output count makes the
+          // standalone page (`templates/notebook/notebookViewer.html?src=...`)
+          // the practical way to open a large one outside the SPA intake.
+          {
+            from: 'src/templates/notebook/notebookViewer.html',
+            to: 'templates/notebook/notebookViewer.html'
+          },
+          // Same debug flow for a HAR capture
+          // (`templates/har/harViewer.html?src=...`), which is how a large
+          // archive gets opened without going through the SPA's file intake.
+          {
+            from: 'src/templates/har/harViewer.html',
+            to: 'templates/har/harViewer.html'
           },
           { from: '_locales', to: '_locales' },
           { from: 'icons', to: 'icons' },

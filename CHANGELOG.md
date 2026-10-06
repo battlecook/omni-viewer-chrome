@@ -2,6 +2,46 @@
 
 All notable changes to the Chrome build of Omni Viewer are documented in this file.
 
+## [0.7.0] - 2026-10-05
+
+### Added
+- Added a Jupyter Notebook (`.ipynb`) viewer backed by `omni-viewer-core`. It
+  is a read-only preview: no kernel is started and no cell is re-run, so the
+  code is shown as highlighted text and every output is the one saved in the
+  file — Markdown cells (with KaTeX math and `attachment:` images), stream and
+  error outputs, `execute_result`/`display_data` bundles, inline images and
+  `text/html` fragments, all behind the core's sanitizer, plus a cell/output
+  search and show-code / show-outputs toggles. A notebook is JSON and carries
+  no magic bytes, so routing claims an `.ipynb` file by extension and a
+  renamed one by a top-level `nbformat: 4` together with a top-level `cells`
+  array — the rule the core itself applies. Only where the head is truncated,
+  and either key can therefore sit past it, does one of them count alone:
+  `nbformat: 4`, or a `cells` array with a `cell_type` inside it. Both keys
+  are read as members of the root object, so a document that merely contains
+  a notebook (a Contents API response, an nbdime diff) stays with the JSON
+  tree, as does a complete document carrying just one of the two. This runs
+  ahead of the generic JSON tree, in both `app.js` and
+  `FileUtils.detectViewerType`. Relative image paths
+  (`![](figures/plot.png)`) stay unresolved — Chrome hands a viewer a lone
+  File with no access to its siblings — and render as "Image unavailable".
+- Added an ExecuTorch (`.pte`) program viewer backed by `omni-viewer-core`.
+  Routing keys off the `ET12` FlatBuffer identifier at byte offset 4 — ahead
+  of the optional `eh00` extended header — with a `.pte` extension fallback
+  for files whose header is gone, in both `app.js` and
+  `FileUtils.detectViewerType`. The viewer renders the program's methods,
+  instruction chains, values, inputs/outputs, delegates and segment table
+  without decoding the constant or delegate payloads that trail the program.
+- Added a HAR (`.har`) network-log viewer backed by `omni-viewer-core`, aimed
+  at web and API failure analysis: a filterable request table (method, status
+  class, resource type, domain, free-text search over URLs, headers and
+  optionally bodies) with per-request waterfall bars, and a detail pane for
+  headers, request payload, response body, cookies and the timing breakdown.
+  A HAR archive is JSON, so it carries no magic bytes — routing claims a
+  `.har` file by extension and a renamed or extensionless capture by its
+  `log` object holding an `entries` array — each looked up as an own member,
+  so a document that merely wraps a capture stays with the JSON tree — ahead
+  of the generic JSON tree, in both `app.js` and `FileUtils.detectViewerType`.
+
 ## [0.6.0] - 2026-09-16
 
 ### Added

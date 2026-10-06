@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "__MSG_appName__",
   "short_name": "__MSG_appShortName__",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "default_locale": "en",
   "description": "__MSG_appDescription__",
   "action": {
@@ -43,9 +43,11 @@
         "text/tab-separated-values": [".tsv"],
         "application/json": [".json"],
         "application/jsonl": [".jsonl", ".ndjson", ".jsonlines"],
+        "application/har+json": [".har"],
         "application/yaml": [".yaml", ".yml"],
         "application/toml": [".toml"],
         "text/markdown": [".md", ".markdown"],
+        "application/x-ipynb+json": [".ipynb"],
         "text/x-tex": [".tex", ".latex", ".ltx"],
         "text/vnd.mermaid": [".mmd", ".mermaid"],
         "text/x-plantuml": [".puml", ".plantuml", ".iuml"],
@@ -89,7 +91,7 @@
         "application/x-xz": [".xz", ".txz", ".tar.xz"],
         "application/vnd.tcpdump.pcap": [".pcap", ".pcapng"],
         "application/x-hdf5": [".h5", ".hdf5"],
-        "application/octet-stream": [".npy", ".npz", ".gguf", ".onnx", ".tflite", ".lite", ".keras", ".mlmodel", ".mlpackage", ".safetensors", ".parquet", ".h5", ".hdf5", ".hwp", ".hwpx", ".blf", ".mf4", ".mdf", ".avro", ".bag", ".db3", ".sqlite", ".sqlite3"]
+        "application/octet-stream": [".npy", ".npz", ".gguf", ".onnx", ".tflite", ".lite", ".pte", ".keras", ".mlmodel", ".mlpackage", ".safetensors", ".parquet", ".h5", ".hdf5", ".hwp", ".hwpx", ".blf", ".mf4", ".mdf", ".avro", ".bag", ".db3", ".sqlite", ".sqlite3"]
       },
       "launch_type": "single-client"
     }

@@ -260,6 +260,23 @@ describe('FileUtils.detectViewerType signatures', () => {
         expect(result.reason).toContain('TFL3');
     });
 
+    it('detects ExecuTorch programs by the ET12 identifier at byte offset 4', async () => {
+        const file = makeFile(
+            [0x14, 0, 0, 0, 0x45, 0x54, 0x31, 0x32],
+            'mislabeled.bin'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.pteViewer');
+        expect(result.matchedBySignature).toBe(true);
+        expect(result.reason).toContain('ET12');
+    });
+
+    it('routes model.pte to the ExecuTorch viewer by extension', async () => {
+        const result = await FileUtils.detectViewerType(makeFile('not a flatbuffer', 'model.pte'));
+        expect(result.viewType).toBe('omni-viewer.pteViewer');
+        expect(result.matchedBySignature).toBe(false);
+    });
+
     it.each(['model.tflite', 'model.lite'])(
         'routes %s to the TFLite viewer by extension',
         async (name) => {
@@ -478,6 +495,206 @@ describe('FileUtils.detectViewerType signatures', () => {
         const result = await FileUtils.detectViewerType(file);
         expect(result.viewType).toBe('omni-viewer.jsonlViewer');
         expect(result.matchedBySignature).toBe(false);
+    });
+
+    it('routes .har to the HAR viewer', async () => {
+        const file = makeFile(
+            '{"log":{"version":"1.2","creator":{"name":"WebInspector"},"entries":[]}}',
+            'network.har'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.harViewer');
+        expect(result.matchedBySignature).toBe(false);
+        expect(result.reason).toContain('HAR extension');
+    });
+
+    it('claims a renamed HAR archive ahead of the JSON tree', async () => {
+        const file = makeFile(
+            '{\n  "log": {\n    "version": "1.2",\n'
+            + '    "creator": { "name": "Firefox", "version": "131" },\n'
+            + '    "entries": [\n      { "request": { "method": "GET" } }\n    ]\n  }\n}\n',
+            'capture.json'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.harViewer');
+        expect(result.reason).toContain('entries array');
+    });
+
+    it('claims a minified single-line archive', async () => {
+        // What har-capturer, curl pipelines and any `JSON.stringify` of a
+        // DevTools export produce. One line, so it reaches the HAR branch only
+        // because `looksLikeJsonl` requires two.
+        const file = makeFile(
+            '{"log":{"version":"1.2","creator":{"name":"curl"},"entries":'
+            + '[{"request":{"method":"GET","url":"https://api.example.test/v1/ping"}}]}}',
+            'capture.json'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.harViewer');
+    });
+
+    it('claims a BOM-prefixed archive', async () => {
+        // Fiddler and PowerShell-written captures carry a UTF-8 BOM; the
+        // sample decoder strips it, so the opening `{` is still the first
+        // character the sniff sees.
+        const file = makeFile(
+            concatBytes(
+                [0xef, 0xbb, 0xbf],
+                new TextEncoder().encode('{"log":{"version":"1.2","entries":[]}}')
+            ),
+            'capture.json'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.harViewer');
+    });
+
+    it('leaves a JSON document with an unrelated log field on the JSON viewer', async () => {
+        const file = makeFile('{"log":{"level":"warn","message":"nope"}}', 'app.json');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.jsonViewer');
+    });
+
+    it('does not claim an entries array that belongs to a sibling of log', async () => {
+        // The `entries` member has to be the log object's own, as it is in the
+        // core's structural `log.entries` lookup — a sibling further down the
+        // document is not a HAR signal.
+        const file = makeFile(
+            '{"log":{"level":"warn"},"cache":{"entries":[{"key":"a"}]}}',
+            'report.json'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.jsonViewer');
+    });
+
+    it('does not claim a JSON document that merely wraps a capture', async () => {
+        // A bug-report attachment: the archive sits under `har`, so `log` is
+        // not the root's own member. The core routes this to the JSON tree and
+        // `parseHar` would refuse it with `diag.har.missing-log`.
+        const file = makeFile(
+            '{"meta":{"ticket":"BUG-1"},"har":{"log":{"version":"1.2",'
+            + '"entries":[{"request":{"method":"GET"}}]}}}',
+            'attachment.json'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.jsonViewer');
+    });
+
+    it('still claims an archive whose request bodies carry braces and quotes', async () => {
+        // `postData.text` holds escaped JSON, so a brace counter that ignored
+        // string literals would lose track of the log object's depth before
+        // reaching `entries`.
+        const file = makeFile(
+            '{"log":{"version":"1.2","comment":"a \\"quoted\\" note {with braces}",'
+            + '"creator":{"name":"WebInspector","comment":"}}}"},'
+            + '"entries":[{"request":{"method":"POST","postData":'
+            + '{"text":"{\\"amount\\":1200}"}}}]}}',
+            'capture.json'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.harViewer');
+    });
+
+    it('routes .ipynb to the notebook viewer', async () => {
+        const file = makeFile(
+            '{"cells":[],"metadata":{},"nbformat":4,"nbformat_minor":5}',
+            'analysis.ipynb'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.notebookViewer');
+        expect(result.matchedBySignature).toBe(false);
+        expect(result.reason).toContain('Jupyter Notebook extension');
+    });
+
+    it('claims a renamed notebook whose nbformat falls past the head', async () => {
+        // nbconvert and JupyterLab write `cells` first and `nbformat` last, so
+        // in a notebook larger than the 64 KB head the only visible signals
+        // are the `cells` array and the first `cell_type`.
+        const file = makeFile(
+            '{"cells":[{"cell_type":"code","execution_count":1,"source":["'
+            + 'print(1)#'.repeat(8 * 1024)
+            + '"],"outputs":[]}],"metadata":{},"nbformat":4,"nbformat_minor":5}',
+            'export.json'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.notebookViewer');
+        expect(result.reason).toContain('top-level notebook cells array');
+    });
+
+    it('leaves a complete JSON document with cells but no nbformat on the JSON viewer', async () => {
+        // Nothing is truncated here, so `nbformat` — which every real notebook
+        // carries — is genuinely absent: the core would refuse this with a
+        // version error, where the JSON tree reads it.
+        const file = makeFile(
+            '{"cells":[{"cell_type":"code","source":["print(1)"]}],"metadata":{}}',
+            'export.json'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.jsonViewer');
+    });
+
+    it('does not take a cell_type outside the cells array as confirmation', async () => {
+        // Past the 64 KB head, so the relaxed route is live; the `cell_type`
+        // sits in a sibling object, and the search is scoped to `cells`.
+        const file = makeFile(
+            '{"cells":[{"id":1}],"schema":{"cell_type":"code","pad":"'
+            + 'p'.repeat(70 * 1024)
+            + '"}}',
+            'schema.json'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.jsonViewer');
+    });
+
+    it('claims a notebook whose nbformat precedes a long metadata block', async () => {
+        // Colab and omni-viewer-core's own sample notebook write `nbformat`
+        // first and `cells` last, so a big `metadata` block can push `cells`
+        // past the 64 KB head — `nbformat` alone has to be enough.
+        const file = makeFile(
+            '{"nbformat":4,"nbformat_minor":0,"metadata":{"widgets":{"state":"'
+            + 'w'.repeat(70 * 1024)
+            + '"}},"cells":[{"cell_type":"code","source":["print(1)"]}]}',
+            'colab-export.json'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.notebookViewer');
+        expect(result.reason).toContain('nbformat');
+    });
+
+    it('claims a notebook that opens with a UTF-8 BOM', async () => {
+        const file = makeFile(
+            '\ufeff{"cells":[{"cell_type":"code","source":["print(1)"]}]'
+            + ',"metadata":{},"nbformat":4,"nbformat_minor":5}',
+            'bom.json'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.notebookViewer');
+    });
+
+    it('does not claim a JSON document that merely wraps a notebook', async () => {
+        // A Jupyter Contents API response carries the notebook under
+        // `content`. The core reads `nbformat`/`cells` off the parsed root, so
+        // it would refuse this with a version error — the JSON tree reads it.
+        const notebook = '{"cells":[{"cell_type":"code","source":["print(1)"]}]'
+            + ',"metadata":{},"nbformat":4,"nbformat_minor":5}';
+        const file = makeFile(
+            `{"name":"Untitled.ipynb","type":"notebook","format":"json","content":${notebook}}`,
+            'response.json'
+        );
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.jsonViewer');
+    });
+
+    it('leaves a line-delimited corpus of notebooks on the JSONL viewer', async () => {
+        const record = '{"cells":[{"cell_type":"code","source":["print(1)"]}],"nbformat":4}';
+        const file = makeFile(`${record}\n${record}\n`, 'notebooks.jsonl');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.jsonlViewer');
+    });
+
+    it('leaves a JSON document with an unrelated cells field on the JSON viewer', async () => {
+        const file = makeFile('{"cells":[{"id":1,"value":"a1"}]}', 'sheet.json');
+        const result = await FileUtils.detectViewerType(file);
+        expect(result.viewType).toBe('omni-viewer.jsonViewer');
     });
 
     it('detects JSON documents by extension', async () => {
@@ -799,8 +1016,10 @@ describe('shortNameForViewType', () => {
         expect(shortNameForViewType('omni-viewer.numpyViewer')).toBe('numpy');
         expect(shortNameForViewType('omni-viewer.mermaidViewer')).toBe('mermaid');
         expect(shortNameForViewType('omni-viewer.markdownViewer')).toBe('markdown');
+        expect(shortNameForViewType('omni-viewer.notebookViewer')).toBe('notebook');
         expect(shortNameForViewType('omni-viewer.latexViewer')).toBe('latex');
         expect(shortNameForViewType('omni-viewer.plantumlViewer')).toBe('plantuml');
+        expect(shortNameForViewType('omni-viewer.harViewer')).toBe('har');
         expect(shortNameForViewType('omni-viewer.avroViewer')).toBe('automotive');
         expect(shortNameForViewType('omni-viewer.reqifViewer')).toBe('automotive');
     });

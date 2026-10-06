@@ -39,8 +39,10 @@ export type OmniViewerViewType =
     | 'omni-viewer.jsonViewer'
     | 'omni-viewer.yamlViewer'
     | 'omni-viewer.jsonlViewer'
+    | 'omni-viewer.harViewer'
     | 'omni-viewer.tomlViewer'
     | 'omni-viewer.markdownViewer'
+    | 'omni-viewer.notebookViewer'
     | 'omni-viewer.latexViewer'
     | 'omni-viewer.mermaidViewer'
     | 'omni-viewer.plantumlViewer'
@@ -59,6 +61,7 @@ export type OmniViewerViewType =
     | 'omni-viewer.ggufViewer'
     | 'omni-viewer.onnxViewer'
     | 'omni-viewer.tfliteViewer'
+    | 'omni-viewer.pteViewer'
     | 'omni-viewer.kerasViewer'
     | 'omni-viewer.coremlViewer'
     | 'omni-viewer.openvinoViewer'
@@ -84,8 +87,10 @@ export type ViewerSlug =
     | 'json'
     | 'yaml'
     | 'jsonl'
+    | 'har'
     | 'toml'
     | 'markdown'
+    | 'notebook'
     | 'latex'
     | 'mermaid'
     | 'plantuml'
@@ -104,6 +109,7 @@ export type ViewerSlug =
     | 'gguf'
     | 'onnx'
     | 'tflite'
+    | 'pte'
     | 'keras'
     | 'coreml'
     | 'openvino'
@@ -211,6 +217,14 @@ export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
         createProvider: () => createPlaceholderProvider('omni-viewer.jsonlViewer')
     },
     {
+        viewType: 'omni-viewer.harViewer',
+        slug: 'har',
+        command: 'omni-viewer.openHarViewer',
+        missingMessage: 'No HAR file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.harViewer')
+    },
+    {
         viewType: 'omni-viewer.tomlViewer',
         slug: 'toml',
         command: 'omni-viewer.openTomlViewer',
@@ -225,6 +239,14 @@ export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
         missingMessage: 'No Markdown file selected',
         retainContextWhenHidden: true,
         createProvider: () => createPlaceholderProvider('omni-viewer.markdownViewer')
+    },
+    {
+        viewType: 'omni-viewer.notebookViewer',
+        slug: 'notebook',
+        command: 'omni-viewer.openNotebookViewer',
+        missingMessage: 'No notebook file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.notebookViewer')
     },
     {
         viewType: 'omni-viewer.latexViewer',
@@ -371,6 +393,14 @@ export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
         createProvider: () => createPlaceholderProvider('omni-viewer.tfliteViewer')
     },
     {
+        viewType: 'omni-viewer.pteViewer',
+        slug: 'pte',
+        command: 'omni-viewer.openPteViewer',
+        missingMessage: 'No ExecuTorch file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.pteViewer')
+    },
+    {
         viewType: 'omni-viewer.kerasViewer',
         slug: 'keras',
         command: 'omni-viewer.openKerasViewer',
@@ -496,9 +526,11 @@ const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
     '.jsonl': 'jsonl',
     '.ndjson': 'jsonl',
     '.jsonlines': 'jsonl',
+    '.har': 'har',
     '.yaml': 'yaml',
     '.yml': 'yaml',
     '.toml': 'toml',
+    '.ipynb': 'notebook',
     '.md': 'markdown',
     '.markdown': 'markdown',
     '.tex': 'latex',
@@ -536,6 +568,7 @@ const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
     '.onnx': 'onnx',
     '.tflite': 'tflite',
     '.lite': 'tflite',
+    '.pte': 'pte',
     '.keras': 'keras',
     '.mlmodel': 'coreml',
     '.mlpackage': 'coreml',

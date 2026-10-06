@@ -177,9 +177,11 @@ const formats = {
   csv: ['.csv', '.tsv'],
   json: ['.json'],
   jsonl: ['.jsonl', '.ndjson', '.jsonlines'],
+  har: ['.har'],
   yaml: ['.yaml', '.yml'],
   toml: ['.toml'],
   markdown: ['.md', '.markdown'],
+  notebook: ['.ipynb'],
   latex: ['.tex', '.latex', '.ltx'],
   mermaid: ['.mmd', '.mermaid'],
   plantuml: ['.puml', '.plantuml', '.iuml'],
@@ -191,6 +193,7 @@ const formats = {
   gguf: ['.gguf'],
   onnx: ['.onnx'],
   tflite: ['.tflite', '.lite'],
+  pte: ['.pte'],
   keras: ['.keras'],
   coreml: ['.mlmodel', '.mlpackage'],
   // Routed by content only: `.xml` belongs to every XML dialect.
@@ -213,9 +216,11 @@ const labels = {
   csv: 'CSV/TSV',
   json: 'JSON',
   jsonl: 'JSONL',
+  har: 'HAR',
   yaml: 'YAML',
   toml: 'TOML',
   markdown: 'Markdown',
+  notebook: 'Jupyter Notebook',
   latex: 'LaTeX',
   mermaid: 'Mermaid',
   plantuml: 'PlantUML',
@@ -227,6 +232,7 @@ const labels = {
   gguf: 'GGUF',
   onnx: 'ONNX',
   tflite: 'TFLite',
+  pte: 'ExecuTorch',
   keras: 'Keras',
   coreml: 'Core ML',
   openvino: 'OpenVINO IR',
@@ -316,6 +322,136 @@ function zipEntryNames(head) {
   return names;
 }
 
+// Mirror of `looksLikeHar` in omni-viewer-core/registry/sniff: a JSON object
+// whose `log` holds an `entries` array. A HAR carries no magic bytes, so this
+// is the only signal a renamed or extensionless archive gives. The core sniff
+// parses the sample with its partial-tolerant JSON parser; the head read here
+// is truncated, which `JSON.parse` would always reject, so the `log` /
+// `entries` opening is matched structurally instead.
+function looksLikeHar(text) {
+  const sample = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+  const trimmed = sample.trimStart();
+  if (!trimmed.startsWith('{')) return false;
+  // Both keys are own members — `log` of the ROOT object (body starting just
+  // past its `{`), then `entries` of that log object — the way the core reads
+  // them off the parsed root. A document that merely *contains* a capture (a
+  // bug-report attachment's `{"meta": ..., "har": {"log": ...}}`, a log-query
+  // response with a nested `log.entries`) is not one, and the core would
+  // refuse it with `diag.har.missing-log` where the JSON tree reads it fine.
+  const logBody = memberValueStart(trimmed, 1, 'log', '\\{');
+  if (logBody < 0) return false;
+  return hasArrayMember(trimmed, logBody, 'entries');
+}
+
+// True if the object whose body starts at `start` (the index just past its
+// `{`) has an `"<name>": [` member of its own. Nested objects and arrays are
+// skipped, so a sibling elsewhere in the document never counts — that keeps
+// the sniff above as narrow as the core's structural `log.entries` lookup,
+// which reads a parsed tree rather than text. String literals are skipped
+// with their escapes, so a captured request body such as `"{\"amount\":1}"`
+// cannot throw off the brace depth. A head truncated mid-object runs out and
+// returns false.
+function hasArrayMember(text, start, name) {
+  return hasMember(text, start, name, '\\[');
+}
+
+// As `hasArrayMember`, for a member whose value matches `value` (a regex
+// source) rather than opening an array — `nbformat` is a number, not a
+// container, so the notebook sniff needs this form.
+function hasMember(text, start, name, value) {
+  return memberValueStart(text, start, name, value) >= 0;
+}
+
+// Index just past the `value` match of the `"<name>"` member of the object
+// whose body starts at `start`, or -1 when there is no such member. When
+// `value` opens a container the result is that container's own body, which is
+// what lets one lookup nest inside another (`log`, then its `entries`).
+function memberValueStart(text, start, name, value) {
+  const member = new RegExp(`"${name}"\\s*:\\s*${value}`, 'y');
+  let depth = 0;
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index];
+    if (char === '"') {
+      if (depth === 0) {
+        member.lastIndex = index;
+        if (member.test(text)) return member.lastIndex;
+      }
+      const end = endOfJsonString(text, index);
+      if (end < 0) return -1;
+      index = end;
+    } else if (char === '{' || char === '[') {
+      depth += 1;
+    } else if (char === '}' || char === ']') {
+      // At depth 0 this closes the object being scanned.
+      if (depth === 0) return -1;
+      depth -= 1;
+    }
+  }
+  return -1;
+}
+
+// Index of the closing quote of the JSON string that opens at `start`, or -1
+// when the head is truncated before it.
+function endOfJsonString(text, start) {
+  for (let index = start + 1; index < text.length; index += 1) {
+    const char = text[index];
+    if (char === '\\') index += 1;
+    else if (char === '"') return index;
+  }
+  return -1;
+}
+
+// Mirror of `looksLikeNotebook` in omni-viewer-core/registry/sniff, fitted to
+// a head that may be truncated. The core parses the whole text and requires
+// both `nbformat: 4` and a `cells` array on the root; the head read here stops
+// at 64 KB, and top-level key order is writer-dependent — nbconvert and
+// JupyterLab emit `{"cells": [ ... ], ... "nbformat": 4}`, while Colab and
+// omni-viewer-core's own sample notebook emit
+// `{"nbformat": 4, ... "cells": [ ... ]}`. So a COMPLETE head is held to the
+// core's rule — both keys — and only a `truncated` one, where either key can
+// sit past the end, accepts one on its own: `nbformat: 4` alone, or a `cells`
+// array with a `cell_type` inside it. A complete document carrying just one of
+// them is not a notebook; the core refuses it where the JSON tree reads it.
+//
+// Both keys are looked up as members of the ROOT object (body starting just
+// past its `{`), the way the core reads them off the parsed root: a document
+// that merely *contains* a notebook — a Jupyter Contents API response's
+// `content`, an nbdime diff's `base` — is not one. `cell_type` is searched
+// inside that `cells` array rather than anywhere in the head.
+function looksLikeNotebook(text, truncated) {
+  const trimmed = text.trimStart();
+  if (!trimmed.startsWith('{')) return false;
+  const cells = memberValueStart(trimmed, 1, 'cells', '\\[');
+  if (hasMember(trimmed, 1, 'nbformat', '4\\b')) return truncated || cells >= 0;
+  if (!truncated) return false;
+  if (cells < 0) return false;
+  const end = endOfJsonContainer(trimmed, cells);
+  const body = end < 0 ? trimmed.slice(cells) : trimmed.slice(cells, end);
+  return /"cell_type"\s*:\s*"(?:code|markdown|raw)"/.test(body);
+}
+
+// Index of the bracket that closes the container whose body starts at `start`,
+// or -1 when the head ends first — the normal case for the `cells` array of a
+// notebook larger than the head window. Strings and their escapes are skipped,
+// so a brace inside a cell's source cannot throw off the depth.
+function endOfJsonContainer(text, start) {
+  let depth = 0;
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index];
+    if (char === '"') {
+      const end = endOfJsonString(text, index);
+      if (end < 0) return -1;
+      index = end;
+    } else if (char === '{' || char === '[') {
+      depth += 1;
+    } else if (char === '}' || char === ']') {
+      if (depth === 0) return index;
+      depth -= 1;
+    }
+  }
+  return -1;
+}
+
 // Mirror of `looksLikeOpenVinoIr` in omni-viewer-core/parsers/openvino: a
 // lowercase `<net>` root carrying a numeric `version` and holding `<layers>`,
 // after any BOM / declaration / comment prologue.
@@ -388,6 +524,7 @@ async function detectType(file) {
   if (hasPrefix(head, [0x93, 0x4e, 0x55, 0x4d, 0x50, 0x59])) return 'numpy';
   if (ascii(head, 0, 4) === 'GGUF') return 'gguf';
   if (ascii(head, 4, 4) === 'TFL3') return 'tflite';
+  if (ascii(head, 4, 4) === 'ET12') return 'pte';
   if (isSafetensorsHead(head, file.size)) return 'safetensors';
   if (ascii(head, 0, 4) === 'LOGG') return 'automotive';
   if (/^MDF\s/.test(ascii(head, 0, Math.min(head.length, 64)))) return 'automotive';
@@ -419,10 +556,38 @@ async function detectType(file) {
     if (rootNames.includes('config.json') && rootNames.includes('model.weights.h5')) return 'keras';
     return formats.archive.includes(ext) ? 'archive' : byExtension(file);
   }
+  // One UTF-8 decode of the head, shared by the structured-text sniffs below.
+  // It must not be the latin1 `ascii()` view: a UTF-8 BOM survives that as
+  // three mojibake characters, which `trimStart()` keeps, so a BOM-prefixed
+  // document would never match the `{` / `<` opening each sniff requires.
+  // FileUtils decodes its sample the same way, and the two have to agree.
+  const headText = new TextDecoder().decode(head);
   // The `<net>` root is what identifies an IR — `.xml` on its own says nothing.
-  if (looksLikeOpenVinoIr(new TextDecoder().decode(head))) return 'openvino';
+  if (looksLikeOpenVinoIr(headText)) return 'openvino';
   const textHead = ascii(head, 0, Math.min(head.length, 4096)).trimStart();
   if (/^@start(?:uml|plantuml|mindmap|wbs|gantt|json|yaml|salt|ditaa)?\b/i.test(textHead)) return 'plantuml';
+  // FileUtils resolves JSONL ahead of every JSON-shaped content sniff, so the
+  // SPA has to claim the extension here too: a line-delimited corpus whose
+  // records happen to be notebooks (or HAR logs) is a stream of documents, not
+  // one document. FileUtils also has a line-shape sniff that this SPA does not
+  // port, so an *unlabelled* corpus (`dump.json`, extensionless) still reaches
+  // the single-document sniffs below — a gap that predates these two formats.
+  if (formats.jsonl.includes(ext)) return 'jsonl';
+  // A HAR archive is JSON, so only the `log`/`entries` pair identifies one.
+  // Scanned over the whole head rather than `textHead`: a multi-page archive
+  // can carry several hundred bytes of `pages` before `entries` opens.
+  if (looksLikeHar(headText)) return 'har';
+  // A notebook is JSON too, and whichever of `nbformat` / `cells` identifies it
+  // can sit far into the file, so this reads the whole head as well.
+  // `head` stops at 64 KB, so a larger file reaches the sniff truncated.
+  if (looksLikeNotebook(headText, file.size > head.length)) return 'notebook';
+  // Whatever no sniff claimed is resolved by extension, and an extensionless
+  // file ends at the raw-data fallback. FileUtils has a generic
+  // `looksLikeJsonDocument` sniff that this SPA does not port, so an
+  // extensionless JSON document — including one shaped like a notebook but
+  // missing a key, which the sniff above deliberately rejects — shows as raw
+  // data here and as the JSON tree there. That gap predates these formats;
+  // `notebookDetectionParity.test.ts` pins it so it cannot drift unnoticed.
   return byExtension(file);
 }
 
@@ -692,9 +857,11 @@ async function renderByType() {
   if (type === 'csv') return renderCsv();
   if (type === 'json') return renderJson();
   if (type === 'jsonl') return renderJsonl();
+  if (type === 'har') return renderHar();
   if (type === 'yaml') return renderYaml();
   if (type === 'toml') return renderToml();
   if (type === 'markdown') return renderMarkdown();
+  if (type === 'notebook') return renderNotebook();
   if (type === 'latex') return renderLatex();
   if (type === 'mermaid') return renderMermaid();
   if (type === 'plantuml') return renderPlantUml();
@@ -706,6 +873,7 @@ async function renderByType() {
   if (type === 'gguf') return renderGguf();
   if (type === 'onnx') return renderOnnx();
   if (type === 'tflite') return renderTflite();
+  if (type === 'pte') return renderPte();
   if (type === 'keras') return renderKeras();
   if (type === 'coreml') return renderCoreml();
   if (type === 'openvino') return renderOpenvino();
@@ -851,6 +1019,17 @@ async function renderJsonl() {
   }
 }
 
+async function renderHar() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading HAR viewer…</p></div>';
+  try {
+    await mountAdvancedViewer('har', 'mountHarViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load HAR viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
+
 async function renderYaml() {
   const body = panel(state.file.name);
   body.innerHTML = '<div class="unsupported"><p>Loading YAML viewer…</p></div>';
@@ -881,6 +1060,17 @@ async function renderMarkdown() {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     body.innerHTML = `<div class="unsupported"><p>Couldn't load Markdown viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
+
+async function renderNotebook() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading notebook viewer...</p></div>';
+  try {
+    await mountAdvancedViewer('notebook', 'mountNotebookViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load notebook viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
   }
 }
 
@@ -1002,6 +1192,17 @@ async function renderTflite() {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     body.innerHTML = `<div class="unsupported"><p>Couldn't load TFLite viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
+
+async function renderPte() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading ExecuTorch viewer...</p></div>';
+  try {
+    await mountAdvancedViewer('pte', 'mountPteViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load ExecuTorch viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
   }
 }
 

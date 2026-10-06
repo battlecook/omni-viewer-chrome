@@ -29,8 +29,10 @@ export type OmniViewerViewType =
     | 'omni-viewer.jsonViewer'
     | 'omni-viewer.yamlViewer'
     | 'omni-viewer.jsonlViewer'
+    | 'omni-viewer.harViewer'
     | 'omni-viewer.tomlViewer'
     | 'omni-viewer.markdownViewer'
+    | 'omni-viewer.notebookViewer'
     | 'omni-viewer.latexViewer'
     | 'omni-viewer.mermaidViewer'
     | 'omni-viewer.plantumlViewer'
@@ -47,6 +49,7 @@ export type OmniViewerViewType =
     | 'omni-viewer.ggufViewer'
     | 'omni-viewer.onnxViewer'
     | 'omni-viewer.tfliteViewer'
+    | 'omni-viewer.pteViewer'
     | 'omni-viewer.kerasViewer'
     | 'omni-viewer.coremlViewer'
     | 'omni-viewer.openvinoViewer'
@@ -316,6 +319,12 @@ export class FileUtils {
             return this.signatureMatch('omni-viewer.tfliteViewer', 'Matched the TFLite TFL3 identifier.');
         }
 
+        // ExecuTorch programs are FlatBuffers like TFLite: the root
+        // identifier sits at byte offset 4, ahead of any extended header.
+        if (this.hasAsciiPrefix(buffer.subarray(4), 'ET12')) {
+            return this.signatureMatch('omni-viewer.pteViewer', 'Matched the ExecuTorch ET12 identifier.');
+        }
+
         if (this.isSafetensors(file, buffer)) {
             return this.signatureMatch('omni-viewer.safetensorsViewer', 'Matched the safetensors header layout.');
         }
@@ -499,6 +508,14 @@ export class FileUtils {
             };
         }
 
+        if (ext === '.pte') {
+            return {
+                viewType: 'omni-viewer.pteViewer',
+                reason: 'Used the ExecuTorch extension fallback.',
+                matchedBySignature: false
+            };
+        }
+
         // Reached when a `.keras` file no longer carries its ZIP header — the
         // viewer reports the damage better than the raw-data fallback does.
         if (ext === '.keras') {
@@ -528,7 +545,7 @@ export class FileUtils {
             };
         }
 
-        const textType = this.detectTextBasedViewType(buffer, ext);
+        const textType = this.detectTextBasedViewType(buffer, ext, file.size);
         if (textType) {
             return textType;
         }
@@ -857,7 +874,11 @@ export class FileUtils {
         return null;
     }
 
-    private static detectTextBasedViewType(buffer: Uint8Array, ext: string): FileViewerDetectionResult | null {
+    private static detectTextBasedViewType(
+        buffer: Uint8Array,
+        ext: string,
+        fileSize: number
+    ): FileViewerDetectionResult | null {
         const sample = utf8Decoder().decode(buffer.subarray(0, Math.min(buffer.length, 16 * 1024)));
         const lines = sample
             .split(/\r?\n/)
@@ -885,6 +906,46 @@ export class FileUtils {
             return {
                 viewType: 'omni-viewer.jsonlViewer',
                 reason: 'Matched line-delimited JSON content.',
+                matchedBySignature: false
+            };
+        }
+
+        // A HAR archive is a JSON object, so it has to be claimed before the
+        // generic JSON sniff below would take it. Same precedence as
+        // omni-viewer-core's registry (sniffTextViewer: jsonl, har,
+        // notebook, json):
+        // a pretty-printed archive opens with a bare `{`, so JSONL never
+        // claims it, and HAR wins over the JSON tree.
+        if (ext === '.har' || this.looksLikeHar(sample)) {
+            return {
+                viewType: 'omni-viewer.harViewer',
+                reason: ext === '.har'
+                    ? 'Used the HAR extension fallback.'
+                    : 'Matched a HAR log with an entries array.',
+                matchedBySignature: false
+            };
+        }
+
+        // A notebook is a JSON object too, so it is claimed in the same place
+        // as HAR — after JSONL, ahead of the JSON tree (sniffTextViewer:
+        // jsonl, har, notebook, json).
+        // Read over the whole signature buffer, not the 16 KB `sample` the line
+        // heuristics above use: `app.js` sniffs the same 64 KB head, and both
+        // mirrors have to mean the same thing by "truncated" — a window that
+        // differs is a window where one of them calls a complete document
+        // truncated and takes the relaxed route the other refuses. (The HAR
+        // sniff above still reads `sample`; widening that is HAR's call.)
+        const notebookMatch = ext === '.ipynb'
+            ? 'extension'
+            : this.looksLikeNotebook(utf8Decoder().decode(buffer), fileSize > buffer.length);
+        if (notebookMatch) {
+            return {
+                viewType: 'omni-viewer.notebookViewer',
+                reason: notebookMatch === 'extension'
+                    ? 'Used the Jupyter Notebook extension fallback.'
+                    : notebookMatch === 'nbformat'
+                        ? 'Matched a top-level notebook nbformat 4.'
+                        : 'Matched a top-level notebook cells array.',
                 matchedBySignature: false
             };
         }
@@ -1016,6 +1077,183 @@ export class FileUtils {
                 return false;
             }
         });
+    }
+
+    /**
+     * Mirror of `looksLikeHar` in omni-viewer-core/registry/sniff: a JSON
+     * object whose `log` holds an `entries` array. The core sniff parses the
+     * sample with its partial-tolerant JSON parser; here the sample is a
+     * truncated 16 KB head, which `JSON.parse` would always reject, so the
+     * `log` / `entries` opening is matched structurally instead. Every HAR
+     * writer emits `version`/`creator` ahead of `entries`, so the pair sits
+     * well inside the sample.
+     *
+     * Both keys are looked up as own members — `log` of the ROOT object, then
+     * `entries` of that log object — the way the core reads them off the
+     * parsed root. A document that merely *contains* a capture (a bug-report
+     * attachment's `{"meta": …, "har": {"log": …}}`, a log-query response with
+     * a nested `log.entries`) is not one, and the core would refuse it with
+     * `diag.har.missing-log` where the JSON tree reads it fine.
+     */
+    private static looksLikeHar(sample: string): boolean {
+        const text = sample.charCodeAt(0) === 0xfeff ? sample.slice(1) : sample;
+        const trimmed = text.trimStart();
+        if (!trimmed.startsWith('{')) {
+            return false;
+        }
+        // Index 1 is the root object's body, just past its `{`.
+        const logBody = this.memberValueStart(trimmed, 1, 'log', '\\{');
+        if (logBody < 0) {
+            return false;
+        }
+        return this.hasArrayMember(trimmed, logBody, 'entries');
+    }
+
+    /**
+     * True if the object whose body starts at `start` (the index just past its
+     * `{`) has a `"<name>": [` member of its own — nested objects and arrays
+     * are skipped, so a sibling elsewhere in the document never counts. This
+     * is what keeps the sniffs above as narrow as the core's structural
+     * lookups (`log.entries`), which read a parsed tree rather than text.
+     * A sample truncated mid-object simply runs out and returns false.
+     */
+    private static hasArrayMember(text: string, start: number, name: string): boolean {
+        return this.hasMember(text, start, name, '\\[');
+    }
+
+    /**
+     * As `hasArrayMember`, for a member whose value matches `value` (a regex
+     * source) rather than opening an array — `nbformat` is a number, not a
+     * container, so the notebook sniff needs this form.
+     */
+    private static hasMember(text: string, start: number, name: string, value: string): boolean {
+        return this.memberValueStart(text, start, name, value) >= 0;
+    }
+
+    /**
+     * Index just past the `value` match of the `"<name>"` member of the object
+     * whose body starts at `start`, or -1 when there is no such member. When
+     * `value` opens a container the result is that container's own body, which
+     * is what lets one lookup nest inside another (`log`, then its `entries`).
+     */
+    private static memberValueStart(
+        text: string,
+        start: number,
+        name: string,
+        value: string
+    ): number {
+        const member = new RegExp(`"${name}"\\s*:\\s*${value}`, 'y');
+        let depth = 0;
+        for (let index = start; index < text.length; index += 1) {
+            const char = text[index];
+            if (char === '"') {
+                if (depth === 0) {
+                    member.lastIndex = index;
+                    if (member.test(text)) {
+                        return member.lastIndex;
+                    }
+                }
+                const end = this.endOfJsonString(text, index);
+                if (end < 0) {
+                    return -1;
+                }
+                index = end;
+            } else if (char === '{' || char === '[') {
+                depth += 1;
+            } else if (char === '}' || char === ']') {
+                // At depth 0 this closes the object being scanned, so the
+                // member is not there.
+                if (depth === 0) {
+                    return -1;
+                }
+                depth -= 1;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Index of the closing quote of the JSON string that opens at `start`, or
+     * -1 when the sample is truncated before it. Escapes are honoured so a
+     * body such as `"{\"amount\":1}"` cannot throw off the brace depth.
+     */
+    private static endOfJsonString(text: string, start: number): number {
+        for (let index = start + 1; index < text.length; index += 1) {
+            const char = text[index];
+            if (char === '\\') {
+                index += 1;
+            } else if (char === '"') {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Mirror of `looksLikeNotebook` in omni-viewer-core/registry/sniff, fitted
+     * to a head that may be truncated. The core parses the whole text and
+     * requires both `nbformat: 4` and a `cells` array on the root; here only
+     * the first 64 KB is read, and top-level key order is writer-dependent —
+     * nbconvert and JupyterLab emit `{"cells": [ … ], … "nbformat": 4}`, while
+     * Colab and the core's own sample notebook emit
+     * `{"nbformat": 4, … "cells": [ … ]}`. So a COMPLETE head is held to the
+     * core's rule — both keys — and only a `truncated` one, where either key
+     * can sit past the end, accepts one on its own: `nbformat: 4` alone, or a
+     * `cells` array with a `cell_type` inside it. A complete document carrying
+     * just one of them is not a notebook: the core refuses it with
+     * `diag.notebook.version` / `diag.notebook.invalid`, where the JSON tree
+     * reads it fine.
+     *
+     * Both keys are looked up as members of the ROOT object (body starting
+     * just past its `{`), so a document that merely *contains* a notebook — a
+     * Jupyter Contents API response's `content`, an nbdime diff's `base` — is
+     * not claimed, and `cell_type` is searched inside that `cells` array
+     * rather than anywhere in the head.
+     */
+    private static looksLikeNotebook(sample: string, truncated: boolean): 'nbformat' | 'cells' | null {
+        const trimmed = sample.trimStart();
+        if (!trimmed.startsWith('{')) {
+            return null;
+        }
+        const cells = this.memberValueStart(trimmed, 1, 'cells', '\\[');
+        if (this.hasMember(trimmed, 1, 'nbformat', '4\\b')) {
+            return truncated || cells >= 0 ? 'nbformat' : null;
+        }
+        if (!truncated || cells < 0) {
+            return null;
+        }
+        const end = this.endOfJsonContainer(trimmed, cells);
+        const body = end < 0 ? trimmed.slice(cells) : trimmed.slice(cells, end);
+        return /"cell_type"\s*:\s*"(?:code|markdown|raw)"/.test(body) ? 'cells' : null;
+    }
+
+    /**
+     * Index of the bracket that closes the container whose body starts at
+     * `start`, or -1 when the sample ends first — which is the normal case for
+     * the `cells` array of a notebook larger than the head window. Strings
+     * and their escapes are skipped, so a brace inside a cell's source cannot
+     * throw off the depth.
+     */
+    private static endOfJsonContainer(text: string, start: number): number {
+        let depth = 0;
+        for (let index = start; index < text.length; index += 1) {
+            const char = text[index];
+            if (char === '"') {
+                const end = this.endOfJsonString(text, index);
+                if (end < 0) {
+                    return -1;
+                }
+                index = end;
+            } else if (char === '{' || char === '[') {
+                depth += 1;
+            } else if (char === '}' || char === ']') {
+                if (depth === 0) {
+                    return index;
+                }
+                depth -= 1;
+            }
+        }
+        return -1;
     }
 
     private static looksLikeJsonDocument(sample: string): boolean {
@@ -1168,10 +1406,14 @@ export function shortNameForViewType(viewType: OmniViewerViewType): string {
         return 'yaml';
     case 'omni-viewer.jsonlViewer':
         return 'jsonl';
+    case 'omni-viewer.harViewer':
+        return 'har';
     case 'omni-viewer.tomlViewer':
         return 'toml';
     case 'omni-viewer.markdownViewer':
         return 'markdown';
+    case 'omni-viewer.notebookViewer':
+        return 'notebook';
     case 'omni-viewer.latexViewer':
         return 'latex';
     case 'omni-viewer.mermaidViewer':
@@ -1197,6 +1439,8 @@ export function shortNameForViewType(viewType: OmniViewerViewType): string {
         return 'onnx';
     case 'omni-viewer.tfliteViewer':
         return 'tflite';
+    case 'omni-viewer.pteViewer':
+        return 'pte';
     case 'omni-viewer.kerasViewer':
         return 'keras';
     case 'omni-viewer.coremlViewer':

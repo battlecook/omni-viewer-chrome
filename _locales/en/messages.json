@@ -44,7 +44,7 @@
     "description": "Drag and drop prompt."
   },
   "formatsSummary": {
-    "message": "Images, PDF, CSV/TSV, JSON/JSONL, YAML/TOML, Proto, NumPy, GGUF, ONNX, TFLite, Keras, Core ML, OpenVINO, Safetensors, media, Office, PSD, Parquet, HWP/HWPX, archives",
+    "message": "Images, PDF, CSV/TSV, JSON/JSONL, HAR, Jupyter, YAML/TOML, Proto, NumPy, GGUF, ONNX, TFLite, ExecuTorch, Keras, Core ML, OpenVINO, Safetensors, media, Office, PSD, Parquet, HWP/HWPX, archives",
     "description": "Summary of supported file formats."
   },
   "openvinoNoBin": {
