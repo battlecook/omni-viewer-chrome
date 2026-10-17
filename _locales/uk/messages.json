@@ -67,6 +67,34 @@
     "message": "Couldn't apply $1: $2",
     "description": "[needsTranslation] OpenVINO IR viewer bar after a picked .bin could not be used. $1 = file name, $2 = error."
   },
+  "shapefileNoDbf": {
+    "message": "No .dbf attached — shapes show geometry only, with no attribute table. Expected $1 beside the geometry.",
+    "description": "[needsTranslation] Shapefile viewer bar when the attribute-table sidecar is missing. $1 = expected .dbf file name."
+  },
+  "shapefileDbfAttached": {
+    "message": "Attributes: $1 ($2)",
+    "description": "[needsTranslation] Shapefile viewer bar naming the attached .dbf. $1 = file name, $2 = size."
+  },
+  "shapefileNoPrj": {
+    "message": "No .prj attached — coordinates render as stored, without reprojection. Expected $1 beside the geometry.",
+    "description": "[needsTranslation] Shapefile viewer bar when the coordinate-system sidecar is missing. $1 = expected .prj file name."
+  },
+  "shapefilePrjAttached": {
+    "message": "Projection: $1",
+    "description": "[needsTranslation] Shapefile viewer bar naming the attached .prj. $1 = file name."
+  },
+  "shapefileAttachSidecar": {
+    "message": "Attach .$1…",
+    "description": "[needsTranslation] Button that opens a picker for a shapefile companion. $1 = extension (dbf or prj)."
+  },
+  "shapefileReplaceSidecar": {
+    "message": "Replace .$1…",
+    "description": "[needsTranslation] Button that opens a picker to swap an attached shapefile companion. $1 = extension (dbf or prj)."
+  },
+  "shapefileSidecarFailed": {
+    "message": "Couldn't apply $1: $2",
+    "description": "[needsTranslation] Shapefile viewer bar after a picked companion could not be used. $1 = file name, $2 = error."
+  },
   "downloadOriginal": {
     "message": "Завантажити оригінал",
     "description": "Button text for downloading the original file."

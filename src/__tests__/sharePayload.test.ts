@@ -1,5 +1,8 @@
 /**
- * Tests for the share-upload pipeline.
+ * @jest-environment node
+ *
+ * Tests for the share-upload pipeline. Runs under Node for real WebCrypto
+ * and `Blob.arrayBuffer()`, which jsdom does not provide.
  *
  * Split into two suites:
  *   1. Pure helpers (`validateShareSize`, `buildShareFormData`,
@@ -9,7 +12,7 @@
  *      friendly error mapping.
  */
 
-import { shareFile, DEFAULT_SHARE_API_BASE } from '../shareCommand';
+import { shareFile, openSharedLink, DEFAULT_SHARE_API_BASE } from '../shareCommand';
 import {
     MAX_SHARE_SIZE_BYTES,
     buildShareFormData,
@@ -48,25 +51,13 @@ describe('validateShareSize', () => {
 });
 
 describe('buildShareFormData', () => {
-    it('appends platform, is_paid_user and the file blob', () => {
-        const blob = new Blob(['hello'], { type: 'text/plain' });
-        const fd = buildShareFormData(blob, 'hello.txt');
+    it('sends only the allowed plaintext fields and the envelope as encrypted.bin', () => {
+        const fd = buildShareFormData(new Blob(['OVS2...']));
 
+        expect([...fd.keys()].sort()).toEqual(['file', 'is_paid_user', 'platform']);
         expect(fd.get('platform')).toBe('chrome');
         expect(fd.get('is_paid_user')).toBe('false');
-
-        const filePart = fd.get('file');
-        expect(filePart).toBeInstanceOf(Blob);
-        // jsdom's FormData wraps the blob in a File when a filename is given.
-        if (filePart && typeof (filePart as File).name === 'string') {
-            expect((filePart as File).name).toBe('hello.txt');
-        }
-    });
-
-    it('omits the filename argument when not supplied', () => {
-        const blob = new Blob(['x']);
-        const fd = buildShareFormData(blob);
-        expect(fd.get('file')).toBeInstanceOf(Blob);
+        expect((fd.get('file') as File).name).toBe('encrypted.bin');
     });
 });
 
@@ -213,13 +204,13 @@ describe('shareFile', () => {
         expect(result).toEqual({
             shareId: 'sid-1',
             expiresAt: '2026-05-08T12:05:00Z',
-            url: 'https://omni-viewer-web.web.app/share/sid-1',
+            url: expect.stringMatching(/^https:\/\/omni-viewer-web\.web\.app\/share\/sid-1#k=[A-Za-z0-9_-]{43}$/),
             filename: 'note.txt',
             size: file.size,
         });
 
         // Trailing slash on apiBase should be normalized.
-        expect(calls[0].url).toBe('https://api.test/v1/shares?expires_in_minutes=5');
+        expect(calls[0].url).toBe('https://api.test/v2/shares?expires_in_minutes=5');
         expect(calls[0].init?.method).toBe('POST');
 
         const auth = (calls[0].init?.headers as Record<string, string>)?.Authorization;
@@ -228,6 +219,71 @@ describe('shareFile', () => {
         // Multipart body must be a FormData.
         expect(calls[0].init?.body).toBeInstanceOf(FormData);
         expect((calls[0].init?.body as FormData).get('platform')).toBe('chrome');
+    });
+
+    it('uploads only ciphertext: no name, MIME type, contents or key in the request', async () => {
+        const file = new File(['top secret contents'], 'secret-plan.txt', { type: 'text/plain' });
+        const { fetchImpl, calls } = makeFetchStub([
+            () => jsonResponse({ share_id: 's', expires_at: 'e', download_url: 'u' }),
+        ]);
+
+        const result = await shareFile(file, { fetchImpl, getIdToken });
+        const key = result.url.split('#k=')[1];
+        const part = (calls[0].init?.body as FormData).get('file') as File;
+        const sent = new Uint8Array(await part.arrayBuffer());
+        const sentText = Buffer.from(sent).toString('latin1');
+
+        expect(part.name).toBe('encrypted.bin');
+        expect(part.type).toBe('application/octet-stream');
+        expect(sentText.startsWith('OVS2')).toBe(true);
+        for (const leak of ['top secret', 'secret-plan', 'text/plain', key]) {
+            expect(sentText).not.toContain(leak);
+            expect(calls[0].url).not.toContain(leak);
+        }
+    });
+
+    it('uses a fresh key for every share', async () => {
+        const file = new File(['same'], 'same.txt');
+        const ok = () => jsonResponse({ share_id: 's', expires_at: 'e', download_url: 'u' });
+        const { fetchImpl } = makeFetchStub([ok, ok]);
+
+        const first = await shareFile(file, { fetchImpl, getIdToken });
+        const second = await shareFile(file, { fetchImpl, getIdToken });
+        expect(first.url).not.toBe(second.url);
+    });
+
+    it('rejects a file that fits but whose envelope exceeds the limit', async () => {
+        const file = new File([new Uint8Array(MAX_SHARE_SIZE_BYTES)], 'edge.bin');
+        const { fetchImpl, mock } = makeFetchStub([]);
+        await expect(shareFile(file, { fetchImpl, getIdToken })).rejects.toThrow(/too large to share once encrypted/i);
+        expect(mock).not.toHaveBeenCalled();
+    });
+
+    it('produces a link that openSharedLink decrypts back to the original file', async () => {
+        const file = new File(['round trip ✓'], 'café.csv', { type: 'text/csv' });
+        const { fetchImpl: uploadFetch, calls } = makeFetchStub([
+            () => jsonResponse({ share_id: 'rt1', expires_at: 'e', download_url: 'u' }),
+        ]);
+        const { url } = await shareFile(file, { fetchImpl: uploadFetch, getIdToken });
+        const envelope = (calls[0].init?.body as FormData).get('file') as Blob;
+
+        const { fetchImpl: openFetch, calls: openCalls } = makeFetchStub([
+            () => jsonResponse({
+                download_url: 'https://storage.googleapis.com/b/shares/v2/rt1',
+                encryption_version: 2,
+                content_type: 'application/octet-stream',
+            }),
+        ]);
+        const opened = await openSharedLink(url, {
+            fetchImpl: openFetch,
+            downloadImpl: async () => envelope,
+        });
+
+        expect(openCalls[0].url).toBe(`${DEFAULT_SHARE_API_BASE}/v2/shares/rt1/download`);
+        expect(openCalls[0].url).not.toContain('#');
+        expect(opened.name).toBe('café.csv');
+        expect(opened.type).toBe('text/csv');
+        expect(await opened.text()).toBe('round trip ✓');
     });
 
     it('uses the documented default API base when none is passed', async () => {

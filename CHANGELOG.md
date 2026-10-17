@@ -2,6 +2,54 @@
 
 All notable changes to the Chrome build of Omni Viewer are documented in this file.
 
+## [0.8.0] - 2026-10-17
+
+### Added
+- Added a Shapefile (`.shp`) viewer backed by `omni-viewer-core`, filling in
+  one of the two formats the core shipped a viewer for that this build never
+  routed to. A shapefile is a set of files that share a base name: the `.shp`
+  holds the geometry, the `.dbf` beside it holds the attribute table, and the
+  `.prj` holds the coordinate system the shapes are expressed in. Both are
+  sidecars the browser cannot read off disk on its own, so — as with the
+  OpenVINO `.bin` — the picker and drop zone pair them with their same-stem
+  `.shp` (which also leads the set, whatever order they arrive in), and the
+  viewer carries "Attach .dbf…" / "Attach .prj…" bars for a geometry file
+  opened alone. Neither is required: a lone `.shp` draws its shapes in native
+  coordinates with no attribute table. With a `.prj`, a projected coordinate
+  system is converted to WGS84 through `proj4` — newly installed as the
+  optional peer the core's self-loading entry imports — and falls back to
+  native coordinates when the WKT cannot be converted. Routing matches the two
+  words the format opens with (file code 9994 big-endian at offset 0, version
+  1000 little-endian at offset 28) with a `.shp` extension fallback, in both
+  `app.js` and `FileUtils.detectViewerType`. The `.shx` index that accompanies
+  a `.shp` carries a byte-identical header, so content alone cannot separate
+  the two — the index is kept out by name, since it is the geometry a viewer
+  opens.
+- Added a PyTorch ExportedProgram (`.pt2`) viewer backed by
+  `omni-viewer-core`, the second such format. It renders the package layout,
+  the serialized graph (nodes, inputs/outputs, symbolic shape constraints and
+  the module stack) and any AOTInductor payloads the program names, without
+  decompressing the weight tensors those payloads point at. A `.pt2` is a ZIP
+  with no distinguishing leading bytes, so routing claims the extension and
+  recognizes a renamed package by the marker torch.export reserves —
+  `archive_format`, or `serialized_exported_program.json` for the layout
+  before it — at the archive root or under the single folder a package may
+  wrap it in, ahead of the generic archive browser, in both `app.js` and
+  `FileUtils.detectViewerType`.
+
+### Changed
+- Sharing now encrypts the file client-side and uploads it through the v2
+  share API (`POST /v2/shares`). The file, its name and MIME type are sealed
+  in an `OVS2` AES-256-GCM envelope under a fresh 32-byte key per share; the
+  server only ever receives `encrypted.bin`. The key travels solely in the
+  link fragment (`/share/<id>#k=<key>`, 43-character unpadded base64url), so
+  it never reaches the server — the same link format the web viewer opens.
+  "Open shared link" picks the API version from the link: a `#k=` key fetches
+  the v2 ticket and decrypts, no key keeps the v1 flow for links from other
+  platforms. A malformed key is rejected before any request, there is no
+  fallback from one version to the other (a ticket spends an access), and a
+  file that fails decryption is never shown.
+
 ## [0.7.0] - 2026-10-05
 
 ### Added

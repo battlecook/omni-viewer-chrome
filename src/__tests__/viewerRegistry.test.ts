@@ -51,6 +51,7 @@ const ALL_SLUGS: ViewerSlug[] = [
     'onnx',
     'tflite',
     'pte',
+    'pt2',
     'keras',
     'coreml',
     'openvino',
@@ -71,6 +72,7 @@ const ALL_SLUGS: ViewerSlug[] = [
     'mermaid',
     'plantuml',
     'proto',
+    'shapefile',
     'automotive',
     'avro',
     'bag',
@@ -85,7 +87,7 @@ const ALL_SLUGS: ViewerSlug[] = [
 
 describe('viewerRegistry', () => {
     it('registers all viewers', () => {
-        expect(VIEWER_REGISTRATIONS).toHaveLength(42);
+        expect(VIEWER_REGISTRATIONS).toHaveLength(44);
         const slugs = VIEWER_REGISTRATIONS.map((r) => r.slug).sort();
         expect(slugs).toEqual([...ALL_SLUGS].sort());
     });
@@ -161,6 +163,7 @@ describe('viewerRegistry', () => {
             ['diagram.puml', 'plantuml'],
             ['diagram.plantuml', 'plantuml'],
             ['schema.proto', 'proto'],
+            ['districts.shp', 'shapefile'],
             ['network.dbc', 'automotive'],
             ['system.arxml', 'automotive'],
             ['calibration.a2l', 'automotive'],
@@ -192,6 +195,7 @@ describe('viewerRegistry', () => {
             ['model.tflite', 'tflite'],
             ['model.lite', 'tflite'],
             ['model.pte', 'pte'],
+            ['model.pt2', 'pt2'],
             ['model.keras', 'keras'],
             ['model.mlmodel', 'coreml'],
             ['model.mlpackage', 'coreml'],

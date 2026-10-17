@@ -186,6 +186,7 @@ const formats = {
   mermaid: ['.mmd', '.mermaid'],
   plantuml: ['.puml', '.plantuml', '.iuml'],
   proto: ['.proto'],
+  shapefile: ['.shp'],
   automotive: ['.dbc', '.arxml', '.a2l', '.asc', '.blf', '.mf4', '.mdf', '.avro', '.bag', '.stp', '.step', '.db3', '.sqlite', '.sqlite3', '.reqif', '.pcap', '.pcapng'],
   hdf5: ['.h5', '.hdf5'],
   mat: ['.mat'],
@@ -194,6 +195,7 @@ const formats = {
   onnx: ['.onnx'],
   tflite: ['.tflite', '.lite'],
   pte: ['.pte'],
+  pt2: ['.pt2'],
   keras: ['.keras'],
   coreml: ['.mlmodel', '.mlpackage'],
   // Routed by content only: `.xml` belongs to every XML dialect.
@@ -225,6 +227,7 @@ const labels = {
   mermaid: 'Mermaid',
   plantuml: 'PlantUML',
   proto: 'Protocol Buffers',
+  shapefile: 'Shapefile',
   automotive: 'Automotive',
   hdf5: 'HDF5',
   mat: 'MAT',
@@ -233,6 +236,7 @@ const labels = {
   onnx: 'ONNX',
   tflite: 'TFLite',
   pte: 'ExecuTorch',
+  pt2: 'PyTorch ExportedProgram',
   keras: 'Keras',
   coreml: 'Core ML',
   openvino: 'OpenVINO IR',
@@ -320,6 +324,29 @@ function zipEntryNames(head) {
     offset = nameEnd + extraLength + compressedSize;
   }
   return names;
+}
+
+// Mirror of the header checks `parseShapefile` opens with in
+// omni-viewer-core/parsers/shapefile: file code 9994 big-endian at offset 0 and
+// version 1000 little-endian at offset 28, over a header that is 100 bytes long.
+// The `.shx` index that accompanies a `.shp` carries a byte-identical header, so
+// content alone cannot separate the two — the caller keeps the index out by name.
+function looksLikeShapefile(head) {
+  if (head.length < 100) return false;
+  const view = new DataView(head.buffer, head.byteOffset, head.byteLength);
+  return view.getInt32(0, false) === 9994 && view.getInt32(28, true) === 1000;
+}
+
+// Mirror of `isPt2Marker` in omni-viewer-core/parsers/pt2: a `.pt2` package is a
+// ZIP that names either the `archive_format` marker torch.export writes or the
+// `serialized_exported_program.json` the older layout used, at the root or under
+// the single wrapping folder the archive may carry.
+function looksLikePt2Archive(names) {
+  return names.some((name) =>
+    name === 'archive_format' || name.endsWith('/archive_format') ||
+    name === 'serialized_exported_program.json' ||
+    name.endsWith('/serialized_exported_program.json')
+  );
 }
 
 // Mirror of `looksLikeHar` in omni-viewer-core/registry/sniff: a JSON object
@@ -483,13 +510,27 @@ function companionBinFor(file, companions) {
   return bins.find((other) => other.name.toLowerCase() === expected) || (bins.length === 1 ? bins[0] : null);
 }
 
-// Which of several files opened together is the one to show. An IR pair is
-// the only case where the answer isn't "the first": its `.xml` leads and the
-// `.bin` rides along, whichever order the picker or the drop delivered them.
+// `map.shp` -> `map.dbf` / `map.prj`, the companions a shapefile set shares a
+// base name with. Same rule as the IR pair: the matching stem, or the only file
+// of that extension when the user brought exactly one.
+function companionSidecarFor(file, companions, kind) {
+  const pattern = new RegExp(`\\.${kind}$`, 'i');
+  const candidates = companions.filter((other) => other !== file && pattern.test(other.name));
+  const expected = `${file.name.replace(/\.shp$/i, '')}.${kind}`.toLowerCase();
+  return candidates.find((other) => other.name.toLowerCase() === expected)
+    || (candidates.length === 1 ? candidates[0] : null);
+}
+
+// Which of several files opened together is the one to show. A set that shares
+// one base name is the case where the answer isn't "the first": an IR's `.xml`
+// leads and the `.bin` rides along, a shapefile's `.shp` leads and the `.dbf` /
+// `.prj` ride along, whichever order the picker or the drop delivered them.
 function pickPrimaryFile(files) {
   if (files.length > 1) {
     const xml = files.find((file) => /\.xml$/i.test(file.name));
     if (xml && companionBinFor(xml, files)) return xml;
+    const shp = files.find((file) => /\.shp$/i.test(file.name));
+    if (shp) return shp;
   }
   return files[0];
 }
@@ -533,6 +574,9 @@ async function detectType(file) {
   if (ascii(head, 0, 16) === 'SQLite format 3\0') return 'automotive';
   if (hasPrefix(head, [0xd4, 0xc3, 0xb2, 0xa1]) || hasPrefix(head, [0xa1, 0xb2, 0xc3, 0xd4]) || hasPrefix(head, [0x4d, 0x3c, 0xb2, 0xa1]) || hasPrefix(head, [0xa1, 0xb2, 0x3c, 0x4d])) return 'automotive';
   if (hasPrefix(head, [0x0a, 0x0d, 0x0d, 0x0a])) return 'automotive';
+  // A `.shx` index shares the `.shp` header byte for byte, and it is the
+  // geometry — not its index — that the viewer opens.
+  if (looksLikeShapefile(head) && ext !== '.shx') return 'shapefile';
   if (hasPrefix(head, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])) return byExtension(file);
   if (hasPrefix(head, [0x50, 0x4b])) {
     if (ext === '.npz') return 'numpy';
@@ -554,6 +598,11 @@ async function detectType(file) {
     // structured containers above get first refusal.
     const rootNames = zipEntryNames(head);
     if (rootNames.includes('config.json') && rootNames.includes('model.weights.h5')) return 'keras';
+    // A `.pt2` package names its own format marker, so a renamed one is still
+    // recognizable — unlike the Keras pair above, one member is enough and a
+    // wrapping folder does not disqualify it (the core resolves members under
+    // the single prefix an archive may carry).
+    if (looksLikePt2Archive(rootNames)) return 'pt2';
     return formats.archive.includes(ext) ? 'archive' : byExtension(file);
   }
   // One UTF-8 decode of the head, shared by the structured-text sniffs below.
@@ -866,6 +915,7 @@ async function renderByType() {
   if (type === 'mermaid') return renderMermaid();
   if (type === 'plantuml') return renderPlantUml();
   if (type === 'proto') return renderProto();
+  if (type === 'shapefile') return renderShapefile();
   if (type === 'automotive') return renderAutomotive();
   if (type === 'hdf5') return renderHdf5();
   if (type === 'mat') return renderMat();
@@ -874,6 +924,7 @@ async function renderByType() {
   if (type === 'onnx') return renderOnnx();
   if (type === 'tflite') return renderTflite();
   if (type === 'pte') return renderPte();
+  if (type === 'pt2') return renderPt2();
   if (type === 'keras') return renderKeras();
   if (type === 'coreml') return renderCoreml();
   if (type === 'openvino') return renderOpenvino();
@@ -1118,6 +1169,22 @@ async function renderProto() {
   }
 }
 
+async function renderShapefile() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading Shapefile viewer...</p></div>';
+  try {
+    // The `.dbf` attribute table and `.prj` coordinate system are sidecars the
+    // core never sees on its own; hand over whichever arrived with the `.shp`.
+    // The adapter lets the user attach them later either way.
+    const dbf = companionSidecarFor(state.file, state.companions, 'dbf');
+    const prj = companionSidecarFor(state.file, state.companions, 'prj');
+    await mountAdvancedViewer('shapefile', 'mountShapefileViewer', body, { sidecars: { dbf, prj } });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load Shapefile viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
+
 async function renderAutomotive() {
   const body = panel(state.file.name);
   body.innerHTML = '<div class="unsupported"><p>Loading automotive data viewer...</p></div>';
@@ -1203,6 +1270,17 @@ async function renderPte() {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     body.innerHTML = `<div class="unsupported"><p>Couldn't load ExecuTorch viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
+
+async function renderPt2() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading ExportedProgram viewer...</p></div>';
+  try {
+    await mountAdvancedViewer('pt2', 'mountPt2Viewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load ExportedProgram viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
   }
 }
 

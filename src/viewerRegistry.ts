@@ -47,6 +47,7 @@ export type OmniViewerViewType =
     | 'omni-viewer.mermaidViewer'
     | 'omni-viewer.plantumlViewer'
     | 'omni-viewer.protoViewer'
+    | 'omni-viewer.shapefileViewer'
     | 'omni-viewer.automotiveViewer'
     | 'omni-viewer.avroViewer'
     | 'omni-viewer.bagViewer'
@@ -62,6 +63,7 @@ export type OmniViewerViewType =
     | 'omni-viewer.onnxViewer'
     | 'omni-viewer.tfliteViewer'
     | 'omni-viewer.pteViewer'
+    | 'omni-viewer.pt2Viewer'
     | 'omni-viewer.kerasViewer'
     | 'omni-viewer.coremlViewer'
     | 'omni-viewer.openvinoViewer'
@@ -95,6 +97,7 @@ export type ViewerSlug =
     | 'mermaid'
     | 'plantuml'
     | 'proto'
+    | 'shapefile'
     | 'automotive'
     | 'avro'
     | 'bag'
@@ -110,6 +113,7 @@ export type ViewerSlug =
     | 'onnx'
     | 'tflite'
     | 'pte'
+    | 'pt2'
     | 'keras'
     | 'coreml'
     | 'openvino'
@@ -281,6 +285,14 @@ export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
         createProvider: () => createPlaceholderProvider('omni-viewer.protoViewer')
     },
     {
+        viewType: 'omni-viewer.shapefileViewer',
+        slug: 'shapefile',
+        command: 'omni-viewer.openShapefileViewer',
+        missingMessage: 'No Shapefile selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.shapefileViewer')
+    },
+    {
         viewType: 'omni-viewer.automotiveViewer',
         slug: 'automotive',
         command: 'omni-viewer.openAutomotiveViewer',
@@ -399,6 +411,14 @@ export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
         missingMessage: 'No ExecuTorch file selected',
         retainContextWhenHidden: true,
         createProvider: () => createPlaceholderProvider('omni-viewer.pteViewer')
+    },
+    {
+        viewType: 'omni-viewer.pt2Viewer',
+        slug: 'pt2',
+        command: 'omni-viewer.openPt2Viewer',
+        missingMessage: 'No ExportedProgram file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.pt2Viewer')
     },
     {
         viewType: 'omni-viewer.kerasViewer',
@@ -542,6 +562,7 @@ const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
     '.plantuml': 'plantuml',
     '.iuml': 'plantuml',
     '.proto': 'proto',
+    '.shp': 'shapefile',
     '.dbc': 'automotive',
     '.arxml': 'automotive',
     '.a2l': 'automotive',
@@ -569,6 +590,7 @@ const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
     '.tflite': 'tflite',
     '.lite': 'tflite',
     '.pte': 'pte',
+    '.pt2': 'pt2',
     '.keras': 'keras',
     '.mlmodel': 'coreml',
     '.mlpackage': 'coreml',

@@ -1,5 +1,8 @@
 /**
- * Tests for the share-open pipeline (issue #67).
+ * @jest-environment node
+ *
+ * Tests for the share-open pipeline (issue #67). Runs under Node for real
+ * WebCrypto, which jsdom does not provide.
  *
  * Two suites:
  *   1. `parseShareInput` — pure helper; URL / bare ID / invalid forms.
@@ -10,6 +13,7 @@
 
 import { openSharedLink, DEFAULT_SHARE_API_BASE } from '../shareCommand';
 import { parseShareInput } from '../utils/sharePayload';
+import { encryptShareFile } from '../utils/shareCrypto';
 
 describe('parseShareInput', () => {
     it('accepts a full share URL with the canonical /s/<id> path', () => {
@@ -30,7 +34,15 @@ describe('parseShareInput', () => {
         ).toEqual({ shareId: 'abc123' });
         expect(
             parseShareInput('https://omni-viewer-share.example.com/s/abc123#preview'),
-        ).toEqual({ shareId: 'abc123' });
+        ).toEqual({ shareId: 'abc123', fragment: '#preview' });
+    });
+
+    it('keeps the v2 key fragment of a share URL', () => {
+        const key = 'A'.repeat(43);
+        expect(parseShareInput(`https://omni-viewer-web.web.app/share/abc123#k=${key}`)).toEqual({
+            shareId: 'abc123',
+            fragment: `#k=${key}`,
+        });
     });
 
     it('accepts a schemeless host with /s/<id>', () => {
@@ -382,5 +394,72 @@ describe('openSharedLink', () => {
         // jsdom blobs default to "" type; we substitute octet-stream.
         expect(result.type === 'application/octet-stream' || result.type === '').toBe(true);
         expect(result.name).toBe('thing.bin');
+    });
+});
+
+describe('openSharedLink (v2 encrypted)', () => {
+    const v2Ticket = () =>
+        jsonResponse({
+            download_url: 'https://storage.googleapis.com/b/shares/v2/abc123',
+            encryption_version: 2,
+            content_type: 'application/octet-stream',
+        });
+
+    async function seal(contents: string, meta: { filename: string; content_type: string }) {
+        return encryptShareFile(new Blob([contents]), { ...meta, file_type: '', file_meta: {} });
+    }
+
+    it('fetches the v2 ticket and decrypts with the fragment key', async () => {
+        const { envelope, key } = await seal('a,b\n1,2\n', { filename: 'data.csv', content_type: 'text/csv' });
+        const { fetchImpl, calls } = makeFetchStub([v2Ticket, () => blobResponse(envelope)]);
+
+        const result = await openSharedLink(`https://omni-viewer-web.web.app/share/abc123#k=${key}`, { fetchImpl });
+
+        expect(calls[0].url).toBe(`${DEFAULT_SHARE_API_BASE}/v2/shares/abc123/download`);
+        expect(calls.every((call) => !call.url.includes(key))).toBe(true);
+        expect(result.name).toBe('data.csv');
+        expect(result.type).toBe('text/csv');
+        expect(await result.text()).toBe('a,b\n1,2\n');
+    });
+
+    it('rejects a malformed key before any network call', async () => {
+        const { fetchImpl, mock } = makeFetchStub([]);
+        for (const fragment of ['#k=short', `#k=${'A'.repeat(42)}B`, `#k=${'A'.repeat(43)}&x=1`]) {
+            await expect(
+                openSharedLink(`https://omni-viewer-web.web.app/share/abc123${fragment}`, { fetchImpl }),
+            ).rejects.toThrow(/key is malformed/i);
+        }
+        expect(mock).not.toHaveBeenCalled();
+    });
+
+    it('refuses to show a file sealed under a different key', async () => {
+        const { envelope } = await seal('secret', { filename: 'a.txt', content_type: 'text/plain' });
+        const { key: otherKey } = await seal('other', { filename: 'b.txt', content_type: 'text/plain' });
+        const { fetchImpl } = makeFetchStub([v2Ticket, () => blobResponse(envelope)]);
+
+        await expect(openSharedLink(`https://x/share/abc123#k=${otherKey}`, { fetchImpl })).rejects.toThrow(
+            /could not decrypt/i,
+        );
+    });
+
+    it('refuses a tampered envelope', async () => {
+        const { envelope, key } = await seal('secret', { filename: 'a.txt', content_type: 'text/plain' });
+        const bytes = new Uint8Array(await envelope.arrayBuffer());
+        bytes[bytes.length - 1] ^= 0x01;
+        const { fetchImpl } = makeFetchStub([v2Ticket, () => blobResponse(new Blob([bytes]))]);
+
+        await expect(openSharedLink(`https://x/share/abc123#k=${key}`, { fetchImpl })).rejects.toThrow(
+            /could not decrypt/i,
+        );
+    });
+
+    it('does not fall back to v1 when the v2 ticket is not found', async () => {
+        const { key } = await seal('x', { filename: 'a.txt', content_type: 'text/plain' });
+        const { fetchImpl, mock } = makeFetchStub([() => jsonResponse({}, { status: 404 })]);
+
+        await expect(openSharedLink(`https://x/share/abc123#k=${key}`, { fetchImpl })).rejects.toThrow(
+            /link not found/i,
+        );
+        expect(mock).toHaveBeenCalledTimes(1);
     });
 });

@@ -36,6 +36,7 @@ export type OmniViewerViewType =
     | 'omni-viewer.latexViewer'
     | 'omni-viewer.mermaidViewer'
     | 'omni-viewer.plantumlViewer'
+    | 'omni-viewer.shapefileViewer'
     | 'omni-viewer.automotiveViewer'
     | 'omni-viewer.avroViewer'
     | 'omni-viewer.bagViewer'
@@ -50,6 +51,7 @@ export type OmniViewerViewType =
     | 'omni-viewer.onnxViewer'
     | 'omni-viewer.tfliteViewer'
     | 'omni-viewer.pteViewer'
+    | 'omni-viewer.pt2Viewer'
     | 'omni-viewer.kerasViewer'
     | 'omni-viewer.coremlViewer'
     | 'omni-viewer.openvinoViewer'
@@ -357,6 +359,13 @@ export class FileUtils {
             return this.signatureMatch('omni-viewer.pcapngViewer', 'Matched the PCAPNG section header block.');
         }
 
+        // A `.shx` index carries the shapefile header byte for byte, so content
+        // alone cannot separate it from the geometry it indexes — and it is the
+        // geometry the viewer opens.
+        if (this.isShapefile(buffer) && ext !== '.shx') {
+            return this.signatureMatch('omni-viewer.shapefileViewer', 'Matched the Shapefile file code and version.');
+        }
+
         if (this.isCompoundFileBinary(buffer)) {
             if (preferredOfficeViewType) {
                 return this.signatureMatch(
@@ -392,6 +401,13 @@ export class FileUtils {
             // scan below.
             if (ext === '.mlpackage') {
                 return this.signatureMatch('omni-viewer.coremlViewer', 'Matched a Core ML package ZIP container.');
+            }
+
+            // A `.pt2` package is a ZIP too. The extension settles it here; a
+            // renamed one still lands in the viewer through the member scan
+            // below, which finds the marker torch.export writes.
+            if (ext === '.pt2') {
+                return this.signatureMatch('omni-viewer.pt2Viewer', 'Matched a PyTorch ExportedProgram ZIP container.');
             }
 
             if (preferredOfficeViewType) {
@@ -512,6 +528,24 @@ export class FileUtils {
             return {
                 viewType: 'omni-viewer.pteViewer',
                 reason: 'Used the ExecuTorch extension fallback.',
+                matchedBySignature: false
+            };
+        }
+
+        // Reached when a `.shp` or `.pt2` no longer carries its header — the
+        // viewer reports the damage better than the raw-data fallback does.
+        if (ext === '.shp') {
+            return {
+                viewType: 'omni-viewer.shapefileViewer',
+                reason: 'Used the Shapefile extension fallback.',
+                matchedBySignature: false
+            };
+        }
+
+        if (ext === '.pt2') {
+            return {
+                viewType: 'omni-viewer.pt2Viewer',
+                reason: 'Used the PyTorch ExportedProgram extension fallback.',
                 matchedBySignature: false
             };
         }
@@ -852,6 +886,22 @@ export class FileUtils {
                 return {
                     viewType: 'omni-viewer.kerasViewer',
                     reason: 'Matched a ZIP container with Keras model entries.'
+                };
+            }
+
+            // One marker is enough for a `.pt2`: `archive_format` is reserved to
+            // torch.export's package layout, and `serialized_exported_program.json`
+            // to the layout before it (omni-viewer-core parsers/pt2 matches the
+            // same pair, at the root or under the one folder an archive may wrap
+            // them in).
+            if (names.some((name) =>
+                name === 'archive_format' || name.endsWith('/archive_format')
+                || name === 'serialized_exported_program.json'
+                || name.endsWith('/serialized_exported_program.json')
+            )) {
+                return {
+                    viewType: 'omni-viewer.pt2Viewer',
+                    reason: 'Matched a ZIP container with PyTorch ExportedProgram entries.'
                 };
             }
 
@@ -1372,6 +1422,19 @@ export class FileUtils {
     private static isPcapng(buffer: Uint8Array): boolean {
         return this.matchesBytes(buffer, [0x0a, 0x0d, 0x0d, 0x0a]);
     }
+
+    /**
+     * The two words `parseShapefile` opens with: file code 9994 big-endian at
+     * offset 0 and version 1000 little-endian at offset 28, over the 100 bytes
+     * the format reserves for its header.
+     */
+    private static isShapefile(buffer: Uint8Array): boolean {
+        if (buffer.length < 100) {
+            return false;
+        }
+        const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+        return view.getInt32(0, false) === 9994 && view.getInt32(28, true) === 1000;
+    }
 }
 
 /**
@@ -1429,6 +1492,8 @@ export function shortNameForViewType(viewType: OmniViewerViewType): string {
     case 'omni-viewer.pcapViewer':
     case 'omni-viewer.pcapngViewer':
         return 'automotive';
+    case 'omni-viewer.shapefileViewer':
+        return 'shapefile';
     case 'omni-viewer.hdf5Viewer':
         return 'hdf5';
     case 'omni-viewer.numpyViewer':
@@ -1441,6 +1506,8 @@ export function shortNameForViewType(viewType: OmniViewerViewType): string {
         return 'tflite';
     case 'omni-viewer.pteViewer':
         return 'pte';
+    case 'omni-viewer.pt2Viewer':
+        return 'pt2';
     case 'omni-viewer.kerasViewer':
         return 'keras';
     case 'omni-viewer.coremlViewer':

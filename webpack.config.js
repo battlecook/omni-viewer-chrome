@@ -43,6 +43,7 @@ const VIEWERS = [
   'latex',
   'mermaid',
   'plantuml',
+  'shapefile',
   'automotive',
   'mat',
   'numpy',
@@ -50,6 +51,7 @@ const VIEWERS = [
   'onnx',
   'tflite',
   'pte',
+  'pt2',
   'keras',
   'coreml',
   'openvino',
@@ -111,6 +113,9 @@ module.exports = (env, argv) => {
         hyparquet: path.resolve(__dirname, 'node_modules/hyparquet/src/index.js'),
         'hyparquet-compressors': require.resolve('hyparquet-compressors'),
         '@rhwp/core': require.resolve('@rhwp/core'),
+        // proj4 ships CommonJS at `main` and ESM at `module`; point at the
+        // ESM build so the core's `import('proj4')` keeps its default export.
+        proj4: path.resolve(__dirname, 'node_modules/proj4/lib/index.js'),
         // puml-canvas-js only exposes an ESM import condition, so Node's
         // CommonJS require.resolve() cannot resolve its package root.
         'puml-canvas-js': path.resolve(
@@ -176,6 +181,17 @@ module.exports = (env, argv) => {
           {
             from: 'src/templates/har/harViewer.html',
             to: 'templates/har/harViewer.html'
+          },
+          // A shapefile's companions are what the standalone page exists for:
+          // `templates/shapefile/shapefileViewer.html?src=...&dbf=...&prj=...`
+          // is the only way to open a full set without the SPA's file intake.
+          {
+            from: 'src/templates/shapefile/shapefileViewer.html',
+            to: 'templates/shapefile/shapefileViewer.html'
+          },
+          {
+            from: 'src/templates/pt2/pt2Viewer.html',
+            to: 'templates/pt2/pt2Viewer.html'
           },
           { from: '_locales', to: '_locales' },
           { from: 'icons', to: 'icons' },

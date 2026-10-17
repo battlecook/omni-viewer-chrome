@@ -38,6 +38,8 @@ export interface ParsedShareResponse {
 /** Successful parse of a user-supplied share URL or bare ID. */
 export interface ParsedShareInput {
     shareId: string;
+    /** The URL's `#...` fragment, which carries the v2 key as `#k=<key>`. */
+    fragment?: string;
 }
 
 /**
@@ -82,7 +84,10 @@ export function parseShareInput(input: unknown): ParsedShareInput | null {
         // rejects pathological inputs like `/s/..%2F..` that decode to a
         // path traversal.
         if (BARE_ID_PATTERN.test(id)) {
-            return { shareId: id };
+            const hashIndex = trimmed.indexOf('#');
+            return hashIndex >= 0
+                ? { shareId: id, fragment: trimmed.slice(hashIndex) }
+                : { shareId: id };
         }
         return null;
     }
@@ -115,22 +120,21 @@ export function validateShareSize(file: { size: number; name?: string } | null |
     return { ok: true };
 }
 
+/** The only filename `POST /v2/shares` accepts for the envelope part. */
+export const ENCRYPTED_SHARE_FILENAME = 'encrypted.bin';
+
 /**
- * Build the multipart `FormData` body posted to `/share`.
+ * Build the multipart `FormData` body posted to `/v2/shares`.
  *
- * Mirrors the VSCode client: includes `platform`, `is_paid_user`, and the
- * raw file bytes. The server signs the request using the JWT obtained from
- * `/upload-token`, so no credentials are placed in the body.
+ * The server rejects any plaintext field beyond `platform`, `is_paid_user`,
+ * `max_access_count` and `jb_license`, and any file part not named
+ * `encrypted.bin`: the original name and MIME type live inside the envelope.
  */
-export function buildShareFormData(file: Blob, filename?: string): FormData {
+export function buildShareFormData(envelope: Blob): FormData {
     const fd = new FormData();
     fd.append('platform', SHARE_PLATFORM);
     fd.append('is_paid_user', 'false');
-    if (filename) {
-        fd.append('file', file, filename);
-    } else {
-        fd.append('file', file);
-    }
+    fd.append('file', envelope, ENCRYPTED_SHARE_FILENAME);
     return fd;
 }
 

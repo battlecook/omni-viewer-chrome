@@ -71,6 +71,40 @@ function makeSafetensorsBytes(): Uint8Array {
     return out;
 }
 
+/**
+ * A `.shp` header: file code 9994 big-endian at offset 0, version 1000
+ * little-endian at offset 28, shape type at 32, over the 100 bytes the format
+ * reserves. A `.shx` index is byte-identical here.
+ */
+function makeShapefileBytes(): Uint8Array {
+    const out = new Uint8Array(100);
+    const view = new DataView(out.buffer);
+    view.setInt32(0, 9994, false);
+    view.setInt32(24, 50, false);
+    view.setInt32(28, 1000, true);
+    view.setInt32(32, 5, true);
+    return out;
+}
+
+/** A ZIP built from stored members, as torch.export writes a `.pt2` package. */
+function makeZipBytes(entries: Array<{ name: string; data?: Uint8Array }>): Uint8Array {
+    const parts: Uint8Array[] = [];
+    for (const { name, data = new Uint8Array(0) } of entries) {
+        const nameBytes = asciiBytes(name);
+        const header = new Uint8Array(30 + nameBytes.length);
+        const view = new DataView(header.buffer);
+        view.setUint32(0, 0x04034b50, true);
+        view.setUint16(4, 20, true);
+        view.setUint16(8, 0, true);
+        view.setUint32(18, data.length, true);
+        view.setUint32(22, data.length, true);
+        view.setUint16(26, nameBytes.length, true);
+        header.set(nameBytes, 30);
+        parts.push(header, data);
+    }
+    return concatBytes(...parts);
+}
+
 describe('FileUtils.detectViewerType signatures', () => {
     it('detects PDF files by signature even with a misleading extension', async () => {
         const file = makeFile(asciiBytes('%PDF-1.7\n'), 'mislabeled.jpg');
@@ -274,6 +308,59 @@ describe('FileUtils.detectViewerType signatures', () => {
     it('routes model.pte to the ExecuTorch viewer by extension', async () => {
         const result = await FileUtils.detectViewerType(makeFile('not a flatbuffer', 'model.pte'));
         expect(result.viewType).toBe('omni-viewer.pteViewer');
+        expect(result.matchedBySignature).toBe(false);
+    });
+
+    it('detects a Shapefile by its file code and version words', async () => {
+        const result = await FileUtils.detectViewerType(
+            makeFile(makeShapefileBytes(), 'geometry.bin')
+        );
+        expect(result.viewType).toBe('omni-viewer.shapefileViewer');
+        expect(result.matchedBySignature).toBe(true);
+    });
+
+    it('leaves a .shx index alone despite the identical header', async () => {
+        const result = await FileUtils.detectViewerType(
+            makeFile(makeShapefileBytes(), 'districts.shx')
+        );
+        expect(result.viewType).not.toBe('omni-viewer.shapefileViewer');
+    });
+
+    it('does not claim a header whose version word is not 1000', async () => {
+        const bytes = makeShapefileBytes();
+        new DataView(bytes.buffer).setInt32(28, 1001, true);
+        const result = await FileUtils.detectViewerType(makeFile(bytes, 'mystery.bin'));
+        expect(result.viewType).not.toBe('omni-viewer.shapefileViewer');
+    });
+
+    it('routes districts.shp to the Shapefile viewer by extension', async () => {
+        const result = await FileUtils.detectViewerType(makeFile('truncated', 'districts.shp'));
+        expect(result.viewType).toBe('omni-viewer.shapefileViewer');
+        expect(result.matchedBySignature).toBe(false);
+    });
+
+    it('detects a .pt2 package by its ZIP container and extension', async () => {
+        const bytes = makeZipBytes([{ name: 'archive_format', data: asciiBytes('pt2') }]);
+        const result = await FileUtils.detectViewerType(makeFile(bytes, 'resnet.pt2'));
+        expect(result.viewType).toBe('omni-viewer.pt2Viewer');
+        expect(result.matchedBySignature).toBe(true);
+    });
+
+    it('recognizes a renamed ExportedProgram package by its archive_format marker', async () => {
+        const bytes = makeZipBytes([
+            { name: 'resnet/archive_format', data: asciiBytes('pt2') },
+            { name: 'resnet/models/model.json', data: asciiBytes('{}') }
+        ]);
+        const result = await FileUtils.detectViewerType(makeFile(bytes, 'export.zip'));
+        // One marker is enough, and the folder torch.export may wrap the
+        // package in does not hide it.
+        expect(result.viewType).toBe('omni-viewer.pt2Viewer');
+        expect(result.matchedBySignature).toBe(true);
+    });
+
+    it('routes model.pt2 to the ExportedProgram viewer by extension', async () => {
+        const result = await FileUtils.detectViewerType(makeFile('not a zip', 'model.pt2'));
+        expect(result.viewType).toBe('omni-viewer.pt2Viewer');
         expect(result.matchedBySignature).toBe(false);
     });
 
