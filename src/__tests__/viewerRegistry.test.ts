@@ -66,8 +66,10 @@ const ALL_SLUGS: ViewerSlug[] = [
     'har',
     'yaml',
     'toml',
+    'xml',
     'markdown',
     'notebook',
+    'epub',
     'latex',
     'mermaid',
     'plantuml',
@@ -87,7 +89,7 @@ const ALL_SLUGS: ViewerSlug[] = [
 
 describe('viewerRegistry', () => {
     it('registers all viewers', () => {
-        expect(VIEWER_REGISTRATIONS).toHaveLength(44);
+        expect(VIEWER_REGISTRATIONS).toHaveLength(46);
         const slugs = VIEWER_REGISTRATIONS.map((r) => r.slug).sort();
         expect(slugs).toEqual([...ALL_SLUGS].sort());
     });
@@ -199,8 +201,16 @@ describe('viewerRegistry', () => {
             ['model.keras', 'keras'],
             ['model.mlmodel', 'coreml'],
             ['model.mlpackage', 'coreml'],
-            // OpenVINO IR is routed by content, never by its shared `.xml`.
-            ['model.xml', undefined],
+            // `.xml` names the generic XML viewer; an OpenVINO IR is moved
+            // off it by content, which filename resolution never sees.
+            ['model.xml', 'xml'],
+            ['pom.xml', 'xml'],
+            ['schema.xsd', 'xml'],
+            ['feed.rss', 'xml'],
+            ['route.gpx', 'xml'],
+            ['App.csproj', 'xml'],
+            ['book.epub', 'epub'],
+            ['Book.EPUB', 'epub'],
             ['model.safetensors', 'safetensors'],
             ['report.hwpx', 'hwp'],
             ['archive.zip', 'archive'],

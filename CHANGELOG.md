@@ -2,6 +2,33 @@
 
 All notable changes to the Chrome build of Omni Viewer are documented in this file.
 
+## [0.9.0] - 2026-10-24
+
+### Added
+- Added a generic XML viewer backed by `omni-viewer-core` 0.20.0 for `.xml`
+  and the dialects with their own extension (`.xsd`, `.xsl`/`.xslt`, `.wsdl`,
+  `.xlf`/`.xliff`, `.rss`, `.atom`, `.xaml`, `.kml`, `.gpx`, `.resx`,
+  `.csproj`, `.vcxproj`, `.nuspec`). It shows an element/attribute tree beside
+  the source, linked both ways, with search, XPath/value/XML copy and
+  well-formedness diagnostics; a broken document still opens as the tree the
+  parser recovered. An `.xml` whose root is an OpenVINO IR keeps going to the
+  OpenVINO viewer, and `.arxml` / `.reqif` keep the automotive viewer.
+  Extensionless XML is recognized by its prolog or root element (HTML is not
+  claimed), mirroring the core's `looksLikeXml`, in both `app.js` and
+  `FileUtils.detectViewerType`.
+- Added an EPUB (`.epub`, EPUB 2 and 3) reader backed by `omni-viewer-core`
+  0.20.0: table of contents, chapter navigation, text scaling and a book-info
+  panel. Chapter markup is sanitized with the bundled DOMPurify, without
+  publisher CSS, scripts or remote images, and external links open in a new
+  tab. A renamed or extensionless book is recognized by the stored `mimetype`
+  member (`application/epub+zip`) that opens every OCF container, ahead of
+  the Office and archive scans.
+
+### Changed
+- Updated `omni-viewer-core` to 0.20.0.
+- `.xml` files without an OpenVINO root now open in the XML viewer instead of
+  the raw-data preview.
+
 ## [0.8.0] - 2026-10-17
 
 ### Added

@@ -41,8 +41,10 @@ export type OmniViewerViewType =
     | 'omni-viewer.jsonlViewer'
     | 'omni-viewer.harViewer'
     | 'omni-viewer.tomlViewer'
+    | 'omni-viewer.xmlViewer'
     | 'omni-viewer.markdownViewer'
     | 'omni-viewer.notebookViewer'
+    | 'omni-viewer.epubViewer'
     | 'omni-viewer.latexViewer'
     | 'omni-viewer.mermaidViewer'
     | 'omni-viewer.plantumlViewer'
@@ -91,8 +93,10 @@ export type ViewerSlug =
     | 'jsonl'
     | 'har'
     | 'toml'
+    | 'xml'
     | 'markdown'
     | 'notebook'
+    | 'epub'
     | 'latex'
     | 'mermaid'
     | 'plantuml'
@@ -237,6 +241,14 @@ export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
         createProvider: () => createPlaceholderProvider('omni-viewer.tomlViewer')
     },
     {
+        viewType: 'omni-viewer.xmlViewer',
+        slug: 'xml',
+        command: 'omni-viewer.openXmlViewer',
+        missingMessage: 'No XML file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.xmlViewer')
+    },
+    {
         viewType: 'omni-viewer.markdownViewer',
         slug: 'markdown',
         command: 'omni-viewer.openMarkdownViewer',
@@ -251,6 +263,14 @@ export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
         missingMessage: 'No notebook file selected',
         retainContextWhenHidden: true,
         createProvider: () => createPlaceholderProvider('omni-viewer.notebookViewer')
+    },
+    {
+        viewType: 'omni-viewer.epubViewer',
+        slug: 'epub',
+        command: 'omni-viewer.openEpubViewer',
+        missingMessage: 'No EPUB book selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.epubViewer')
     },
     {
         viewType: 'omni-viewer.latexViewer',
@@ -550,7 +570,28 @@ const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
     '.yaml': 'yaml',
     '.yml': 'yaml',
     '.toml': 'toml',
+    // Generic XML. An `.xml` whose root is an OpenVINO IR (`<net version>`
+    // with `<layers>`) is moved to that viewer by content in
+    // `FileUtils.detectViewerType` / app.js `detectType`; `.arxml` and
+    // `.reqif` keep their dedicated viewers.
+    '.xml': 'xml',
+    '.xsd': 'xml',
+    '.xsl': 'xml',
+    '.xslt': 'xml',
+    '.wsdl': 'xml',
+    '.xlf': 'xml',
+    '.xliff': 'xml',
+    '.rss': 'xml',
+    '.atom': 'xml',
+    '.xaml': 'xml',
+    '.kml': 'xml',
+    '.gpx': 'xml',
+    '.resx': 'xml',
+    '.csproj': 'xml',
+    '.vcxproj': 'xml',
+    '.nuspec': 'xml',
     '.ipynb': 'notebook',
+    '.epub': 'epub',
     '.md': 'markdown',
     '.markdown': 'markdown',
     '.tex': 'latex',
@@ -594,9 +635,8 @@ const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
     '.keras': 'keras',
     '.mlmodel': 'coreml',
     '.mlpackage': 'coreml',
-    // OpenVINO IR is deliberately absent: its `.xml` is shared with every
-    // other XML dialect, so it is routed by content (`<net version>` with
-    // `<layers>`) in `FileUtils.detectViewerType` / app.js `detectType` only.
+    // OpenVINO IR has no extension of its own: its `.xml` maps to the generic
+    // XML viewer above, and the `<net version>` root reroutes it by content.
     '.safetensors': 'safetensors',
     '.mp3': 'audio',
     '.wav': 'audio',

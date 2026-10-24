@@ -19,6 +19,7 @@ import {
     AudioMetadata
 } from './fileUtils/media';
 import { detectDelimiter } from './fileUtils/tabular';
+import { resolveRegistrationByFileName } from '../viewerRegistry';
 
 export type OmniViewerViewType =
     | 'omni-viewer.audioViewer'
@@ -31,8 +32,10 @@ export type OmniViewerViewType =
     | 'omni-viewer.jsonlViewer'
     | 'omni-viewer.harViewer'
     | 'omni-viewer.tomlViewer'
+    | 'omni-viewer.xmlViewer'
     | 'omni-viewer.markdownViewer'
     | 'omni-viewer.notebookViewer'
+    | 'omni-viewer.epubViewer'
     | 'omni-viewer.latexViewer'
     | 'omni-viewer.mermaidViewer'
     | 'omni-viewer.plantumlViewer'
@@ -110,6 +113,12 @@ const AUTOMOTIVE_TEXT_EXTENSIONS = new Set(['.dbc', '.arxml', '.a2l', '.asc']);
 const AUTOMOTIVE_BINARY_EXTENSIONS = new Set(['.blf', '.mf4', '.mdf']);
 const STRUCTURED_DATA_TEXT_EXTENSIONS = new Set(['.stp', '.step', '.reqif']);
 const LATEX_EXTENSIONS = new Set(['.tex', '.latex', '.ltx']);
+// The generic XML viewer's extensions (omni-viewer-core XML_VIEWER_META).
+// `.arxml` and `.reqif` are XML too but keep their dedicated viewers.
+const XML_EXTENSIONS = new Set([
+    '.xml', '.xsd', '.xsl', '.xslt', '.wsdl', '.xlf', '.xliff', '.rss', '.atom',
+    '.xaml', '.kml', '.gpx', '.resx', '.csproj', '.vcxproj', '.nuspec'
+]);
 const STRUCTURED_DATA_BINARY_EXTENSIONS = new Set(['.avro', '.bag', '.db3', '.sqlite', '.sqlite3', '.pcap', '.pcapng', '.h5', '.hdf5']);
 
 // Lazy decoders — jest-environment-jsdom 29 does not expose `TextDecoder`
@@ -187,6 +196,7 @@ export class FileUtils {
         const ext = extOf(file.name);
         const bufferLength = buffer.length;
         const preferredOfficeViewType = this.getOfficeViewTypeForExtension(ext);
+        const extensionClaimed = resolveRegistrationByFileName(file.name) !== undefined;
 
         if (bufferLength === 0) {
             return {
@@ -224,7 +234,12 @@ export class FileUtils {
             return this.signatureMatch('omni-viewer.imageViewer', 'Matched the WebP RIFF signature.');
         }
 
-        if (this.isSvg(buffer)) {
+        // SVG markup only settles a name some other viewer claims. An
+        // XML-named file is the XML viewer's even when it embeds `<svg` (an
+        // XSLT emitting SVG), and an unclaimed one goes to the content-only
+        // XML sniff — app.js and the core registry, which have no SVG content
+        // sniff, route both the same way.
+        if (extensionClaimed && !XML_EXTENSIONS.has(ext) && this.isSvg(buffer)) {
             return this.signatureMatch('omni-viewer.imageViewer', 'Matched SVG markup.');
         }
 
@@ -236,7 +251,11 @@ export class FileUtils {
             return this.signatureMatch('omni-viewer.audioViewer', 'Matched the OGG container signature.');
         }
 
-        if (this.hasAsciiPrefix(buffer, 'ID3') || this.isMp3FrameHeader(buffer)) {
+        // A UTF-16LE BOM (`FF FE`) passes the MP3 / ADTS frame-sync masks, so
+        // those bare-sync sniffs stand aside for a file named as XML.
+        const frameSyncEligible = !XML_EXTENSIONS.has(ext);
+
+        if (this.hasAsciiPrefix(buffer, 'ID3') || (frameSyncEligible && this.isMp3FrameHeader(buffer))) {
             return this.signatureMatch('omni-viewer.audioViewer', 'Matched MP3 frame metadata.');
         }
 
@@ -256,7 +275,7 @@ export class FileUtils {
             return this.signatureMatch('omni-viewer.audioViewer', 'Matched the AMR file header.');
         }
 
-        if (this.isAacAdts(buffer)) {
+        if (frameSyncEligible && this.isAacAdts(buffer)) {
             return this.signatureMatch('omni-viewer.audioViewer', 'Matched AAC ADTS sync bytes.');
         }
 
@@ -386,6 +405,14 @@ export class FileUtils {
             // generic ZIP before the core validates and reads its entries.
             if (ext === '.npz') {
                 return this.signatureMatch('omni-viewer.numpyViewer', 'Matched a NumPy NPZ ZIP container.');
+            }
+
+            // An EPUB is a ZIP carrying a stored `mimetype` member of
+            // `application/epub+zip` — normally first, but accepted at any
+            // position, as omni-viewer-core registry/probe.ts does — so a
+            // renamed book is still recognizable.
+            if (ext === '.epub' || this.isEpubContainer(buffer)) {
+                return this.signatureMatch('omni-viewer.epubViewer', 'Matched an EPUB OCF ZIP container.');
             }
 
             // A Keras 3 model is a ZIP with no distinguishing leading bytes.
@@ -532,6 +559,16 @@ export class FileUtils {
             };
         }
 
+        // Reached when an `.epub` no longer carries its ZIP header — the
+        // reader reports the damage better than the raw-data fallback does.
+        if (ext === '.epub') {
+            return {
+                viewType: 'omni-viewer.epubViewer',
+                reason: 'Used the EPUB extension fallback.',
+                matchedBySignature: false
+            };
+        }
+
         // Reached when a `.shp` or `.pt2` no longer carries its header — the
         // viewer reports the damage better than the raw-data fallback does.
         if (ext === '.shp') {
@@ -579,7 +616,12 @@ export class FileUtils {
             };
         }
 
-        const textType = this.detectTextBasedViewType(buffer, ext, file.size);
+        const textType = this.detectTextBasedViewType(
+            buffer,
+            ext,
+            file.size,
+            extensionClaimed
+        );
         if (textType) {
             return textType;
         }
@@ -927,7 +969,9 @@ export class FileUtils {
     private static detectTextBasedViewType(
         buffer: Uint8Array,
         ext: string,
-        fileSize: number
+        fileSize: number,
+        /** True when a registered viewer claims the file name's extension. */
+        extensionClaimed: boolean
     ): FileViewerDetectionResult | null {
         const sample = utf8Decoder().decode(buffer.subarray(0, Math.min(buffer.length, 16 * 1024)));
         const lines = sample
@@ -1013,10 +1057,41 @@ export class FileUtils {
         // and only the `<net version>` root with a `<layers>` child routes
         // here. Ahead of the remaining sniffs because an IR's attribute-heavy
         // lines would otherwise read as delimited text.
-        if (this.looksLikeOpenVinoIr(sample)) {
+        // Over the whole signature buffer, like app.js: this sniff is all that
+        // keeps an IR out of the XML viewer below, and a long licence comment
+        // can push the `<net>` root past the 16 KB `sample`.
+        if (this.looksLikeOpenVinoIr(utf8Decoder().decode(buffer))) {
             return {
                 viewType: 'omni-viewer.openvinoViewer',
                 reason: 'Matched an OpenVINO IR <net> document.',
+                matchedBySignature: false
+            };
+        }
+
+        // Every other `.xml` (and the dialects with their own extension) is
+        // the generic XML viewer's — the IR sniff above is what keeps an
+        // OpenVINO model out of it.
+        if (XML_EXTENSIONS.has(ext)) {
+            return {
+                viewType: 'omni-viewer.xmlViewer',
+                reason: `Used the XML extension fallback for ${ext}.`,
+                matchedBySignature: false
+            };
+        }
+
+        // Content-only XML. The core registry sniffs only when no extension
+        // claims the file, and app.js only when `byExtension` finds nothing,
+        // so any name a viewer registers (`.arxml`, `.reqif`, `.svg`,
+        // `.proto`, `.toml`, …) is never re-routed by its contents. Ahead of
+        // the TOML / Mermaid / PlantUML / delimiter guesses, which
+        // attribute-heavy or bare-text lines would otherwise satisfy — the
+        // core runs `looksLikeXml` before anything like them. Read over the
+        // whole signature buffer, the 64 KB window app.js and the core sniff:
+        // a long licence comment or DTD can push the root past `sample`.
+        if (!extensionClaimed && this.looksLikeXml(utf8Decoder().decode(buffer))) {
+            return {
+                viewType: 'omni-viewer.xmlViewer',
+                reason: 'Matched an XML prolog or root element.',
                 matchedBySignature: false
             };
         }
@@ -1338,6 +1413,43 @@ export class FileUtils {
         return (tableCount > 0 && assignmentCount > 0) || assignmentCount >= 3;
     }
 
+    /**
+     * Mirror of `looksLikeXml` in omni-viewer-core/registry/sniff: after a
+     * BOM, whitespace, the declaration, comments, PIs and a DOCTYPE comes a
+     * start tag — or an `<?xml` declaration opens a sample that ends before
+     * the root. An `html` root (or `<!DOCTYPE html>`) is declined.
+     */
+    private static looksLikeXml(text: string): boolean {
+        const sample = text.slice(0, 64 * 1024);
+        let index = sample.charCodeAt(0) === 0xfeff ? 1 : 0;
+        while (index < sample.length && /\s/.test(sample[index])) index++;
+        const declared = /^<\?xml[\s?]/.test(sample.slice(index, index + 6));
+        for (;;) {
+            while (index < sample.length && /\s/.test(sample[index])) index++;
+            if (sample.startsWith('<!--', index)) {
+                const end = sample.indexOf('-->', index + 4);
+                if (end < 0) return declared;
+                index = end + 3;
+            } else if (sample.startsWith('<?', index)) {
+                const end = sample.indexOf('?>', index + 2);
+                if (end < 0) return declared;
+                index = end + 2;
+            } else if (sample.startsWith('<!DOCTYPE', index)) {
+                if (/^<!DOCTYPE\s+html[\s>]/i.test(sample.slice(index, index + 20))) return false;
+                // An internal subset `[...]` holds '>'s of its own; it ends at `]>`.
+                const gt = sample.indexOf('>', index);
+                const bracket = sample.indexOf('[', index);
+                const subsetEnd = bracket >= 0 && bracket < gt ? /\]\s*>/.exec(sample.slice(bracket)) : null;
+                const end = subsetEnd ? bracket + subsetEnd.index + subsetEnd[0].length : gt + 1;
+                if (gt < 0 || (bracket >= 0 && bracket < gt && !subsetEnd)) return declared;
+                index = end;
+            } else break;
+        }
+        const root = /^<([A-Za-z_:\u00C0-\uFFFF][\w.:\-\u00B7\u00C0-\uFFFF]*)[\s/>]/.exec(sample.slice(index, index + 256));
+        if (!root) return declared && /^(<[^\s/<>]*)?$/.test(sample.slice(index));
+        return root[1].toLowerCase() !== 'html';
+    }
+
     private static looksLikeLatex(lines: string[]): boolean {
         // `%` starts a LaTeX comment, so a preamble is commonly preceded by a
         // licence header. Scan past those rather than only checking line one.
@@ -1424,6 +1536,48 @@ export class FileUtils {
     }
 
     /**
+     * The OCF convention `probeZip` checks in omni-viewer-core
+     * registry/probe.ts: a stored `mimetype` member whose content is
+     * `application/epub+zip`. The spec puts it first, but core accepts it at
+     * any position (`zip -r` sorts `META-INF/` ahead of it), so this walks the
+     * local headers inside the signature window. A member written with a data
+     * descriptor records size 0 locally; a stored `mimetype` then still starts
+     * with the media type, and the walk cannot go past it.
+     */
+    private static isEpubContainer(buffer: Uint8Array): boolean {
+        const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+        const expected = 'application/epub+zip';
+        let offset = 0;
+        while (offset + 30 <= buffer.length && view.getUint32(offset, true) === 0x04034b50) {
+            const flags = view.getUint16(offset + 6, true);
+            const method = view.getUint16(offset + 8, true);
+            const compressedSize = view.getUint32(offset + 18, true);
+            const nameLength = view.getUint16(offset + 26, true);
+            const dataStart = offset + 30 + nameLength + view.getUint16(offset + 28, true);
+            if (dataStart > buffer.length) {
+                return false;
+            }
+            const name = latin1Decoder().decode(buffer.subarray(offset + 30, offset + 30 + nameLength));
+            const deferred = (flags & 0x08) !== 0;
+            if (name === 'mimetype') {
+                if (method !== 0) {
+                    return false;
+                }
+                const size = deferred ? expected.length : Math.min(compressedSize, 256);
+                if (dataStart + size > buffer.length) {
+                    return false;
+                }
+                return latin1Decoder().decode(buffer.subarray(dataStart, dataStart + size)).trim() === expected;
+            }
+            if (deferred) {
+                return false;
+            }
+            offset = dataStart + compressedSize;
+        }
+        return false;
+    }
+
+    /**
      * The two words `parseShapefile` opens with: file code 9994 big-endian at
      * offset 0 and version 1000 little-endian at offset 28, over the 100 bytes
      * the format reserves for its header.
@@ -1494,6 +1648,10 @@ export function shortNameForViewType(viewType: OmniViewerViewType): string {
         return 'automotive';
     case 'omni-viewer.shapefileViewer':
         return 'shapefile';
+    case 'omni-viewer.xmlViewer':
+        return 'xml';
+    case 'omni-viewer.epubViewer':
+        return 'epub';
     case 'omni-viewer.hdf5Viewer':
         return 'hdf5';
     case 'omni-viewer.numpyViewer':

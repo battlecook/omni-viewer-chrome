@@ -245,6 +245,8 @@ describe('storeManifest invariants', () => {
                 '.har',  // HAR network log
                 '.yaml', // yaml
                 '.toml', // toml
+                '.xml',  // generic XML
+                '.epub', // EPUB e-book
                 '.ipynb',// Jupyter Notebook
                 '.tex',  // latex
                 '.mmd',  // mermaid

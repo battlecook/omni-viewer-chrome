@@ -38,8 +38,10 @@ const VIEWERS = [
   'har',
   'yaml',
   'toml',
+  'xml',
   'markdown',
   'notebook',
+  'epub',
   'latex',
   'mermaid',
   'plantuml',
@@ -192,6 +194,14 @@ module.exports = (env, argv) => {
           {
             from: 'src/templates/pt2/pt2Viewer.html',
             to: 'templates/pt2/pt2Viewer.html'
+          },
+          {
+            from: 'src/templates/xml/xmlViewer.html',
+            to: 'templates/xml/xmlViewer.html'
+          },
+          {
+            from: 'src/templates/epub/epubViewer.html',
+            to: 'templates/epub/epubViewer.html'
           },
           { from: '_locales', to: '_locales' },
           { from: 'icons', to: 'icons' },

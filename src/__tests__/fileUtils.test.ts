@@ -1025,7 +1025,7 @@ describe('FileUtils.detectViewerType OOXML / HWPX disambiguation', () => {
             const result = await FileUtils.detectViewerType(
                 makeFile('<?xml version="1.0"?><AUTOSAR><layers/></AUTOSAR>', 'system.xml')
             );
-            expect(result.viewType).not.toBe('omni-viewer.openvinoViewer');
+            expect(result.viewType).toBe('omni-viewer.xmlViewer');
         });
 
         it('maps the view type to its short name', () => {
@@ -1107,7 +1107,201 @@ describe('shortNameForViewType', () => {
         expect(shortNameForViewType('omni-viewer.latexViewer')).toBe('latex');
         expect(shortNameForViewType('omni-viewer.plantumlViewer')).toBe('plantuml');
         expect(shortNameForViewType('omni-viewer.harViewer')).toBe('har');
+        expect(shortNameForViewType('omni-viewer.xmlViewer')).toBe('xml');
+        expect(shortNameForViewType('omni-viewer.epubViewer')).toBe('epub');
         expect(shortNameForViewType('omni-viewer.avroViewer')).toBe('automotive');
         expect(shortNameForViewType('omni-viewer.reqifViewer')).toBe('automotive');
+    });
+});
+
+describe('FileUtils.detectViewerType XML / EPUB', () => {
+    /** A stored ZIP member list whose first entry is the OCF `mimetype`. */
+    function ocfZipBytes(mimetype: string): Uint8Array {
+        const name = new TextEncoder().encode('mimetype');
+        const data = new TextEncoder().encode(mimetype);
+        const bytes = new Uint8Array(30 + name.length + data.length);
+        const view = new DataView(bytes.buffer);
+        view.setUint32(0, 0x04034b50, true);
+        view.setUint16(8, 0, true); // stored
+        view.setUint32(18, data.length, true);
+        view.setUint32(22, data.length, true);
+        view.setUint16(26, name.length, true);
+        bytes.set(name, 30);
+        bytes.set(data, 30 + name.length);
+        return bytes;
+    }
+
+    it.each(['pom.xml', 'schema.xsd', 'feed.rss', 'route.gpx', 'App.csproj'])(
+        'routes %s to the XML viewer by extension',
+        async (name) => {
+            const result = await FileUtils.detectViewerType(
+                makeFile('<?xml version="1.0"?><project><modules/></project>', name)
+            );
+            expect(result.viewType).toBe('omni-viewer.xmlViewer');
+        }
+    );
+
+    it('recognizes extensionless XML by its prolog and root', async () => {
+        const result = await FileUtils.detectViewerType(
+            makeFile('<?xml version="1.0"?>\n<!-- generated -->\n<catalog a="1" b="2" c="3"/>', 'download')
+        );
+        expect(result.viewType).toBe('omni-viewer.xmlViewer');
+        expect(result.reason).toContain('XML');
+    });
+
+    it('does not claim HTML', async () => {
+        const result = await FileUtils.detectViewerType(
+            makeFile('<!DOCTYPE html>\n<html><body></body></html>', 'page')
+        );
+        expect(result.viewType).not.toBe('omni-viewer.xmlViewer');
+    });
+
+    it('keeps .arxml and .reqif with their dedicated viewers', async () => {
+        const arxml = await FileUtils.detectViewerType(
+            makeFile('<?xml version="1.0"?><AUTOSAR><AR-PACKAGES/></AUTOSAR>', 'system.arxml')
+        );
+        expect(arxml.viewType).toBe('omni-viewer.automotiveViewer');
+        const reqif = await FileUtils.detectViewerType(
+            makeFile('<?xml version="1.0"?><REQ-IF/>', 'spec.reqif')
+        );
+        expect(reqif.viewType).not.toBe('omni-viewer.xmlViewer');
+    });
+
+    it('routes a .epub and a renamed OCF container to the EPUB reader', async () => {
+        const named = await FileUtils.detectViewerType(makeFile(ocfZipBytes('application/epub+zip'), 'alice.epub'));
+        expect(named.viewType).toBe('omni-viewer.epubViewer');
+        const renamed = await FileUtils.detectViewerType(makeFile(ocfZipBytes('application/epub+zip'), 'download.zip'));
+        expect(renamed.viewType).toBe('omni-viewer.epubViewer');
+        expect(renamed.matchedBySignature).toBe(true);
+    });
+
+    it('leaves a ZIP with another mimetype alone', async () => {
+        const result = await FileUtils.detectViewerType(
+            makeFile(ocfZipBytes('application/vnd.oasis.opendocument.text'), 'notes.zip')
+        );
+        expect(result.viewType).not.toBe('omni-viewer.epubViewer');
+    });
+
+    /** Stored members in order; `deferred` writes the sizes to a data descriptor. */
+    function storedZip(entries: Array<{ name: string; data: string; deferred?: boolean }>): Uint8Array {
+        const parts: Uint8Array[] = [];
+        for (const { name, data, deferred } of entries) {
+            const nameBytes = new TextEncoder().encode(name);
+            const dataBytes = new TextEncoder().encode(data);
+            const header = new Uint8Array(30 + nameBytes.length);
+            const view = new DataView(header.buffer);
+            view.setUint32(0, 0x04034b50, true);
+            view.setUint16(6, deferred ? 0x08 : 0, true);
+            view.setUint32(18, deferred ? 0 : dataBytes.length, true);
+            view.setUint32(22, deferred ? 0 : dataBytes.length, true);
+            view.setUint16(26, nameBytes.length, true);
+            header.set(nameBytes, 30);
+            parts.push(header, dataBytes);
+            if (deferred) {
+                const descriptor = new Uint8Array(16);
+                const dv = new DataView(descriptor.buffer);
+                dv.setUint32(0, 0x08074b50, true);
+                dv.setUint32(8, dataBytes.length, true);
+                dv.setUint32(12, dataBytes.length, true);
+                parts.push(descriptor);
+            }
+        }
+        const out = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
+        let offset = 0;
+        for (const part of parts) {
+            out.set(part, offset);
+            offset += part.length;
+        }
+        return out;
+    }
+
+    it('finds the mimetype member wherever `zip -r` put it', async () => {
+        const bytes = storedZip([
+            { name: 'META-INF/container.xml', data: '<container/>' },
+            { name: 'OEBPS/content.opf', data: '<package/>' },
+            { name: 'mimetype', data: 'application/epub+zip' }
+        ]);
+        const result = await FileUtils.detectViewerType(makeFile(bytes, 'book'));
+        expect(result.viewType).toBe('omni-viewer.epubViewer');
+    });
+
+    it('reads a stored mimetype whose sizes went to a data descriptor', async () => {
+        const bytes = storedZip([
+            { name: 'mimetype', data: 'application/epub+zip', deferred: true },
+            { name: 'META-INF/container.xml', data: '<container/>' }
+        ]);
+        const result = await FileUtils.detectViewerType(makeFile(bytes, 'book'));
+        expect(result.viewType).toBe('omni-viewer.epubViewer');
+    });
+
+    it('runs the XML sniff ahead of the TOML and PlantUML guesses', async () => {
+        // Each attribute line reads as a TOML assignment, and a bare `start`
+        // line as PlantUML; the core (and app.js) claim both as XML first.
+        const tomlLike = await FileUtils.detectViewerType(
+            makeFile('<?xml version="1.0"?>\n<root\n  alpha="1"\n  beta="2"\n  gamma="3">\n</root>', 'data')
+        );
+        expect(tomlLike.viewType).toBe('omni-viewer.xmlViewer');
+        const plantUmlLike = await FileUtils.detectViewerType(makeFile('<doc>\nstart here\n</doc>', 'notes'));
+        expect(plantUmlLike.viewType).toBe('omni-viewer.xmlViewer');
+        // A claiming extension still wins over the contents.
+        const named = await FileUtils.detectViewerType(makeFile('<a/>\nkey = "v"', 'conf.toml'));
+        expect(named.viewType).toBe('omni-viewer.tomlViewer');
+    });
+
+    it('never re-routes a file whose extension a viewer claims', async () => {
+        // `isSvg` misses an SVG behind a comment or DOCTYPE; the `.svg` name
+        // still owns it, as it does in app.js and the core registry.
+        const svg = await FileUtils.detectViewerType(
+            makeFile('<!-- license -->\n<svg xmlns="http://www.w3.org/2000/svg"/>', 'icon.svg'),
+            'omni-viewer.imageViewer'
+        );
+        expect(svg.viewType).toBe('omni-viewer.imageViewer');
+        const proto = await FileUtils.detectViewerType(makeFile('<root/>', 'a.proto'), 'omni-viewer.protoViewer');
+        expect(proto.viewType).not.toBe('omni-viewer.xmlViewer');
+    });
+
+    it('sends extensionless SVG markup to the XML viewer, as app.js and the core do', async () => {
+        const result = await FileUtils.detectViewerType(
+            makeFile('<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>', 'icon')
+        );
+        expect(result.viewType).toBe('omni-viewer.xmlViewer');
+    });
+
+    it('still finds an OpenVINO IR behind a long licence comment', async () => {
+        const ir = `<!--${'x'.repeat(20000)}-->\n<net name="m" version="11">\n<layers>\n</layers>\n</net>`;
+        const result = await FileUtils.detectViewerType(makeFile(ir, 'model.xml'));
+        expect(result.viewType).toBe('omni-viewer.openvinoViewer');
+    });
+
+    it('finds an XML root past a long leading comment, as app.js does', async () => {
+        const result = await FileUtils.detectViewerType(
+            makeFile(`<!--${'x'.repeat(20000)}-->\n<root/>`, 'download')
+        );
+        expect(result.viewType).toBe('omni-viewer.xmlViewer');
+    });
+
+    it('keeps an XSLT that emits SVG in the XML viewer', async () => {
+        const result = await FileUtils.detectViewerType(
+            makeFile('<?xml version="1.0"?><xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"><xsl:template match="/"><svg width="10"/></xsl:template></xsl:stylesheet>', 'drawing.xsl')
+        );
+        expect(result.viewType).toBe('omni-viewer.xmlViewer');
+        const image = await FileUtils.detectViewerType(makeFile('<svg xmlns="http://www.w3.org/2000/svg"/>', 'icon.svg'));
+        expect(image.viewType).toBe('omni-viewer.imageViewer');
+    });
+
+    it('does not read a UTF-16LE BOM in an .xml as an MP3 frame', async () => {
+        const text = '<?xml version="1.0" encoding="UTF-16"?><Task/>';
+        const bytes = new Uint8Array(2 + text.length * 2);
+        bytes[0] = 0xff;
+        bytes[1] = 0xfe;
+        for (let i = 0; i < text.length; i += 1) bytes[2 + i * 2] = text.charCodeAt(i);
+        const result = await FileUtils.detectViewerType(makeFile(bytes, 'task.xml'));
+        expect(result.viewType).toBe('omni-viewer.xmlViewer');
+    });
+
+    it('falls back to the .epub extension when the ZIP header is gone', async () => {
+        const result = await FileUtils.detectViewerType(makeFile(new Uint8Array(16).fill(1), 'truncated.epub'));
+        expect(result.viewType).toBe('omni-viewer.epubViewer');
+        expect(result.matchedBySignature).toBe(false);
     });
 });

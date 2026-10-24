@@ -83,6 +83,7 @@ describe('legacy SPA OpenVINO IR detection', () => {
             fakeFile('config.xml', bytesOf('<?xml version="1.0"?><config><layers/></config>'))
         ]);
         expect(meta).not.toContain('OpenVINO');
+        expect(meta).toContain('XML');
     });
 
     it('does not claim a <net> root that carries no IR version', async () => {

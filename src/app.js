@@ -180,8 +180,13 @@ const formats = {
   har: ['.har'],
   yaml: ['.yaml', '.yml'],
   toml: ['.toml'],
+  // `.xml` is shared with OpenVINO IR; `detectType` hands an IR root to that
+  // viewer before the extension is consulted. `.arxml` / `.reqif` stay with
+  // the automotive viewer.
+  xml: ['.xml', '.xsd', '.xsl', '.xslt', '.wsdl', '.xlf', '.xliff', '.rss', '.atom', '.xaml', '.kml', '.gpx', '.resx', '.csproj', '.vcxproj', '.nuspec'],
   markdown: ['.md', '.markdown'],
   notebook: ['.ipynb'],
+  epub: ['.epub'],
   latex: ['.tex', '.latex', '.ltx'],
   mermaid: ['.mmd', '.mermaid'],
   plantuml: ['.puml', '.plantuml', '.iuml'],
@@ -198,7 +203,7 @@ const formats = {
   pt2: ['.pt2'],
   keras: ['.keras'],
   coreml: ['.mlmodel', '.mlpackage'],
-  // Routed by content only: `.xml` belongs to every XML dialect.
+  // Routed by content only: its `.xml` belongs to the generic XML viewer.
   openvino: [],
   safetensors: ['.safetensors'],
   audio: ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'],
@@ -221,8 +226,10 @@ const labels = {
   har: 'HAR',
   yaml: 'YAML',
   toml: 'TOML',
+  xml: 'XML',
   markdown: 'Markdown',
   notebook: 'Jupyter Notebook',
+  epub: 'EPUB',
   latex: 'LaTeX',
   mermaid: 'Mermaid',
   plantuml: 'PlantUML',
@@ -324,6 +331,74 @@ function zipEntryNames(head) {
     offset = nameEnd + extraLength + compressedSize;
   }
   return names;
+}
+
+// Mirror of the OCF branch of `probeZip` in omni-viewer-core/registry/probe:
+// an EPUB carries a stored (uncompressed) `mimetype` member whose content is
+// `application/epub+zip` — the same convention ODF and HWPX follow with their
+// own media types. The spec puts it first, but core accepts it anywhere
+// (`zip -r` sorts `META-INF/` ahead of it), so this walks the local headers in
+// `head` the way `zipEntryNames` does. A member written with a data
+// descriptor records size 0 locally: a stored `mimetype` then still starts
+// with the media type, and the walk cannot go past it.
+function looksLikeEpubContainer(head) {
+  const view = new DataView(head.buffer, head.byteOffset, head.byteLength);
+  const expected = 'application/epub+zip';
+  let offset = 0;
+  while (offset + 30 <= head.length && view.getUint32(offset, true) === 0x04034b50) {
+    const flags = view.getUint16(offset + 6, true);
+    const method = view.getUint16(offset + 8, true);
+    const compressedSize = view.getUint32(offset + 18, true);
+    const nameLength = view.getUint16(offset + 26, true);
+    const dataStart = offset + 30 + nameLength + view.getUint16(offset + 28, true);
+    if (dataStart > head.length) return false;
+    const deferred = (flags & 0x08) !== 0;
+    if (ascii(head, offset + 30, nameLength) === 'mimetype') {
+      if (method !== 0) return false;
+      const size = deferred ? expected.length : Math.min(compressedSize, 256);
+      if (dataStart + size > head.length) return false;
+      return ascii(head, dataStart, size).trim() === expected;
+    }
+    if (deferred) return false;
+    offset = dataStart + compressedSize;
+  }
+  return false;
+}
+
+// Mirror of `looksLikeXml` in omni-viewer-core/registry/sniff: after a BOM,
+// whitespace, the declaration, comments, PIs and a DOCTYPE comes a start tag —
+// or an `<?xml` declaration opens a sample that ends before the root. An
+// `html` root (or `<!DOCTYPE html>`) is declined: it is rarely well-formed and
+// the element tree is the wrong view for it.
+function looksLikeXml(text) {
+  const sample = text.slice(0, 64 * 1024);
+  let index = sample.charCodeAt(0) === 0xfeff ? 1 : 0;
+  while (index < sample.length && /\s/.test(sample[index])) index++;
+  const declared = /^<\?xml[\s?]/.test(sample.slice(index, index + 6));
+  for (;;) {
+    while (index < sample.length && /\s/.test(sample[index])) index++;
+    if (sample.startsWith('<!--', index)) {
+      const end = sample.indexOf('-->', index + 4);
+      if (end < 0) return declared;
+      index = end + 3;
+    } else if (sample.startsWith('<?', index)) {
+      const end = sample.indexOf('?>', index + 2);
+      if (end < 0) return declared;
+      index = end + 2;
+    } else if (sample.startsWith('<!DOCTYPE', index)) {
+      if (/^<!DOCTYPE\s+html[\s>]/i.test(sample.slice(index, index + 20))) return false;
+      // An internal subset `[...]` holds '>'s of its own; it ends at `]>`.
+      const gt = sample.indexOf('>', index);
+      const bracket = sample.indexOf('[', index);
+      const subsetEnd = bracket >= 0 && bracket < gt ? /\]\s*>/.exec(sample.slice(bracket)) : null;
+      const end = subsetEnd ? bracket + subsetEnd.index + subsetEnd[0].length : gt + 1;
+      if (gt < 0 || (bracket >= 0 && bracket < gt && !subsetEnd)) return declared;
+      index = end;
+    } else break;
+  }
+  const root = /^<([A-Za-z_:\u00C0-\uFFFF][\w.:\-\u00B7\u00C0-\uFFFF]*)[\s/>]/.exec(sample.slice(index, index + 256));
+  if (!root) return declared && /^(<[^\s/<>]*)?$/.test(sample.slice(index));
+  return root[1].toLowerCase() !== 'html';
 }
 
 // Mirror of the header checks `parseShapefile` opens with in
@@ -580,6 +655,10 @@ async function detectType(file) {
   if (hasPrefix(head, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])) return byExtension(file);
   if (hasPrefix(head, [0x50, 0x4b])) {
     if (ext === '.npz') return 'numpy';
+    // The stored `mimetype` member identifies a renamed or extensionless book;
+    // checked ahead of the Office scans below, whose bare substrings a
+    // chapter path could happen to contain.
+    if (ext === '.epub' || looksLikeEpubContainer(head)) return 'epub';
     if (ext === '.keras') return 'keras';
     // An .mlpackage is a directory bundle on disk, so the browser only ever
     // sees the zipped form.
@@ -630,14 +709,19 @@ async function detectType(file) {
   // can sit far into the file, so this reads the whole head as well.
   // `head` stops at 64 KB, so a larger file reaches the sniff truncated.
   if (looksLikeNotebook(headText, file.size > head.length)) return 'notebook';
-  // Whatever no sniff claimed is resolved by extension, and an extensionless
-  // file ends at the raw-data fallback. FileUtils has a generic
+  // Whatever no sniff claimed is resolved by extension. Only a file no
+  // extension claims is offered to the XML sniff, as in the core registry: a
+  // trusted extension — `.arxml`, `.reqif`, `.svg` — always wins over content.
+  const extensionType = byExtension(file);
+  if (extensionType === 'unknown' && looksLikeXml(headText)) return 'xml';
+  // An extensionless file nothing claimed ends at the raw-data fallback.
+  // FileUtils has a generic
   // `looksLikeJsonDocument` sniff that this SPA does not port, so an
   // extensionless JSON document — including one shaped like a notebook but
   // missing a key, which the sniff above deliberately rejects — shows as raw
   // data here and as the JSON tree there. That gap predates these formats;
   // `notebookDetectionParity.test.ts` pins it so it cannot drift unnoticed.
-  return byExtension(file);
+  return extensionType;
 }
 
 function setStatus(message, error = false) {
@@ -909,8 +993,10 @@ async function renderByType() {
   if (type === 'har') return renderHar();
   if (type === 'yaml') return renderYaml();
   if (type === 'toml') return renderToml();
+  if (type === 'xml') return renderXml();
   if (type === 'markdown') return renderMarkdown();
   if (type === 'notebook') return renderNotebook();
+  if (type === 'epub') return renderEpub();
   if (type === 'latex') return renderLatex();
   if (type === 'mermaid') return renderMermaid();
   if (type === 'plantuml') return renderPlantUml();
@@ -1100,6 +1186,28 @@ async function renderToml() {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     body.innerHTML = `<div class="unsupported"><p>Couldn't load TOML viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
+
+async function renderXml() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading XML viewer…</p></div>';
+  try {
+    await mountAdvancedViewer('xml', 'mountXmlViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load XML viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
+
+async function renderEpub() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading EPUB reader…</p></div>';
+  try {
+    await mountAdvancedViewer('epub', 'mountEpubViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load EPUB reader.</p><pre>${escapeHtml(message)}</pre></div>`;
   }
 }
 
