@@ -25,6 +25,37 @@ licenses.
 | hyparquet | `hyparquet/**` | MIT | Copyright (c) Hyperparam — https://github.com/hyparam/hyparquet |
 | libarchive.js | `libarchive-worker-bundle.js`, `libarchive.wasm` | MIT | Copyright (c) 2018 Nika Begiashvili — https://github.com/nika-begiashvili/libarchivejs |
 
+## Arrow / Feather viewer dependencies (webpack bundles)
+
+| Component | License | Copyright / Source |
+|-----------|---------|--------------------|
+| Apache Arrow JavaScript | Apache-2.0 | Copyright 2017-2025 The Apache Software Foundation — https://github.com/apache/arrow-js |
+| FlatBuffers | Apache-2.0 | Google — https://github.com/google/flatbuffers |
+| json-with-bigint | MIT | https://github.com/Ivan-Korolenko/json-with-bigint |
+| tslib | 0BSD | Microsoft Corporation — https://github.com/microsoft/tslib |
+| lz4js | ISC | John Chadwick — https://github.com/Benzinga/lz4js |
+| fzstd | MIT | Copyright (c) 2020 Arjun Barrett — https://github.com/101arrowz/fzstd |
+
+The Apache license is reproduced in `THIRD-PARTY-LICENSES/Apache-2.0.txt`,
+with Arrow's notice in `THIRD-PARTY-LICENSES/Apache-Arrow-NOTICE.txt`.
+The fzstd license is reproduced in `THIRD-PARTY-LICENSES/fzstd-MIT.txt`.
+Licenses for Arrow's bundled FlatBuffers, json-with-bigint, and tslib
+transitive dependencies are also included in `THIRD-PARTY-LICENSES/`.
+
+lz4js is distributed under the ISC license:
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
 ## Audio engine (`assets/audio-engine/`)
 
 The WebAssembly audio decode/analysis engine is provided by `omni-viewer-core`

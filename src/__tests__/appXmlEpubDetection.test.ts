@@ -129,11 +129,12 @@ describe('legacy SPA XML detection', () => {
         expect(await openInSpa([fakeFile('notes', bytesOf('<doc>\nstart here\n</doc>'))])).toContain('XML');
     });
 
-    it('does not claim HTML, which is rarely well-formed', async () => {
+    it('routes HTML to its own viewer', async () => {
         const meta = await openInSpa([
             fakeFile('page', bytesOf('<!DOCTYPE html><html><body><p>hi</body></html>'))
         ]);
-        expect(meta).toContain('Raw Data');
+        expect(meta).toContain('HTML');
+        expect(meta).not.toContain('XML');
     });
 
     it('keeps the dialects with their own viewer by extension', async () => {

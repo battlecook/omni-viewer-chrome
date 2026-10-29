@@ -42,6 +42,10 @@ export type OmniViewerViewType =
     | 'omni-viewer.harViewer'
     | 'omni-viewer.tomlViewer'
     | 'omni-viewer.xmlViewer'
+    | 'omni-viewer.htmlViewer'
+    | 'omni-viewer.fontViewer'
+    | 'omni-viewer.arrowViewer'
+    | 'omni-viewer.geojsonViewer'
     | 'omni-viewer.markdownViewer'
     | 'omni-viewer.notebookViewer'
     | 'omni-viewer.epubViewer'
@@ -94,6 +98,10 @@ export type ViewerSlug =
     | 'har'
     | 'toml'
     | 'xml'
+    | 'html'
+    | 'font'
+    | 'arrow'
+    | 'geojson'
     | 'markdown'
     | 'notebook'
     | 'epub'
@@ -160,6 +168,30 @@ function createPlaceholderProvider(viewType: OmniViewerViewType): ChromeViewerPr
 }
 
 export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
+    {
+        viewType: 'omni-viewer.geojsonViewer',
+        slug: 'geojson',
+        command: 'omni-viewer.openGeoJsonViewer',
+        missingMessage: 'No GeoJSON file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.geojsonViewer')
+    },
+    {
+        viewType: 'omni-viewer.arrowViewer',
+        slug: 'arrow',
+        command: 'omni-viewer.openArrowViewer',
+        missingMessage: 'No Arrow / Feather file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.arrowViewer')
+    },
+    {
+        viewType: 'omni-viewer.fontViewer',
+        slug: 'font',
+        command: 'omni-viewer.openFontViewer',
+        missingMessage: 'No font file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.fontViewer')
+    },
     {
         viewType: 'omni-viewer.archiveViewer',
         slug: 'archive',
@@ -247,6 +279,14 @@ export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
         missingMessage: 'No XML file selected',
         retainContextWhenHidden: true,
         createProvider: () => createPlaceholderProvider('omni-viewer.xmlViewer')
+    },
+    {
+        viewType: 'omni-viewer.htmlViewer',
+        slug: 'html',
+        command: 'omni-viewer.openHtmlViewer',
+        missingMessage: 'No HTML file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.htmlViewer')
     },
     {
         viewType: 'omni-viewer.markdownViewer',
@@ -592,6 +632,14 @@ const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
     '.nuspec': 'xml',
     '.ipynb': 'notebook',
     '.epub': 'epub',
+    '.ttf': 'font',
+    '.otf': 'font',
+    '.woff': 'font',
+    '.arrow': 'arrow',
+    '.feather': 'arrow',
+    '.geojson': 'geojson',
+    '.html': 'html',
+    '.htm': 'html',
     '.md': 'markdown',
     '.markdown': 'markdown',
     '.tex': 'latex',

@@ -33,6 +33,10 @@ export type OmniViewerViewType =
     | 'omni-viewer.harViewer'
     | 'omni-viewer.tomlViewer'
     | 'omni-viewer.xmlViewer'
+    | 'omni-viewer.htmlViewer'
+    | 'omni-viewer.fontViewer'
+    | 'omni-viewer.arrowViewer'
+    | 'omni-viewer.geojsonViewer'
     | 'omni-viewer.markdownViewer'
     | 'omni-viewer.notebookViewer'
     | 'omni-viewer.epubViewer'
@@ -194,16 +198,28 @@ export class FileUtils {
         const fallbackViewType = options.fallbackViewType;
         const buffer = await this.readSignatureBuffer(file);
         const ext = extOf(file.name);
+        const formatSlug = ext === '.geojson' ? 'geojson'
+            : ['.ttf', '.otf', '.woff'].includes(ext) ? 'font'
+                : ['.arrow', '.feather'].includes(ext) ? 'arrow' : undefined;
+        const isHtmlExtension = ext === '.html' || ext === '.htm';
         const bufferLength = buffer.length;
         const preferredOfficeViewType = this.getOfficeViewTypeForExtension(ext);
         const extensionClaimed = resolveRegistrationByFileName(file.name) !== undefined;
 
         if (bufferLength === 0) {
             return {
-                viewType: fallbackViewType ?? null,
+                viewType: isHtmlExtension ? 'omni-viewer.htmlViewer'
+                    : formatSlug ? `omni-viewer.${formatSlug}Viewer` : fallbackViewType ?? null,
                 reason: 'The file is empty, so the extension fallback was used.',
                 matchedBySignature: false
             };
+        }
+
+        if (this.looksLikeArrowIpc(buffer)) {
+            return this.signatureMatch('omni-viewer.arrowViewer', 'Matched an Arrow IPC file or schema message.');
+        }
+        if (this.looksLikeFont(buffer, file.size)) {
+            return this.signatureMatch('omni-viewer.fontViewer', 'Matched a TrueType, OpenType, or WOFF font.');
         }
 
         if (this.hasAsciiPrefix(buffer, '%PDF-')) {
@@ -234,12 +250,12 @@ export class FileUtils {
             return this.signatureMatch('omni-viewer.imageViewer', 'Matched the WebP RIFF signature.');
         }
 
-        // SVG markup only settles a name some other viewer claims. An
-        // XML-named file is the XML viewer's even when it embeds `<svg` (an
-        // XSLT emitting SVG), and an unclaimed one goes to the content-only
+        // SVG markup only settles a name some other viewer claims. A file
+        // named as XML, HTML, or a dedicated core format keeps its viewer even when it embeds `<svg`
+        // (an XSLT emitting SVG). An unclaimed name goes to the content-only
         // XML sniff — app.js and the core registry, which have no SVG content
         // sniff, route both the same way.
-        if (extensionClaimed && !XML_EXTENSIONS.has(ext) && this.isSvg(buffer)) {
+        if (extensionClaimed && !XML_EXTENSIONS.has(ext) && !isHtmlExtension && !formatSlug && this.isSvg(buffer)) {
             return this.signatureMatch('omni-viewer.imageViewer', 'Matched SVG markup.');
         }
 
@@ -252,8 +268,8 @@ export class FileUtils {
         }
 
         // A UTF-16LE BOM (`FF FE`) passes the MP3 / ADTS frame-sync masks, so
-        // those bare-sync sniffs stand aside for a file named as XML.
-        const frameSyncEligible = !XML_EXTENSIONS.has(ext);
+        // those bare-sync sniffs stand aside for files named as XML or HTML.
+        const frameSyncEligible = !XML_EXTENSIONS.has(ext) && !isHtmlExtension;
 
         if (this.hasAsciiPrefix(buffer, 'ID3') || (frameSyncEligible && this.isMp3FrameHeader(buffer))) {
             return this.signatureMatch('omni-viewer.audioViewer', 'Matched MP3 frame metadata.');
@@ -612,6 +628,24 @@ export class FileUtils {
             return {
                 viewType: 'omni-viewer.safetensorsViewer',
                 reason: 'Used the safetensors extension fallback.',
+                matchedBySignature: false
+            };
+        }
+
+        // Preserve strong binary signatures above, but do not classify HTML
+        // fragments by their text contents or misread a UTF-16 BOM as audio.
+        if (isHtmlExtension) {
+            return {
+                viewType: 'omni-viewer.htmlViewer',
+                reason: `Used the HTML extension fallback for ${ext}.`,
+                matchedBySignature: false
+            };
+        }
+
+        if (formatSlug) {
+            return {
+                viewType: `omni-viewer.${formatSlug}Viewer`,
+                reason: `Used the ${formatSlug} extension fallback.`,
                 matchedBySignature: false
             };
         }
@@ -1044,6 +1078,14 @@ export class FileUtils {
             };
         }
 
+        if ((!extensionClaimed || ext === '.json') && this.looksLikeGeoJson(utf8Decoder().decode(buffer))) {
+            return {
+                viewType: 'omni-viewer.geojsonViewer',
+                reason: 'Matched a GeoJSON geometry, feature, or feature collection.',
+                matchedBySignature: false
+            };
+        }
+
         if (ext === '.json' || this.looksLikeJsonDocument(sample)) {
             return {
                 viewType: 'omni-viewer.jsonViewer',
@@ -1075,6 +1117,14 @@ export class FileUtils {
             return {
                 viewType: 'omni-viewer.xmlViewer',
                 reason: `Used the XML extension fallback for ${ext}.`,
+                matchedBySignature: false
+            };
+        }
+
+        if (!extensionClaimed && this.looksLikeHtml(utf8Decoder().decode(buffer))) {
+            return {
+                viewType: 'omni-viewer.htmlViewer',
+                reason: 'Matched an HTML doctype or root element.',
                 matchedBySignature: false
             };
         }
@@ -1413,6 +1463,85 @@ export class FileUtils {
         return (tableCount > 0 && assignmentCount > 0) || assignmentCount >= 3;
     }
 
+    // ASCII font signatures also begin ordinary prose and table cells.
+    // Validate their headers/directories before overriding a document format.
+    private static looksLikeFont(data: Uint8Array, fileSize: number): boolean {
+      if (this.matchesBytes(data, [0, 1, 0, 0])) return true;
+      const signature = latin1Decoder().decode(data.subarray(0, 4));
+      const woff = signature === 'wOFF';
+      if (!woff && signature !== 'true' && signature !== 'OTTO') return false;
+      const headerSize = woff ? 44 : 12;
+      const stride = woff ? 20 : 16;
+      if (data.length < headerSize + stride) return false;
+      const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+      if (woff && (view.getUint32(8, false) !== fileSize || view.getUint16(14, false) !== 0
+          || ![0x00010000, 0x4f54544f, 0x74727565].includes(view.getUint32(4, false)))) return false;
+      const count = view.getUint16(woff ? 12 : 4, false);
+      const directoryEnd = headerSize + count * stride;
+      if (count === 0 || count > 4096 || directoryEnd > fileSize) return false;
+      const visibleTables = Math.min(count, Math.floor((data.length - headerSize) / stride));
+      const tags = new Set();
+      for (let index = 0; index < visibleTables; index++) {
+        const entry = headerSize + index * stride;
+        const tag = latin1Decoder().decode(data.subarray(entry, entry + 4));
+        const offset = view.getUint32(entry + (woff ? 4 : 8), false);
+        const storedLength = view.getUint32(entry + (woff ? 8 : 12), false);
+        const length = woff ? view.getUint32(entry + 12, false) : storedLength;
+        if (!/^[\x20-\x7e]{4}$/.test(tag) || tags.has(tag) || offset < directoryEnd
+            || offset + storedLength > fileSize || storedLength > length || (!storedLength && length)) return false;
+        tags.add(tag);
+      }
+      return true;
+    }
+
+    // Mirror core binary detection, including modern and legacy IPC streams.
+    private static looksLikeArrowIpc(data: Uint8Array): boolean {
+        if ([0x41, 0x52, 0x52, 0x4f, 0x57, 0x31].every((byte, index) => data[index] === byte))
+            return true;
+        if (data.byteLength < 16)
+            return false;
+        const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+        const continuation = view.getInt32(0, true) === -1;
+        const prefix = continuation ? 8 : 4;
+        const length = view.getInt32(continuation ? 4 : 0, true);
+        if (length < 16 || length > 16 * 1024 * 1024)
+            return false;
+        const available = Math.min(data.byteLength, prefix + length);
+        const table = prefix + view.getUint32(prefix, true);
+        if (table < prefix + 4 || table + 4 > available)
+            return false;
+        const vtable = table - view.getInt32(table, true);
+        if (vtable < prefix + 4 || vtable + 8 > available)
+            return false;
+        const field = view.getUint16(vtable + 6, true);
+        if (field < 4 || table + field >= available)
+            return false;
+        // Message.header_type = Schema (1). A continuation marker alone is ambiguous.
+        return view.getUint8(table + field) === 1;
+    }
+
+    // Match GeoJSON's own type and shape members; ignore nested examples.
+    private static looksLikeGeoJson(text: string): boolean {
+        const sample = text.slice(0, 64 * 1024).replace(/^\uFEFF/, '').trimStart();
+        if (!sample.startsWith('{')) return false;
+        const typed = (type: string) => this.hasMember(sample, 1, 'type', `"${type}"(?=\\s*[,}]|\\s*$)`);
+        if (typed('FeatureCollection')) return this.hasArrayMember(sample, 1, 'features');
+        if (typed('Feature')) {
+          return this.hasMember(sample, 1, 'geometry', '(?:\\{|null(?=\\s*[,}]))')
+            && this.hasMember(sample, 1, 'properties', '(?:\\{|null(?=\\s*[,}]))');
+        }
+        if (typed('GeometryCollection')) return this.hasArrayMember(sample, 1, 'geometries');
+        return ['Point', 'MultiPoint', 'LineString', 'MultiLineString', 'Polygon', 'MultiPolygon']
+          .some(typed) && this.hasArrayMember(sample, 1, 'coordinates');
+    }
+
+    // Mirror core HTML detection; fragments require an extension.
+    private static looksLikeHtml(text: string): boolean {
+        const sample = text.slice(0, 64 * 1024).replace(/^\uFEFF?\s*/, '');
+        const start = sample.replace(/^(?:<!--[\s\S]*?-->\s*)*/, '');
+        return /^<!doctype\s+html(?:\s|>|\[)/i.test(start) || /^<html(?:\s|>)/i.test(start);
+    }
+
     /**
      * Mirror of `looksLikeXml` in omni-viewer-core/registry/sniff: after a
      * BOM, whitespace, the declaration, comments, PIs and a DOCTYPE comes a
@@ -1650,6 +1779,14 @@ export function shortNameForViewType(viewType: OmniViewerViewType): string {
         return 'shapefile';
     case 'omni-viewer.xmlViewer':
         return 'xml';
+    case 'omni-viewer.fontViewer':
+        return 'font';
+    case 'omni-viewer.arrowViewer':
+        return 'arrow';
+    case 'omni-viewer.geojsonViewer':
+        return 'geojson';
+    case 'omni-viewer.htmlViewer':
+        return 'html';
     case 'omni-viewer.epubViewer':
         return 'epub';
     case 'omni-viewer.hdf5Viewer':

@@ -67,6 +67,10 @@ const ALL_SLUGS: ViewerSlug[] = [
     'yaml',
     'toml',
     'xml',
+    'html',
+    'font',
+    'arrow',
+    'geojson',
     'markdown',
     'notebook',
     'epub',
@@ -89,7 +93,7 @@ const ALL_SLUGS: ViewerSlug[] = [
 
 describe('viewerRegistry', () => {
     it('registers all viewers', () => {
-        expect(VIEWER_REGISTRATIONS).toHaveLength(46);
+        expect(VIEWER_REGISTRATIONS).toHaveLength(50);
         const slugs = VIEWER_REGISTRATIONS.map((r) => r.slug).sort();
         expect(slugs).toEqual([...ALL_SLUGS].sort());
     });
@@ -205,6 +209,14 @@ describe('viewerRegistry', () => {
             // off it by content, which filename resolution never sees.
             ['model.xml', 'xml'],
             ['pom.xml', 'xml'],
+            ['index.html', 'html'],
+            ['font.TTF', 'font'],
+            ['font.otf', 'font'],
+            ['font.woff', 'font'],
+            ['data.arrow', 'arrow'],
+            ['data.FEATHER', 'arrow'],
+            ['map.geojson', 'geojson'],
+            ['page.HTM', 'html'],
             ['schema.xsd', 'xml'],
             ['feed.rss', 'xml'],
             ['route.gpx', 'xml'],

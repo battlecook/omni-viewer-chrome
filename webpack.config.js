@@ -39,6 +39,10 @@ const VIEWERS = [
   'yaml',
   'toml',
   'xml',
+  'html',
+  'font',
+  'arrow',
+  'geojson',
   'markdown',
   'notebook',
   'epub',
@@ -203,6 +207,14 @@ module.exports = (env, argv) => {
             from: 'src/templates/epub/epubViewer.html',
             to: 'templates/epub/epubViewer.html'
           },
+          {
+            from: 'src/templates/html/htmlViewer.html',
+            to: 'templates/html/htmlViewer.html'
+          },
+          ...['font', 'arrow', 'geojson'].map((slug) => ({
+            from: `src/templates/${slug}/${slug}Viewer.html`,
+            to: `templates/${slug}/${slug}Viewer.html`
+          })),
           { from: '_locales', to: '_locales' },
           { from: 'icons', to: 'icons' },
           { from: 'vendor', to: 'vendor' },

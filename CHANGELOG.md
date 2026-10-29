@@ -2,6 +2,34 @@
 
 All notable changes to the Chrome build of Omni Viewer are documented in this file.
 
+## [Unreleased]
+
+## [0.10.0] - 2026-10-29
+
+### Added
+- Added local font previews for `.ttf`, `.otf`, and `.woff`: editable sample
+  text, size and variable axes, glyph search, metadata, and license details.
+- Added Arrow IPC / Feather V2 (`.arrow`, `.feather`) tables with LZ4/ZSTD
+  support, search/sort/pagination, schema and JSON views, copy, and JSON export.
+- Added an offline GeoJSON (`.geojson`) map with feature properties, pan/zoom,
+  and keyboard navigation. Recognize GeoJSON content ahead of generic JSON,
+  including renamed and extensionless documents.
+- Registered all three formats in file handlers, the SPA and viewer registry,
+  with standalone viewer pages and binary detection for fonts and Arrow IPC.
+- Added the `omni-viewer-core` HTML viewer for `.html` and `.htm` files, with
+  preview and source tabs. The preview keeps inline styles and embedded images
+  inside a sandboxed iframe while blocking scripts and external resources.
+- Recognize extensionless HTML documents by their doctype or HTML root in both
+  the file-opening screen and registry detector. Added a standalone HTML viewer
+  page and HTML file-handler registration.
+
+### Changed
+- Updated `omni-viewer-core` to 0.22.0.
+
+### Fixed
+- Prevent ordinary text beginning with `true`, `OTTO`, or `wOFF` from being
+  misclassified as a font by validating ASCII font headers and table directories.
+
 ## [0.9.0] - 2026-10-24
 
 ### Added

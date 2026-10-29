@@ -180,6 +180,10 @@ const formats = {
   har: ['.har'],
   yaml: ['.yaml', '.yml'],
   toml: ['.toml'],
+  html: ['.html', '.htm'],
+  font: ['.ttf', '.otf', '.woff'],
+  arrow: ['.arrow', '.feather'],
+  geojson: ['.geojson'],
   // `.xml` is shared with OpenVINO IR; `detectType` hands an IR root to that
   // viewer before the extension is consulted. `.arxml` / `.reqif` stay with
   // the automotive viewer.
@@ -227,6 +231,10 @@ const labels = {
   yaml: 'YAML',
   toml: 'TOML',
   xml: 'XML',
+  html: 'HTML',
+  font: 'Font',
+  arrow: 'Arrow / Feather',
+  geojson: 'GeoJSON',
   markdown: 'Markdown',
   notebook: 'Jupyter Notebook',
   epub: 'EPUB',
@@ -363,6 +371,13 @@ function looksLikeEpubContainer(head) {
     offset = dataStart + compressedSize;
   }
   return false;
+}
+
+// Mirror omni-viewer-core/registry/sniff: fragments require an extension.
+function looksLikeHtml(text) {
+  const sample = text.slice(0, 64 * 1024).replace(/^\uFEFF?\s*/, '');
+  const start = sample.replace(/^(?:<!--[\s\S]*?-->\s*)*/, '');
+  return /^<!doctype\s+html(?:\s|>|\[)/i.test(start) || /^<html(?:\s|>)/i.test(start);
 }
 
 // Mirror of `looksLikeXml` in omni-viewer-core/registry/sniff: after a BOM,
@@ -618,9 +633,82 @@ function byExtension(file) {
   return 'unknown';
 }
 
+// ASCII font signatures also begin ordinary prose and table cells.
+// Validate their headers/directories before overriding a document format.
+function looksLikeFont(data, fileSize) {
+  if (hasPrefix(data, [0, 1, 0, 0])) return true;
+  const signature = ascii(data, 0, 4);
+  const woff = signature === 'wOFF';
+  if (!woff && signature !== 'true' && signature !== 'OTTO') return false;
+  const headerSize = woff ? 44 : 12;
+  const stride = woff ? 20 : 16;
+  if (data.length < headerSize + stride) return false;
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  if (woff && (view.getUint32(8, false) !== fileSize || view.getUint16(14, false) !== 0
+      || ![0x00010000, 0x4f54544f, 0x74727565].includes(view.getUint32(4, false)))) return false;
+  const count = view.getUint16(woff ? 12 : 4, false);
+  const directoryEnd = headerSize + count * stride;
+  if (count === 0 || count > 4096 || directoryEnd > fileSize) return false;
+  const visibleTables = Math.min(count, Math.floor((data.length - headerSize) / stride));
+  const tags = new Set();
+  for (let index = 0; index < visibleTables; index++) {
+    const entry = headerSize + index * stride;
+    const tag = ascii(data, entry, 4);
+    const offset = view.getUint32(entry + (woff ? 4 : 8), false);
+    const storedLength = view.getUint32(entry + (woff ? 8 : 12), false);
+    const length = woff ? view.getUint32(entry + 12, false) : storedLength;
+    if (!/^[\x20-\x7e]{4}$/.test(tag) || tags.has(tag) || offset < directoryEnd
+        || offset + storedLength > fileSize || storedLength > length || (!storedLength && length)) return false;
+    tags.add(tag);
+  }
+  return true;
+}
+
+function looksLikeArrowIpc(data) {
+  if ([0x41, 0x52, 0x52, 0x4f, 0x57, 0x31].every((byte, index) => data[index] === byte))
+      return true;
+  if (data.byteLength < 16)
+      return false;
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const continuation = view.getInt32(0, true) === -1;
+  const prefix = continuation ? 8 : 4;
+  const length = view.getInt32(continuation ? 4 : 0, true);
+  if (length < 16 || length > 16 * 1024 * 1024)
+      return false;
+  const available = Math.min(data.byteLength, prefix + length);
+  const table = prefix + view.getUint32(prefix, true);
+  if (table < prefix + 4 || table + 4 > available)
+      return false;
+  const vtable = table - view.getInt32(table, true);
+  if (vtable < prefix + 4 || vtable + 8 > available)
+      return false;
+  const field = view.getUint16(vtable + 6, true);
+  if (field < 4 || table + field >= available)
+      return false;
+  // Message.header_type = Schema (1). A continuation marker alone is ambiguous.
+  return view.getUint8(table + field) === 1;
+}
+
+// Match GeoJSON's own type and shape members; ignore nested examples.
+function looksLikeGeoJson(text) {
+  const sample = text.slice(0, 64 * 1024).replace(/^\uFEFF/, '').trimStart();
+  if (!sample.startsWith('{')) return false;
+  const typed = (type) => hasMember(sample, 1, 'type', `"${type}"(?=\\s*[,}]|\\s*$)`);
+  if (typed('FeatureCollection')) return hasArrayMember(sample, 1, 'features');
+  if (typed('Feature')) {
+    return hasMember(sample, 1, 'geometry', '(?:\\{|null(?=\\s*[,}]))')
+      && hasMember(sample, 1, 'properties', '(?:\\{|null(?=\\s*[,}]))');
+  }
+  if (typed('GeometryCollection')) return hasArrayMember(sample, 1, 'geometries');
+  return ['Point', 'MultiPoint', 'LineString', 'MultiLineString', 'Polygon', 'MultiPolygon']
+    .some(typed) && hasArrayMember(sample, 1, 'coordinates');
+}
+
 async function detectType(file) {
   const head = await readHead(file);
   const ext = extOf(file.name);
+  if (looksLikeArrowIpc(head)) return 'arrow';
+  if (looksLikeFont(head, file.size)) return 'font';
   if (hasPrefix(head, [0x25, 0x50, 0x44, 0x46, 0x2d])) return 'pdf';
   if (hasPrefix(head, [0x38, 0x42, 0x50, 0x53])) return 'psd';
   if (hasPrefix(head, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return 'image';
@@ -682,8 +770,16 @@ async function detectType(file) {
     // wrapping folder does not disqualify it (the core resolves members under
     // the single prefix an archive may carry).
     if (looksLikePt2Archive(rootNames)) return 'pt2';
+    // A mislabeled HTML file must keep a recognized ZIP local-file signature.
+    if (formats.html.includes(ext) && hasPrefix(head, [0x50, 0x4b, 0x03, 0x04])) return 'archive';
     return formats.archive.includes(ext) ? 'archive' : byExtension(file);
   }
+  // HTML fragments may contain plain JSON or diagram examples. Preserve the
+  // declared format after binary signatures, before any text content sniffs.
+  if (formats.html.includes(ext)) return 'html';
+  if (formats.geojson.includes(ext)) return 'geojson';
+  if (formats.font.includes(ext)) return 'font';
+  if (formats.arrow.includes(ext)) return 'arrow';
   // One UTF-8 decode of the head, shared by the structured-text sniffs below.
   // It must not be the latin1 `ascii()` view: a UTF-8 BOM survives that as
   // three mojibake characters, which `trimStart()` keeps, so a BOM-prefixed
@@ -710,9 +806,11 @@ async function detectType(file) {
   // `head` stops at 64 KB, so a larger file reaches the sniff truncated.
   if (looksLikeNotebook(headText, file.size > head.length)) return 'notebook';
   // Whatever no sniff claimed is resolved by extension. Only a file no
-  // extension claims is offered to the XML sniff, as in the core registry: a
+  // extension claims is offered to the HTML/XML sniffs, as in the core registry: a
   // trusted extension — `.arxml`, `.reqif`, `.svg` — always wins over content.
   const extensionType = byExtension(file);
+  if ((extensionType === 'unknown' || extensionType === 'json') && looksLikeGeoJson(headText)) return 'geojson';
+  if (extensionType === 'unknown' && looksLikeHtml(headText)) return 'html';
   if (extensionType === 'unknown' && looksLikeXml(headText)) return 'xml';
   // An extensionless file nothing claimed ends at the raw-data fallback.
   // FileUtils has a generic
@@ -994,6 +1092,10 @@ async function renderByType() {
   if (type === 'yaml') return renderYaml();
   if (type === 'toml') return renderToml();
   if (type === 'xml') return renderXml();
+  if (type === 'html') return renderHtml();
+  if (type === 'font') return renderCoreFormat('font', 'mountFontViewer');
+  if (type === 'arrow') return renderCoreFormat('arrow', 'mountArrowViewer');
+  if (type === 'geojson') return renderCoreFormat('geojson', 'mountGeoJsonViewer');
   if (type === 'markdown') return renderMarkdown();
   if (type === 'notebook') return renderNotebook();
   if (type === 'epub') return renderEpub();
@@ -1197,6 +1299,28 @@ async function renderXml() {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     body.innerHTML = `<div class="unsupported"><p>Couldn't load XML viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
+
+async function renderCoreFormat(slug, mountFnName) {
+  const body = panel(state.file.name);
+  body.innerHTML = `<div class="unsupported"><p>Loading ${escapeHtml(labels[slug])} viewer…</p></div>`;
+  try {
+    await mountAdvancedViewer(slug, mountFnName, body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load ${escapeHtml(labels[slug])} viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
+  }
+}
+
+async function renderHtml() {
+  const body = panel(state.file.name);
+  body.innerHTML = '<div class="unsupported"><p>Loading HTML viewer…</p></div>';
+  try {
+    await mountAdvancedViewer('html', 'mountHtmlViewer', body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    body.innerHTML = `<div class="unsupported"><p>Couldn't load HTML viewer.</p><pre>${escapeHtml(message)}</pre></div>`;
   }
 }
 
