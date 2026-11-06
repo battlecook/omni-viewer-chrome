@@ -1,0 +1,50 @@
+name: Check Chrome Web Store authentication
+
+# Read-only: verifies GitHub OIDC and Web Store access without uploading a ZIP.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Authenticate to Chrome Web Store
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.CWS_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.CWS_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/chromewebstore
+          create_credentials_file: false
+          export_environment_variables: false
+
+      - name: Verify access to Omni Viewer
+        env:
+          CWS_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+          CWS_EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs';
+          const { CWS_PUBLISHER_ID: publisher, CWS_EXTENSION_ID: item, CWS_ACCESS_TOKEN: token } = process.env;
+          if (!publisher || !item || !token) throw new Error('Missing Chrome Web Store configuration.');
+          const response = await fetch(`https://chromewebstore.googleapis.com/v2/publishers/${publisher}/items/${item}:fetchStatus`, {
+            headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(60_000)
+          });
+          const status = await response.json();
+          if (!response.ok || status.error) {
+            throw new Error(`Chrome Web Store access failed (HTTP ${response.status}). Check the service account association in Publisher Settings.`);
+          }
+          if (status.itemId !== item) throw new Error('API returned an unexpected extension.');
+          const published = status.publishedItemRevisionStatus;
+          const submitted = status.submittedItemRevisionStatus;
+          const summary = `GitHub OIDC and Chrome Web Store access verified.\nPublished: ${published?.state ?? 'none'} (${published?.distributionChannels?.map(channel => channel.crxVersion).join(', ') ?? 'none'}).\nSubmitted: ${submitted?.state ?? 'none'}.\nNo upload or publish request was sent.\n`;
+          console.log(summary);
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+          NODE

@@ -19,11 +19,14 @@ the Web Store job; the GitHub Release and its ZIP remain available.
 Authentication uses GitHub OIDC and a Google Cloud service account through
 Workload Identity Federation. No JSON private key or refresh token is stored in
 GitHub. Use a Google Cloud project you control and an account allowed to configure
-IAM. Replace `YOUR_PROJECT_ID` below. The remaining commands target this repository.
+IAM. This repository uses `omni-viewer-web`; the commands below document its setup.
+Existing resources do not need to be recreated.
 
 ```sh
-export CWS_PROJECT_ID='YOUR_PROJECT_ID'
+export CWS_PROJECT_ID='omni-viewer-web'
 export CWS_REPOSITORY='battlecook/omni-viewer-chrome'
+export CWS_REPOSITORY_ID='1229869113'
+export CWS_REPOSITORY_OWNER_ID='9781396'
 export CWS_SERVICE_ACCOUNT="chrome-webstore-publisher@${CWS_PROJECT_ID}.iam.gserviceaccount.com"
 
 gcloud services enable chromewebstore.googleapis.com iam.googleapis.com iamcredentials.googleapis.com sts.googleapis.com \
@@ -39,15 +42,15 @@ gcloud iam workload-identity-pools providers create-oidc github \
   --project="$CWS_PROJECT_ID" --location=global \
   --workload-identity-pool=chrome-webstore-github \
   --issuer-uri=https://token.actions.githubusercontent.com \
-  --attribute-mapping='google.subject=assertion.sub,attribute.repository=assertion.repository' \
-  --attribute-condition="assertion.repository == '${CWS_REPOSITORY}' && (assertion.ref.startsWith('refs/tags/v') || assertion.ref == 'refs/heads/main')"
+  --attribute-mapping='google.subject=assertion.sub,attribute.repository_id=assertion.repository_id' \
+  --attribute-condition="assertion.repository_id == '${CWS_REPOSITORY_ID}' && assertion.repository_owner_id == '${CWS_REPOSITORY_OWNER_ID}' && (assertion.ref.startsWith('refs/tags/v') || assertion.ref == 'refs/heads/main')"
 
 export CWS_POOL_NAME="$(gcloud iam workload-identity-pools describe chrome-webstore-github \
   --project="$CWS_PROJECT_ID" --location=global --format='value(name)')"
 
 gcloud iam service-accounts add-iam-policy-binding "$CWS_SERVICE_ACCOUNT" \
   --project="$CWS_PROJECT_ID" --role=roles/iam.workloadIdentityUser \
-  --member="principalSet://iam.googleapis.com/${CWS_POOL_NAME}/attribute.repository/${CWS_REPOSITORY}"
+  --member="principalSet://iam.googleapis.com/${CWS_POOL_NAME}/attribute.repository_id/${CWS_REPOSITORY_ID}"
 
 export CWS_PROVIDER_NAME="$(gcloud iam workload-identity-pools providers describe github \
   --project="$CWS_PROJECT_ID" --location=global \
@@ -111,6 +114,16 @@ Publisher tests run without credentials or network access:
 ```sh
 node --test scripts/__tests__/publish-webstore.test.mjs
 ```
+
+After linking the service account in the dashboard, verify the actual GitHub OIDC
+and Web Store connection without uploading or submitting a release:
+
+```sh
+gh workflow run webstore-auth-check.yml --ref main
+```
+
+The **Check Chrome Web Store authentication** workflow reports the current store
+status and fails if either authentication or item access is unavailable.
 
 References: [Chrome Web Store API](https://developer.chrome.com/docs/webstore/using-api),
 [service accounts](https://developer.chrome.com/docs/webstore/service-accounts),
