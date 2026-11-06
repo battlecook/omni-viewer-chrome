@@ -1,3 +1,6 @@
+import { TextDecoder as NodeTextDecoder, TextEncoder as NodeTextEncoder } from 'node:util';
+Object.assign(globalThis, { TextDecoder: NodeTextDecoder, TextEncoder: NodeTextEncoder });
+
 /**
  * Jest test harness setup for the Chrome extension build.
  *
@@ -32,7 +35,9 @@ const makeEvent = <T extends AnyFn = AnyFn>(): ChromeEvent<T> => ({
 const chromeStub = {
     runtime: {
         id: 'omni-viewer-test',
-        getURL: jest.fn((path: string) => `chrome-extension://omni-viewer-test/${String(path).replace(/^\/+/, '')}`),
+        getURL: jest.fn((path: string) => path === 'templates/detection/detectionViewer.js'
+            ? require.resolve('../utils/documentDetection.js')
+            : `chrome-extension://omni-viewer-test/${String(path).replace(/^\/+/, '')}`),
         sendMessage: jest.fn((..._args: unknown[]) => undefined),
         connect: jest.fn(() => ({
             name: 'test-port',

@@ -56,6 +56,12 @@ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+## 3D mesh viewer (webpack bundles)
+
+Three.js is licensed under MIT, Copyright © 2010-2025 three.js authors.
+Source: https://github.com/mrdoob/three.js.
+The full notice is included in `THIRD-PARTY-LICENSES/three-MIT.txt`.
+
 ## Audio engine (`assets/audio-engine/`)
 
 The WebAssembly audio decode/analysis engine is provided by `omni-viewer-core`

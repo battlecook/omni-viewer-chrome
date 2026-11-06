@@ -577,8 +577,8 @@ describe('FileUtils.detectViewerType signatures', () => {
         }
     });
 
-    it('falls back to JSONL content sniffing for text files', async () => {
-        const file = makeFile('{"id":1}\n{"id":2}\n', 'records.txt');
+    it('falls back to JSONL content sniffing for an unclaimed filename', async () => {
+        const file = makeFile('{"id":1}\n{"id":2}\n', 'records.bin');
         const result = await FileUtils.detectViewerType(file);
         expect(result.viewType).toBe('omni-viewer.jsonlViewer');
         expect(result.matchedBySignature).toBe(false);
@@ -837,8 +837,8 @@ describe('FileUtils.detectViewerType signatures', () => {
         expect(result.reason).toContain('Mermaid extension');
     });
 
-    it('detects Mermaid diagram syntax in text files', async () => {
-        const file = makeFile('sequenceDiagram\n  Alice->>Bob: Hi\n', 'diagram.txt');
+    it('detects Mermaid diagram syntax with an unclaimed filename', async () => {
+        const file = makeFile('sequenceDiagram\n  Alice->>Bob: Hi\n', 'diagram.bin');
         const result = await FileUtils.detectViewerType(file);
         expect(result.viewType).toBe('omni-viewer.mermaidViewer');
         expect(result.reason).toContain('Mermaid diagram syntax');
@@ -851,8 +851,8 @@ describe('FileUtils.detectViewerType signatures', () => {
         expect(result.reason).toContain('PlantUML extension');
     });
 
-    it('detects PlantUML diagram syntax in text files', async () => {
-        const file = makeFile('@startuml\nclass User\n@enduml', 'diagram.txt');
+    it('detects PlantUML diagram syntax with an unclaimed filename', async () => {
+        const file = makeFile('@startuml\nclass User\n@enduml', 'diagram.bin');
         const result = await FileUtils.detectViewerType(file);
         expect(result.viewType).toBe('omni-viewer.plantumlViewer');
         expect(result.reason).toContain('PlantUML diagram syntax');

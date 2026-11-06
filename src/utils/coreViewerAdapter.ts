@@ -1,10 +1,15 @@
-import type { ClipboardService, FileSaveService, HostContext } from 'omni-viewer-core/host';
+import type { ClipboardService, DocumentAssetsService, FileSaveService, HostContext } from 'omni-viewer-core/host';
 import { resolveLocalizedCatalogMessage } from 'omni-viewer-core/i18n';
 import type { MountOptions, ViewerHandle, ViewerInput } from 'omni-viewer-core/viewers/types';
 import { getRegistrationBySlug, type ViewerSlug } from '../viewerRegistry';
 import { createChromeFileSaveService } from './chromeFileSaveService';
 
-type ChromeCoreContext = HostContext & { clipboard?: ClipboardService; save?: FileSaveService };
+type ChromeCoreContext = HostContext & {
+    clipboard?: ClipboardService;
+    save?: FileSaveService;
+    documentAssets?: DocumentAssetsService;
+};
+export interface ChromeCoreMountOptions { companions?: readonly File[] }
 type CoreMount = (
     input: ViewerInput, container: HTMLElement, context: ChromeCoreContext, options: MountOptions
 ) => Promise<ViewerHandle>;
@@ -31,15 +36,19 @@ function createContext(slug: string): ChromeCoreContext {
 }
 
 /** Adapt a core mount to the SPA, registry provider, and standalone page. */
-export function createChromeCoreViewerMount(slug: ViewerSlug, coreMount: CoreMount) {
-    async function mount(file: File, container: HTMLElement, _fileHandle?: unknown, signal?: AbortSignal): Promise<ViewerHandle> {
+export function createChromeCoreViewerMount(
+    slug: ViewerSlug,
+    coreMount: CoreMount,
+    services?: (file: File, options: ChromeCoreMountOptions) => Partial<ChromeCoreContext>
+) {
+    async function mount(file: File, container: HTMLElement, _fileHandle?: unknown, signal?: AbortSignal, options: ChromeCoreMountOptions = {}): Promise<ViewerHandle> {
         container.style.height = 'min(78vh, 900px)';
         container.style.minHeight = '560px';
         return coreMount({
             fileName: file.name,
             data: new Uint8Array(await file.arrayBuffer()),
             lastModified: file.lastModified
-        }, container, createContext(slug), { signal });
+        }, container, { ...createContext(slug), ...services?.(file, options) }, { signal });
     }
 
     const registration = getRegistrationBySlug(slug);

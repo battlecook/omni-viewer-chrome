@@ -1,6 +1,6 @@
 {
   "name": "omni-viewer-chrome",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "private": true,
   "description": "Chrome Web Store build of Omni Viewer.",
   "scripts": {
@@ -42,11 +42,12 @@
     "lz4js": "^0.2.0",
     "marked": "^16.4.2",
     "mermaid": "^11.15.0",
-    "omni-viewer-core": "0.22.0",
+    "omni-viewer-core": "0.23.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.10.38",
     "proj4": "^2.22.0",
     "puml-canvas-js": "^0.10.0",
+    "three": "^0.180.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "yaml": "2.8.3"
   }

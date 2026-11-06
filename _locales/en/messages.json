@@ -722,5 +722,17 @@
   "tomlLoadFailed": {
     "message": "Failed to load TOML: $1",
     "description": "TOML viewer load-failure. $1 = error."
+  },
+  "shareUploadTitle": {
+    "message": "Share file",
+    "description": "Title of the confirmation dialog before uploading a shared file."
+  },
+  "shareUploadNotice": {
+    "message": "The file will be encrypted and uploaded to the server. The share link expires after 5 minutes.",
+    "description": "Notice shown before uploading a shared file."
+  },
+  "shareUploadConfirm": {
+    "message": "Upload and create link",
+    "description": "Button that confirms the upload and creates a share link."
   }
 }

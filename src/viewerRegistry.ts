@@ -46,6 +46,13 @@ export type OmniViewerViewType =
     | 'omni-viewer.fontViewer'
     | 'omni-viewer.arrowViewer'
     | 'omni-viewer.geojsonViewer'
+    | 'omni-viewer.textViewer'
+    | 'omni-viewer.dicomViewer'
+    | 'omni-viewer.junitViewer'
+    | 'omni-viewer.openapiViewer'
+    | 'omni-viewer.emlViewer'
+    | 'omni-viewer.mcapViewer'
+    | 'omni-viewer.meshViewer'
     | 'omni-viewer.markdownViewer'
     | 'omni-viewer.notebookViewer'
     | 'omni-viewer.epubViewer'
@@ -102,6 +109,13 @@ export type ViewerSlug =
     | 'font'
     | 'arrow'
     | 'geojson'
+    | 'text'
+    | 'dicom'
+    | 'junit'
+    | 'openapi'
+    | 'eml'
+    | 'mcap'
+    | 'mesh'
     | 'markdown'
     | 'notebook'
     | 'epub'
@@ -168,6 +182,62 @@ function createPlaceholderProvider(viewType: OmniViewerViewType): ChromeViewerPr
 }
 
 export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
+    {
+        viewType: 'omni-viewer.textViewer',
+        slug: 'text',
+        command: 'omni-viewer.openTextViewer',
+        missingMessage: 'No text file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.textViewer')
+    },
+    {
+        viewType: 'omni-viewer.dicomViewer',
+        slug: 'dicom',
+        command: 'omni-viewer.openDicomViewer',
+        missingMessage: 'No DICOM file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.dicomViewer')
+    },
+    {
+        viewType: 'omni-viewer.junitViewer',
+        slug: 'junit',
+        command: 'omni-viewer.openJUnitViewer',
+        missingMessage: 'No JUnit report file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.junitViewer')
+    },
+    {
+        viewType: 'omni-viewer.openapiViewer',
+        slug: 'openapi',
+        command: 'omni-viewer.openOpenApiViewer',
+        missingMessage: 'No OpenAPI document file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.openapiViewer')
+    },
+    {
+        viewType: 'omni-viewer.emlViewer',
+        slug: 'eml',
+        command: 'omni-viewer.openEmlViewer',
+        missingMessage: 'No EML email file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.emlViewer')
+    },
+    {
+        viewType: 'omni-viewer.mcapViewer',
+        slug: 'mcap',
+        command: 'omni-viewer.openMcapViewer',
+        missingMessage: 'No MCAP recording file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.mcapViewer')
+    },
+    {
+        viewType: 'omni-viewer.meshViewer',
+        slug: 'mesh',
+        command: 'omni-viewer.openMeshViewer',
+        missingMessage: 'No 3D mesh file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.meshViewer')
+    },
     {
         viewType: 'omni-viewer.geojsonViewer',
         slug: 'geojson',
@@ -638,6 +708,15 @@ const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
     '.arrow': 'arrow',
     '.feather': 'arrow',
     '.geojson': 'geojson',
+    '.txt': 'text',
+    '.dcm': 'dicom',
+    '.dicom': 'dicom',
+    '.eml': 'eml',
+    '.mcap': 'mcap',
+    '.glb': 'mesh',
+    '.gltf': 'mesh',
+    '.stl': 'mesh',
+    '.obj': 'mesh',
     '.html': 'html',
     '.htm': 'html',
     '.md': 'markdown',

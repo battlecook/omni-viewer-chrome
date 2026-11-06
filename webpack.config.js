@@ -43,6 +43,13 @@ const VIEWERS = [
   'font',
   'arrow',
   'geojson',
+  'text',
+  'dicom',
+  'junit',
+  'openapi',
+  'eml',
+  'mcap',
+  'mesh',
   'markdown',
   'notebook',
   'epub',
@@ -70,6 +77,7 @@ const entries = VIEWERS.reduce((acc, viewer) => {
     `./src/templates/${viewer}/js/${viewer}Viewer.ts`;
   return acc;
 }, {});
+entries['templates/detection/detectionViewer'] = './src/utils/documentDetection.js';
 entries['share/shareCommand'] = './src/shareCommand.ts';
 
 module.exports = (env, argv) => {
@@ -211,7 +219,7 @@ module.exports = (env, argv) => {
             from: 'src/templates/html/htmlViewer.html',
             to: 'templates/html/htmlViewer.html'
           },
-          ...['font', 'arrow', 'geojson'].map((slug) => ({
+          ...['font', 'arrow', 'geojson', 'text', 'dicom', 'junit', 'openapi', 'eml', 'mcap', 'mesh'].map((slug) => ({
             from: `src/templates/${slug}/${slug}Viewer.html`,
             to: `templates/${slug}/${slug}Viewer.html`
           })),

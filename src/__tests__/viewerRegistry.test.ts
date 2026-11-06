@@ -71,6 +71,13 @@ const ALL_SLUGS: ViewerSlug[] = [
     'font',
     'arrow',
     'geojson',
+    'text',
+    'dicom',
+    'junit',
+    'openapi',
+    'eml',
+    'mcap',
+    'mesh',
     'markdown',
     'notebook',
     'epub',
@@ -93,7 +100,7 @@ const ALL_SLUGS: ViewerSlug[] = [
 
 describe('viewerRegistry', () => {
     it('registers all viewers', () => {
-        expect(VIEWER_REGISTRATIONS).toHaveLength(50);
+        expect(VIEWER_REGISTRATIONS).toHaveLength(57);
         const slugs = VIEWER_REGISTRATIONS.map((r) => r.slug).sort();
         expect(slugs).toEqual([...ALL_SLUGS].sort());
     });
@@ -216,6 +223,15 @@ describe('viewerRegistry', () => {
             ['data.arrow', 'arrow'],
             ['data.FEATHER', 'arrow'],
             ['map.geojson', 'geojson'],
+            ['readme.TXT', 'text'],
+            ['scan.dcm', 'dicom'],
+            ['scan.DICOM', 'dicom'],
+            ['mail.EML', 'eml'],
+            ['capture.mcap', 'mcap'],
+            ['mesh.glb', 'mesh'],
+            ['mesh.gltf', 'mesh'],
+            ['mesh.stl', 'mesh'],
+            ['mesh.obj', 'mesh'],
             ['page.HTM', 'html'],
             ['schema.xsd', 'xml'],
             ['feed.rss', 'xml'],

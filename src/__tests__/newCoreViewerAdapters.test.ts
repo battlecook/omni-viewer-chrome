@@ -1,3 +1,10 @@
+jest.mock('omni-viewer-core/viewers/text', () => ({ mountTextViewer: jest.fn() }));
+jest.mock('omni-viewer-core/viewers/dicom', () => ({ mountDicomViewer: jest.fn() }));
+jest.mock('omni-viewer-core/viewers/junit', () => ({ mountJUnitViewer: jest.fn() }));
+jest.mock('omni-viewer-core/viewers/openapi/self-loading', () => ({ mountSelfLoadingOpenApiViewer: jest.fn() }));
+jest.mock('omni-viewer-core/viewers/eml', () => ({ mountEmlViewer: jest.fn() }));
+jest.mock('omni-viewer-core/viewers/mcap/self-loading', () => ({ mountSelfLoadingMcapViewer: jest.fn() }));
+jest.mock('omni-viewer-core/viewers/mesh/self-loading', () => ({ mountSelfLoadingMeshViewer: jest.fn() }));
 jest.mock('omni-viewer-core/viewers/font', () => ({ mountFontViewer: jest.fn() }));
 jest.mock('omni-viewer-core/viewers/arrow/self-loading', () => ({ mountSelfLoadingArrowViewer: jest.fn() }));
 jest.mock('omni-viewer-core/viewers/geojson', () => ({ mountGeoJsonViewer: jest.fn() }));
@@ -11,9 +18,23 @@ jest.mock('../utils/chromeFileSaveService', () => ({
 import { mountFontViewer } from '../templates/font/js/fontViewer';
 import { mountArrowViewer } from '../templates/arrow/js/arrowViewer';
 import { mountGeoJsonViewer } from '../templates/geojson/js/geojsonViewer';
+import { mountTextViewer } from '../templates/text/js/textViewer';
+import { mountDicomViewer } from '../templates/dicom/js/dicomViewer';
+import { mountJUnitViewer } from '../templates/junit/js/junitViewer';
+import { mountOpenApiViewer } from '../templates/openapi/js/openapiViewer';
+import { mountEmlViewer } from '../templates/eml/js/emlViewer';
+import { mountMcapViewer } from '../templates/mcap/js/mcapViewer';
+import { mountMeshViewer } from '../templates/mesh/js/meshViewer';
 import { getRegistrationBySlug, type ViewerSlug } from '../viewerRegistry';
 
 const cases = [
+    ['text', mountTextViewer, jest.requireMock('omni-viewer-core/viewers/text').mountTextViewer],
+    ['dicom', mountDicomViewer, jest.requireMock('omni-viewer-core/viewers/dicom').mountDicomViewer],
+    ['junit', mountJUnitViewer, jest.requireMock('omni-viewer-core/viewers/junit').mountJUnitViewer],
+    ['openapi', mountOpenApiViewer, jest.requireMock('omni-viewer-core/viewers/openapi/self-loading').mountSelfLoadingOpenApiViewer],
+    ['eml', mountEmlViewer, jest.requireMock('omni-viewer-core/viewers/eml').mountEmlViewer],
+    ['mcap', mountMcapViewer, jest.requireMock('omni-viewer-core/viewers/mcap/self-loading').mountSelfLoadingMcapViewer],
+    ['mesh', mountMeshViewer, jest.requireMock('omni-viewer-core/viewers/mesh/self-loading').mountSelfLoadingMeshViewer],
     ['font', mountFontViewer, jest.requireMock('omni-viewer-core/viewers/font').mountFontViewer],
     ['arrow', mountArrowViewer, jest.requireMock('omni-viewer-core/viewers/arrow/self-loading').mountSelfLoadingArrowViewer],
     ['geojson', mountGeoJsonViewer, jest.requireMock('omni-viewer-core/viewers/geojson').mountGeoJsonViewer]

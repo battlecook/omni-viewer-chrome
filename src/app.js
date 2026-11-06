@@ -25,6 +25,7 @@ const shareToast = $('#shareToast');
 const shareToastLink = $('#shareToastLink');
 const languageSelect = $('#languageSelect');
 let shareToastTimer;
+let shareInProgress = false;
 
 const LOCALE_NATIVE_NAMES = {
   am: 'አማርኛ', ar: 'العربية', as: 'অসমীয়া', az: 'azərbaycan',
@@ -184,6 +185,13 @@ const formats = {
   font: ['.ttf', '.otf', '.woff'],
   arrow: ['.arrow', '.feather'],
   geojson: ['.geojson'],
+  text: ['.txt'],
+  dicom: ['.dcm', '.dicom'],
+  junit: [],
+  openapi: [],
+  eml: ['.eml'],
+  mcap: ['.mcap'],
+  mesh: ['.glb', '.gltf', '.stl', '.obj'],
   // `.xml` is shared with OpenVINO IR; `detectType` hands an IR root to that
   // viewer before the extension is consulted. `.arxml` / `.reqif` stay with
   // the automotive viewer.
@@ -235,6 +243,13 @@ const labels = {
   font: 'Font',
   arrow: 'Arrow / Feather',
   geojson: 'GeoJSON',
+  text: 'Text',
+  dicom: 'DICOM',
+  junit: 'JUnit',
+  openapi: 'OpenAPI / Swagger',
+  eml: 'EML',
+  mcap: 'MCAP',
+  mesh: '3D Mesh',
   markdown: 'Markdown',
   notebook: 'Jupyter Notebook',
   epub: 'EPUB',
@@ -617,6 +632,8 @@ function companionSidecarFor(file, companions, kind) {
 // `.prj` ride along, whichever order the picker or the drop delivered them.
 function pickPrimaryFile(files) {
   if (files.length > 1) {
+    const mesh = files.find((file) => /\.(?:gltf|glb|stl|obj)$/i.test(file.name));
+    if (mesh) return mesh;
     const xml = files.find((file) => /\.xml$/i.test(file.name));
     if (xml && companionBinFor(xml, files)) return xml;
     const shp = files.find((file) => /\.shp$/i.test(file.name));
@@ -704,9 +721,29 @@ function looksLikeGeoJson(text) {
     .some(typed) && hasArrayMember(sample, 1, 'coordinates');
 }
 
+// glTF is also a word in prose. Require the GLB 2.0 container header
+// and a bounded, aligned first JSON chunk before overriding a filename.
+function looksLikeGlb(data, fileSize) {
+  if (data.length < 20 || ascii(data, 0, 4) !== 'glTF') return false;
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const chunkLength = view.getUint32(12, true);
+  return view.getUint32(4, true) === 2 && view.getUint32(8, true) === fileSize
+    && view.getUint32(16, true) === 0x4e4f534a && chunkLength >= 4
+    && chunkLength % 4 === 0 && 20 + chunkLength <= fileSize;
+}
+
+async function refineDocumentType(...args) {
+  const detection = await loadAdvancedViewerBundle('detection');
+  return detection.refineDocumentType(...args);
+}
+
 async function detectType(file) {
   const head = await readHead(file);
   const ext = extOf(file.name);
+  const extensionType = byExtension(file);
+  if ((extensionType === 'unknown' || extensionType === 'dicom') && ascii(head, 128, 4) === 'DICM') return 'dicom';
+  if (hasPrefix(head, [0x89, 0x4d, 0x43, 0x41, 0x50, 0x30, 0x0d, 0x0a])) return 'mcap';
+  if (looksLikeGlb(head, file.size)) return 'mesh';
   if (looksLikeArrowIpc(head)) return 'arrow';
   if (looksLikeFont(head, file.size)) return 'font';
   if (hasPrefix(head, [0x25, 0x50, 0x44, 0x46, 0x2d])) return 'pdf';
@@ -780,6 +817,9 @@ async function detectType(file) {
   if (formats.geojson.includes(ext)) return 'geojson';
   if (formats.font.includes(ext)) return 'font';
   if (formats.arrow.includes(ext)) return 'arrow';
+  if (['text', 'dicom', 'eml', 'mcap', 'mesh'].includes(extensionType)) return extensionType;
+  const specificType = await refineDocumentType(head, ext, extensionType !== 'unknown', file);
+  if (specificType) return specificType;
   // One UTF-8 decode of the head, shared by the structured-text sniffs below.
   // It must not be the latin1 `ascii()` view: a UTF-8 BOM survives that as
   // three mojibake characters, which `trimStart()` keeps, so a BOM-prefixed
@@ -808,7 +848,6 @@ async function detectType(file) {
   // Whatever no sniff claimed is resolved by extension. Only a file no
   // extension claims is offered to the HTML/XML sniffs, as in the core registry: a
   // trusted extension — `.arxml`, `.reqif`, `.svg` — always wins over content.
-  const extensionType = byExtension(file);
   if ((extensionType === 'unknown' || extensionType === 'json') && looksLikeGeoJson(headText)) return 'geojson';
   if (extensionType === 'unknown' && looksLikeHtml(headText)) return 'html';
   if (extensionType === 'unknown' && looksLikeXml(headText)) return 'xml';
@@ -1032,17 +1071,49 @@ async function openFile(file, handle = null, generation = claimOpenFileIntent(),
   }
 }
 
+function confirmShareUpload(file) {
+  const dialog = document.createElement('dialog');
+  dialog.className = 'share-dialog';
+  dialog.setAttribute('aria-labelledby', 'shareUploadTitle');
+  dialog.setAttribute('aria-describedby', 'shareUploadNotice shareUploadFilename');
+  dialog.innerHTML = `
+    <form method="dialog">
+      <h2 id="shareUploadTitle">${escapeHtml(i18n('shareUploadTitle') || 'Share file')}</h2>
+      <p id="shareUploadFilename" class="share-dialog-filename"></p>
+      <p id="shareUploadNotice">${escapeHtml(i18n('shareUploadNotice') || 'The file will be encrypted and uploaded to the server. The share link expires after 5 minutes.')}</p>
+      <div class="share-dialog-actions">
+        <button type="submit" value="cancel" autofocus>${escapeHtml(i18n('commonCancel') || 'Cancel')}</button>
+        <button type="submit" value="upload" class="primary">${escapeHtml(i18n('shareUploadConfirm') || 'Upload and create link')}</button>
+      </div>
+    </form>
+  `;
+  dialog.querySelector('#shareUploadFilename').textContent = file.name;
+  document.body.appendChild(dialog);
+  return new Promise((resolve) => {
+    dialog.addEventListener('close', () => {
+      const confirmed = dialog.returnValue === 'upload';
+      dialog.remove();
+      resolve(confirmed);
+    }, { once: true });
+    dialog.showModal();
+  });
+}
+
 async function shareCurrentFile() {
+  if (shareInProgress) return;
   if (!state.file) {
     setStatus('No file selected to share.', true);
     return;
   }
+  const file = state.file;
+  shareInProgress = true;
   const buttons = [shareCurrentFileButton, $('#shareViewerFile')].filter(Boolean);
-  buttons.forEach((button) => { button.disabled = true; });
-  setStatus(`Uploading ${state.file.name}...`);
   try {
+    if (!await confirmShareUpload(file) || state.file !== file) return;
+    buttons.forEach((button) => { button.disabled = true; });
+    setStatus(`Uploading ${file.name}...`);
     const { shareFile } = await loadShareModule();
-    const result = await shareFile(state.file);
+    const result = await shareFile(file);
     let copied = false;
     try {
       await navigator.clipboard.writeText(result.url);
@@ -1056,6 +1127,7 @@ async function shareCurrentFile() {
     console.error(error);
     setStatus(`Share failed: ${error instanceof Error ? error.message : String(error)}`, true);
   } finally {
+    shareInProgress = false;
     buttons.forEach((button) => { button.disabled = false; });
   }
 }
@@ -1096,6 +1168,14 @@ async function renderByType() {
   if (type === 'font') return renderCoreFormat('font', 'mountFontViewer');
   if (type === 'arrow') return renderCoreFormat('arrow', 'mountArrowViewer');
   if (type === 'geojson') return renderCoreFormat('geojson', 'mountGeoJsonViewer');
+  if (type === 'text') return renderCoreFormat('text', 'mountTextViewer');
+  if (type === 'dicom') return renderCoreFormat('dicom', 'mountDicomViewer');
+  if (type === 'junit') return renderCoreFormat('junit', 'mountJUnitViewer');
+  if (type === 'openapi') return renderCoreFormat('openapi', 'mountOpenApiViewer');
+  if (type === 'eml') return renderCoreFormat('eml', 'mountEmlViewer');
+  if (type === 'mcap') return renderCoreFormat('mcap', 'mountMcapViewer');
+  if (type === 'mesh') return renderCoreFormat('mesh', 'mountMeshViewer');
+
   if (type === 'markdown') return renderMarkdown();
   if (type === 'notebook') return renderNotebook();
   if (type === 'epub') return renderEpub();
@@ -1306,7 +1386,7 @@ async function renderCoreFormat(slug, mountFnName) {
   const body = panel(state.file.name);
   body.innerHTML = `<div class="unsupported"><p>Loading ${escapeHtml(labels[slug])} viewer…</p></div>`;
   try {
-    await mountAdvancedViewer(slug, mountFnName, body);
+    await mountAdvancedViewer(slug, mountFnName, body, slug === 'mesh' ? { companions: state.companions } : undefined);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     body.innerHTML = `<div class="unsupported"><p>Couldn't load ${escapeHtml(labels[slug])} viewer.</p><pre>${escapeHtml(message)}</pre></div>`;

@@ -18,6 +18,7 @@ import {
     getAudioMetadata as readAudioMetadata,
     AudioMetadata
 } from './fileUtils/media';
+import { refineDocumentType } from './documentDetection';
 import { detectDelimiter } from './fileUtils/tabular';
 import { resolveRegistrationByFileName } from '../viewerRegistry';
 
@@ -37,6 +38,13 @@ export type OmniViewerViewType =
     | 'omni-viewer.fontViewer'
     | 'omni-viewer.arrowViewer'
     | 'omni-viewer.geojsonViewer'
+    | 'omni-viewer.textViewer'
+    | 'omni-viewer.dicomViewer'
+    | 'omni-viewer.junitViewer'
+    | 'omni-viewer.openapiViewer'
+    | 'omni-viewer.emlViewer'
+    | 'omni-viewer.mcapViewer'
+    | 'omni-viewer.meshViewer'
     | 'omni-viewer.markdownViewer'
     | 'omni-viewer.notebookViewer'
     | 'omni-viewer.epubViewer'
@@ -200,7 +208,12 @@ export class FileUtils {
         const ext = extOf(file.name);
         const formatSlug = ext === '.geojson' ? 'geojson'
             : ['.ttf', '.otf', '.woff'].includes(ext) ? 'font'
-                : ['.arrow', '.feather'].includes(ext) ? 'arrow' : undefined;
+                : ['.arrow', '.feather'].includes(ext) ? 'arrow'
+                    : ext === '.txt' ? 'text'
+                        : ['.dcm', '.dicom'].includes(ext) ? 'dicom'
+                            : ext === '.eml' ? 'eml'
+                                : ext === '.mcap' ? 'mcap'
+                                    : ['.glb', '.gltf', '.stl', '.obj'].includes(ext) ? 'mesh' : undefined;
         const isHtmlExtension = ext === '.html' || ext === '.htm';
         const bufferLength = buffer.length;
         const preferredOfficeViewType = this.getOfficeViewTypeForExtension(ext);
@@ -215,6 +228,16 @@ export class FileUtils {
             };
         }
 
+        if ((!extensionClaimed || formatSlug === 'dicom') && buffer.length >= 132
+            && this.hasAsciiPrefix(buffer.subarray(128), 'DICM')) {
+            return this.signatureMatch('omni-viewer.dicomViewer', 'Matched the DICOM Part 10 marker.');
+        }
+        if (this.matchesBytes(buffer, [0x89, 0x4d, 0x43, 0x41, 0x50, 0x30, 0x0d, 0x0a])) {
+            return this.signatureMatch('omni-viewer.mcapViewer', 'Matched MCAP v0 magic.');
+        }
+        if (this.looksLikeGlb(buffer, file.size)) {
+            return this.signatureMatch('omni-viewer.meshViewer', 'Matched GLB magic.');
+        }
         if (this.looksLikeArrowIpc(buffer)) {
             return this.signatureMatch('omni-viewer.arrowViewer', 'Matched an Arrow IPC file or schema message.');
         }
@@ -269,7 +292,7 @@ export class FileUtils {
 
         // A UTF-16LE BOM (`FF FE`) passes the MP3 / ADTS frame-sync masks, so
         // those bare-sync sniffs stand aside for files named as XML or HTML.
-        const frameSyncEligible = !XML_EXTENSIONS.has(ext) && !isHtmlExtension;
+        const frameSyncEligible = !XML_EXTENSIONS.has(ext) && !isHtmlExtension && formatSlug !== 'text';
 
         if (this.hasAsciiPrefix(buffer, 'ID3') || (frameSyncEligible && this.isMp3FrameHeader(buffer))) {
             return this.signatureMatch('omni-viewer.audioViewer', 'Matched MP3 frame metadata.');
@@ -646,6 +669,15 @@ export class FileUtils {
             return {
                 viewType: `omni-viewer.${formatSlug}Viewer`,
                 reason: `Used the ${formatSlug} extension fallback.`,
+                matchedBySignature: false
+            };
+        }
+
+        const specificType = await refineDocumentType(buffer, ext, extensionClaimed, file);
+        if (specificType) {
+            return {
+                viewType: `omni-viewer.${specificType}Viewer`,
+                reason: `Matched ${specificType} document content.`,
                 matchedBySignature: false
             };
         }
@@ -1463,6 +1495,17 @@ export class FileUtils {
         return (tableCount > 0 && assignmentCount > 0) || assignmentCount >= 3;
     }
 
+    // glTF is also a word in prose. Require the GLB 2.0 container header
+    // and a bounded, aligned first JSON chunk before overriding a filename.
+    private static looksLikeGlb(data: Uint8Array, fileSize: number): boolean {
+      if (data.length < 20 || !this.hasAsciiPrefix(data, 'glTF')) return false;
+      const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+      const chunkLength = view.getUint32(12, true);
+      return view.getUint32(4, true) === 2 && view.getUint32(8, true) === fileSize
+        && view.getUint32(16, true) === 0x4e4f534a && chunkLength >= 4
+        && chunkLength % 4 === 0 && 20 + chunkLength <= fileSize;
+    }
+
     // ASCII font signatures also begin ordinary prose and table cells.
     // Validate their headers/directories before overriding a document format.
     private static looksLikeFont(data: Uint8Array, fileSize: number): boolean {
@@ -1783,6 +1826,20 @@ export function shortNameForViewType(viewType: OmniViewerViewType): string {
         return 'font';
     case 'omni-viewer.arrowViewer':
         return 'arrow';
+    case 'omni-viewer.textViewer':
+        return 'text';
+    case 'omni-viewer.dicomViewer':
+        return 'dicom';
+    case 'omni-viewer.junitViewer':
+        return 'junit';
+    case 'omni-viewer.openapiViewer':
+        return 'openapi';
+    case 'omni-viewer.emlViewer':
+        return 'eml';
+    case 'omni-viewer.mcapViewer':
+        return 'mcap';
+    case 'omni-viewer.meshViewer':
+        return 'mesh';
     case 'omni-viewer.geojsonViewer':
         return 'geojson';
     case 'omni-viewer.htmlViewer':

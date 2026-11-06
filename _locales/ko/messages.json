@@ -722,5 +722,17 @@
   "tomlLoadFailed": {
     "message": "TOML을 로드하지 못했습니다: $1",
     "description": "TOML viewer load-failure. $1 = error."
+  },
+  "shareUploadTitle": {
+    "message": "파일 공유",
+    "description": "Title of the confirmation dialog before uploading a shared file."
+  },
+  "shareUploadNotice": {
+    "message": "파일을 암호화해 서버에 업로드합니다. 공유 링크는 5분 후 만료됩니다.",
+    "description": "Notice shown before uploading a shared file."
+  },
+  "shareUploadConfirm": {
+    "message": "업로드하고 링크 만들기",
+    "description": "Button that confirms the upload and creates a share link."
   }
 }

@@ -2,7 +2,33 @@
 
 All notable changes to the Chrome build of Omni Viewer are documented in this file.
 
-## [Unreleased]
+## [0.11.0] - 2026-11-07
+
+### Added
+- Added a literal `.txt` viewer with UTF-8 / BOM-aware UTF-16 decoding,
+  wrapping, and bounded previews. Text files retain their whitespace and do not
+  interpret Markdown, HTML, JSON, or diagrams.
+- Added DICOM (`.dcm`, `.dicom`) metadata and native-pixel previews, frame
+  navigation, windowing, inversion, and zoom. Recognize extensionless Part 10 files.
+- Added JUnit XML reports with outcome filters, suite/case details, traces,
+  captured output, report copy, and source inspection; other XML retains its viewer.
+- Added OpenAPI / Swagger JSON and YAML inspection with operations, schemas,
+  parameters, examples, authentication, and local references, using core detection
+  to refine generic JSON/YAML documents.
+- Added EML messages with decoded headers, text/HTML bodies, inline CID images,
+  attachment downloads, copy, and raw source views; recognize extensionless email.
+- Added MCAP recordings with topic/channel/schema inspection, message previews,
+  metadata, attachments, and bundled LZ4/Zstd decoding.
+- Added GLB/glTF, STL, and OBJ 3D meshes with orbit/pan/zoom, fit, wireframe,
+  grid/axes, statistics, and glTF animations. Selected companion files supply
+  local glTF buffers and textures without network access.
+- Registered all new formats in the SPA, viewer registry, file handlers, and
+  build, with standalone viewer pages.
+
+### Changed
+- Updated `omni-viewer-core` to 0.23.0 and bundled Three.js for the mesh viewer.
+- Added a localized confirmation dialog before encrypting and uploading a shared
+  file, with protection against duplicate uploads and file-selection changes.
 
 ## [0.10.0] - 2026-10-29
 

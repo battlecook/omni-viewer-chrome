@@ -5,7 +5,7 @@ module.exports = {
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
-    '^.+\\.ts$': [
+    '^.+\\.[tj]s$': [
       'ts-jest',
       {
         tsconfig: {
@@ -19,6 +19,9 @@ module.exports = {
       },
     ],
   },
+  moduleNameMapper: { '^yaml$': require.resolve('yaml') },
+  // Exercise the same ESM document signatures used by the browser bundle.
+  transformIgnorePatterns: ['/node_modules/(?!omni-viewer-core/)'],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
