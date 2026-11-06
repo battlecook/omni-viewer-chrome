@@ -3,7 +3,8 @@ name: Release Chrome Extension
 # Triggered when a `v*` tag is pushed (e.g. `v0.1.0`). The job verifies that
 # the tag matches package.json/manifest.json, builds the extension, packages
 # it into a Chrome Web Store-ready zip, and attaches the zip to a GitHub
-# Release.
+# Release, then submits it to the Chrome Web Store when configured.
+# One-time account setup: store/automatic-publishing.md.
 #
 # To cut a release locally:
 #   1. Bump `version` in BOTH package.json and manifest.json (must match).
@@ -17,6 +18,19 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to build and submit (e.g. v0.11.0)'
+        required: true
+        type: string
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -25,9 +39,20 @@ jobs:
   release:
     name: Build and publish zip
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.zip.outputs.version }}
     steps:
+      - name: Validate release tag
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Expected a stable release tag such as v0.11.0."
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -40,7 +65,7 @@ jobs:
 
       - name: Verify tag matches package version
         run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          TAG_VERSION="${RELEASE_TAG#v}"
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
           MANIFEST_VERSION=$(node -p "require('./manifest.json').version")
           if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ] || [ "$TAG_VERSION" != "$MANIFEST_VERSION" ]; then
@@ -50,6 +75,9 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Tests
+        run: npm run test:ci -- --runInBand
 
       - name: Build
         run: npm run build
@@ -79,9 +107,79 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
           files: ${{ steps.zip.outputs.path }}
           draft: false
           prerelease: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Explain Web Store setup
+        if: vars.CWS_PUBLISH_ENABLED != 'true'
+        run: echo 'Chrome Web Store submission is disabled. See store/automatic-publishing.md to enable it.' >> "$GITHUB_STEP_SUMMARY"
+
+  webstore:
+    name: Submit to Chrome Web Store
+    needs: release
+    if: vars.CWS_PUBLISH_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    # Do not interrupt an upload or submission when another release starts.
+    concurrency:
+      group: chrome-web-store-publish
+      cancel-in-progress: false
+    env:
+      CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+      CWS_EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID }}
+      CWS_SERVICE_ACCOUNT: ${{ vars.CWS_SERVICE_ACCOUNT }}
+      CWS_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.CWS_WORKLOAD_IDENTITY_PROVIDER }}
+      RELEASE_VERSION: ${{ needs.release.outputs.version }}
+    steps:
+      # Use this workflow's scripts even when manually releasing an older tag.
+      - name: Checkout publisher
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify publishing configuration
+        run: |
+          for name in CWS_PUBLISHER_ID CWS_EXTENSION_ID CWS_SERVICE_ACCOUNT CWS_WORKLOAD_IDENTITY_PROVIDER; do
+            if [ -z "${!name}" ]; then
+              echo "Missing repository variable: $name. See store/automatic-publishing.md."
+              exit 1
+            fi
+          done
+
+      - name: Test publisher
+        run: node --test scripts/__tests__/publish-webstore.test.mjs
+
+      - name: Download tested release zip
+        uses: actions/download-artifact@v4
+        with:
+          name: omni-viewer-${{ needs.release.outputs.version }}
+          path: release-package
+
+      - name: Authenticate to Chrome Web Store
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.CWS_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.CWS_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/chromewebstore
+          create_credentials_file: false
+          export_environment_variables: false
+
+      - name: Upload and submit for review
+        env:
+          CWS_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: node scripts/publish-webstore.mjs "release-package/omni-viewer-${RELEASE_VERSION}.zip"

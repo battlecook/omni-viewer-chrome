@@ -101,10 +101,14 @@ ticked is a blocker.
 
 ## 8. Submission
 
-- [ ] Upload the zip from step 5.
-- [ ] Save the draft. Re-open and re-verify the listing fields populated.
-- [ ] Submit for review.
-- [ ] Tag the release in git (`git tag vX.Y.Z`).
+- [ ] For automatic submission, complete the one-time setup in
+      [automatic-publishing.md](automatic-publishing.md).
+- [ ] Commit and push the release, then push its tag (`git tag vX.Y.Z` and
+      `git push origin vX.Y.Z`). The workflow creates the ZIP and GitHub Release.
+- [ ] Confirm the **Submit to Chrome Web Store** job succeeds (not skipped).
+      It uploads the ZIP and requests automatic publication after approval.
+- [ ] If automatic submission is disabled, upload the ZIP from step 5 in the
+      dashboard, save the draft, verify the listing fields and submit for review.
 
 ## 9. Post-submission
 
