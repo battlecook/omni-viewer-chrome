@@ -1131,7 +1131,7 @@ describe('FileUtils.detectViewerType XML / EPUB', () => {
         return bytes;
     }
 
-    it.each(['pom.xml', 'schema.xsd', 'feed.rss', 'route.gpx', 'App.csproj'])(
+    it.each(['pom.xml', 'schema.xsd', 'feed.rss', 'strings.resx', 'App.csproj'])(
         'routes %s to the XML viewer by extension',
         async (name) => {
             const result = await FileUtils.detectViewerType(

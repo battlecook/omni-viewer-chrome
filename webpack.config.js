@@ -50,6 +50,13 @@ const VIEWERS = [
   'eml',
   'mcap',
   'mesh',
+  'sarif',
+  'gps',
+  'trace',
+  'sbom',
+  'msg',
+  'drawio',
+  'opendocument',
   'markdown',
   'notebook',
   'epub',
@@ -219,7 +226,8 @@ module.exports = (env, argv) => {
             from: 'src/templates/html/htmlViewer.html',
             to: 'templates/html/htmlViewer.html'
           },
-          ...['font', 'arrow', 'geojson', 'text', 'dicom', 'junit', 'openapi', 'eml', 'mcap', 'mesh'].map((slug) => ({
+          ...['font', 'arrow', 'geojson', 'text', 'dicom', 'junit', 'openapi', 'eml', 'mcap', 'mesh',
+            'sarif', 'gps', 'trace', 'sbom', 'msg', 'drawio', 'opendocument'].map((slug) => ({
             from: `src/templates/${slug}/${slug}Viewer.html`,
             to: `templates/${slug}/${slug}Viewer.html`
           })),

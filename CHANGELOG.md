@@ -2,6 +2,32 @@
 
 All notable changes to the Chrome build of Omni Viewer are documented in this file.
 
+## [0.12.0] - 2026-11-15
+
+### Added
+- Added SARIF analysis reports (`.sarif`, `.sarif.json`) with severity, rule, and
+  tool filters and per-result locations.
+- Added GPX, KML, and KMZ tracks on a map with distance, elapsed time, and
+  elevation summaries. GPX 1.0/1.1 and KML 2.0–2.2 files now open here instead
+  of the XML tree; other dialects, such as KML 2.3, keep the XML tree.
+- Added Chrome / Perfetto JSON performance traces (`.trace.json`,
+  `.chrome-trace`) with a zoomable track timeline and event details.
+- Added CycloneDX SBOMs (`.cdx.json`, `.cyclonedx.json`) with component,
+  license, package URL, and direct-dependency inspection.
+- Added Outlook `.msg` messages with headers, text/HTML bodies, and attachment
+  downloads. ROS and Tcl `.msg` text files are left alone.
+- Added draw.io diagrams (`.drawio`, `.dio`) with pages, layers, and zoom,
+  including compressed pages.
+- Added OpenDocument text and presentations (`.odt`, `.odp`).
+- Recognize these formats by content in generic `.json` / `.xml` files and in
+  renamed or extensionless files, using the core's detection and container probe.
+- Registered all new formats in the SPA, viewer registry, file handlers, and
+  build, with standalone viewer pages.
+
+### Changed
+- Updated `omni-viewer-core` to 0.24.0. The audio spectrogram now computes in a
+  worker shipped with the core's audio engine assets.
+
 ## [0.11.0] - 2026-11-07
 
 ### Added

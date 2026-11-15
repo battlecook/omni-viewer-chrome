@@ -192,10 +192,19 @@ const formats = {
   eml: ['.eml'],
   mcap: ['.mcap'],
   mesh: ['.glb', '.gltf', '.stl', '.obj'],
+  sarif: ['.sarif', '.sarif.json'],
+  // GPX and KML are XML, but the map preview outranks the generic tree.
+  gps: ['.gpx', '.kml', '.kmz'],
+  trace: ['.trace.json', '.chrome-trace'],
+  sbom: ['.cdx.json', '.cyclonedx.json'],
+  // Shared with ROS and Tcl text files: `detectType` keeps only a compound file.
+  msg: ['.msg'],
+  drawio: ['.drawio', '.dio'],
+  opendocument: ['.odt', '.odp'],
   // `.xml` is shared with OpenVINO IR; `detectType` hands an IR root to that
   // viewer before the extension is consulted. `.arxml` / `.reqif` stay with
   // the automotive viewer.
-  xml: ['.xml', '.xsd', '.xsl', '.xslt', '.wsdl', '.xlf', '.xliff', '.rss', '.atom', '.xaml', '.kml', '.gpx', '.resx', '.csproj', '.vcxproj', '.nuspec'],
+  xml: ['.xml', '.xsd', '.xsl', '.xslt', '.wsdl', '.xlf', '.xliff', '.rss', '.atom', '.xaml', '.resx', '.csproj', '.vcxproj', '.nuspec'],
   markdown: ['.md', '.markdown'],
   notebook: ['.ipynb'],
   epub: ['.epub'],
@@ -250,6 +259,13 @@ const labels = {
   eml: 'EML',
   mcap: 'MCAP',
   mesh: '3D Mesh',
+  sarif: 'SARIF',
+  gps: 'GPS Map',
+  trace: 'Performance Trace',
+  sbom: 'CycloneDX SBOM',
+  msg: 'Outlook Message',
+  drawio: 'draw.io',
+  opendocument: 'OpenDocument',
   markdown: 'Markdown',
   notebook: 'Jupyter Notebook',
   epub: 'EPUB',
@@ -292,9 +308,14 @@ function formatSize(bytes) {
   return `${(bytes / (1024 ** index)).toFixed(index ? 1 : 0)} ${units[index]}`;
 }
 
+// Two-part extensions that name a format of their own: an archive, and the
+// core previews that would otherwise read as plain `.json`.
+const COMPOUND_EXTENSIONS = ['.tar.gz', '.sarif.json', '.trace.json', '.cdx.json', '.cyclonedx.json'];
+
 function extOf(name) {
   const lower = name.toLowerCase();
-  if (lower.endsWith('.tar.gz')) return '.tar.gz';
+  const compound = COMPOUND_EXTENSIONS.find((ext) => lower.endsWith(ext));
+  if (compound) return compound;
   return lower.includes('.') ? `.${lower.split('.').pop()}` : '';
 }
 
@@ -737,10 +758,35 @@ async function refineDocumentType(...args) {
   return detection.refineDocumentType(...args);
 }
 
+// A renamed Outlook message, KMZ, or OpenDocument package, by the core's probe.
+async function probePreviewContainer(file, container) {
+  try {
+    const detection = await loadAdvancedViewerBundle('detection');
+    if (file.size > detection.PREVIEW_PROBE_MAX_BYTES) return null;
+    return await detection.probePreviewContainer(new Uint8Array(await file.arrayBuffer()), container);
+  } catch {
+    // An unreadable file keeps the signature and extension routing below.
+    return null;
+  }
+}
+
+// Other KML / GPX dialects keep the XML tree; see documentDetection.js.
+async function acceptsGpsDocument(head) {
+  try {
+    return (await loadAdvancedViewerBundle('detection')).acceptsGpsDocument(head);
+  } catch {
+    return true;
+  }
+}
+
 async function detectType(file) {
   const head = await readHead(file);
   const ext = extOf(file.name);
-  const extensionType = byExtension(file);
+  const compoundFile = hasPrefix(head, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+  const declaredType = byExtension(file);
+  // As in the core registry, `.msg` names an Outlook message only when the
+  // bytes are a compound file; otherwise the name claims nothing.
+  const extensionType = declaredType === 'msg' && !compoundFile ? 'unknown' : declaredType;
   if ((extensionType === 'unknown' || extensionType === 'dicom') && ascii(head, 128, 4) === 'DICM') return 'dicom';
   if (hasPrefix(head, [0x89, 0x4d, 0x43, 0x41, 0x50, 0x30, 0x0d, 0x0a])) return 'mcap';
   if (looksLikeGlb(head, file.size)) return 'mesh';
@@ -777,7 +823,10 @@ async function detectType(file) {
   // A `.shx` index shares the `.shp` header byte for byte, and it is the
   // geometry — not its index — that the viewer opens.
   if (looksLikeShapefile(head) && ext !== '.shx') return 'shapefile';
-  if (hasPrefix(head, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])) return byExtension(file);
+  if (compoundFile) {
+    if (extensionType === 'unknown' && await probePreviewContainer(file, 'ole') === 'msg') return 'msg';
+    return extensionType;
+  }
   if (hasPrefix(head, [0x50, 0x4b])) {
     if (ext === '.npz') return 'numpy';
     // The stored `mimetype` member identifies a renamed or extensionless book;
@@ -788,6 +837,11 @@ async function detectType(file) {
     // An .mlpackage is a directory bundle on disk, so the browser only ever
     // sees the zipped form.
     if (ext === '.mlpackage') return 'coreml';
+    if (extensionType === 'gps' || extensionType === 'opendocument') return extensionType;
+    if (extensionType === 'unknown') {
+      const previewType = await probePreviewContainer(file, 'zip');
+      if (previewType) return previewType;
+    }
     const text = ascii(head, 0, Math.min(head.length, 65536));
     // Likewise for a renamed .mlpackage: only Core ML reserves this Data tree.
     if (text.includes('Data/com.apple.CoreML/')) return 'coreml';
@@ -809,7 +863,7 @@ async function detectType(file) {
     if (looksLikePt2Archive(rootNames)) return 'pt2';
     // A mislabeled HTML file must keep a recognized ZIP local-file signature.
     if (formats.html.includes(ext) && hasPrefix(head, [0x50, 0x4b, 0x03, 0x04])) return 'archive';
-    return formats.archive.includes(ext) ? 'archive' : byExtension(file);
+    return formats.archive.includes(ext) ? 'archive' : extensionType;
   }
   // HTML fragments may contain plain JSON or diagram examples. Preserve the
   // declared format after binary signatures, before any text content sniffs.
@@ -817,7 +871,8 @@ async function detectType(file) {
   if (formats.geojson.includes(ext)) return 'geojson';
   if (formats.font.includes(ext)) return 'font';
   if (formats.arrow.includes(ext)) return 'arrow';
-  if (['text', 'dicom', 'eml', 'mcap', 'mesh'].includes(extensionType)) return extensionType;
+  if (extensionType === 'gps' && !await acceptsGpsDocument(head)) return 'xml';
+  if (['text', 'dicom', 'eml', 'mcap', 'mesh', 'sarif', 'gps', 'trace', 'sbom', 'drawio', 'opendocument'].includes(extensionType)) return extensionType;
   const specificType = await refineDocumentType(head, ext, extensionType !== 'unknown', file);
   if (specificType) return specificType;
   // One UTF-8 decode of the head, shared by the structured-text sniffs below.
@@ -1175,6 +1230,13 @@ async function renderByType() {
   if (type === 'eml') return renderCoreFormat('eml', 'mountEmlViewer');
   if (type === 'mcap') return renderCoreFormat('mcap', 'mountMcapViewer');
   if (type === 'mesh') return renderCoreFormat('mesh', 'mountMeshViewer');
+  if (type === 'sarif') return renderCoreFormat('sarif', 'mountSarifViewer');
+  if (type === 'gps') return renderCoreFormat('gps', 'mountGpsViewer');
+  if (type === 'trace') return renderCoreFormat('trace', 'mountTraceViewer');
+  if (type === 'sbom') return renderCoreFormat('sbom', 'mountSbomViewer');
+  if (type === 'msg') return renderCoreFormat('msg', 'mountMsgViewer');
+  if (type === 'drawio') return renderCoreFormat('drawio', 'mountDrawioViewer');
+  if (type === 'opendocument') return renderCoreFormat('opendocument', 'mountOpenDocumentViewer');
 
   if (type === 'markdown') return renderMarkdown();
   if (type === 'notebook') return renderNotebook();

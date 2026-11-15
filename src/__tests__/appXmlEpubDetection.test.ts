@@ -106,7 +106,7 @@ function epubBytes(mimetype = 'application/epub+zip'): Uint8Array {
 }
 
 describe('legacy SPA XML detection', () => {
-    it.each(['pom.xml', 'schema.xsd', 'feed.rss', 'route.gpx', 'App.csproj'])(
+    it.each(['pom.xml', 'schema.xsd', 'feed.rss', 'strings.resx', 'App.csproj'])(
         'routes %s to the XML viewer by extension',
         async (name) => {
             const meta = await openInSpa([

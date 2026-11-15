@@ -5,6 +5,13 @@ jest.mock('omni-viewer-core/viewers/openapi/self-loading', () => ({ mountSelfLoa
 jest.mock('omni-viewer-core/viewers/eml', () => ({ mountEmlViewer: jest.fn() }));
 jest.mock('omni-viewer-core/viewers/mcap/self-loading', () => ({ mountSelfLoadingMcapViewer: jest.fn() }));
 jest.mock('omni-viewer-core/viewers/mesh/self-loading', () => ({ mountSelfLoadingMeshViewer: jest.fn() }));
+jest.mock('omni-viewer-core/viewers/sarif', () => ({ mountSarifViewer: jest.fn() }));
+jest.mock('omni-viewer-core/viewers/gps', () => ({ mountGpsViewer: jest.fn() }));
+jest.mock('omni-viewer-core/viewers/trace', () => ({ mountTraceViewer: jest.fn() }));
+jest.mock('omni-viewer-core/viewers/sbom', () => ({ mountSbomViewer: jest.fn() }));
+jest.mock('omni-viewer-core/viewers/msg', () => ({ mountMsgViewer: jest.fn() }));
+jest.mock('omni-viewer-core/viewers/drawio', () => ({ mountDrawioViewer: jest.fn() }));
+jest.mock('omni-viewer-core/viewers/opendocument', () => ({ mountOpenDocumentViewer: jest.fn() }));
 jest.mock('omni-viewer-core/viewers/font', () => ({ mountFontViewer: jest.fn() }));
 jest.mock('omni-viewer-core/viewers/arrow/self-loading', () => ({ mountSelfLoadingArrowViewer: jest.fn() }));
 jest.mock('omni-viewer-core/viewers/geojson', () => ({ mountGeoJsonViewer: jest.fn() }));
@@ -25,6 +32,13 @@ import { mountOpenApiViewer } from '../templates/openapi/js/openapiViewer';
 import { mountEmlViewer } from '../templates/eml/js/emlViewer';
 import { mountMcapViewer } from '../templates/mcap/js/mcapViewer';
 import { mountMeshViewer } from '../templates/mesh/js/meshViewer';
+import { mountSarifViewer } from '../templates/sarif/js/sarifViewer';
+import { mountGpsViewer } from '../templates/gps/js/gpsViewer';
+import { mountTraceViewer } from '../templates/trace/js/traceViewer';
+import { mountSbomViewer } from '../templates/sbom/js/sbomViewer';
+import { mountMsgViewer } from '../templates/msg/js/msgViewer';
+import { mountDrawioViewer } from '../templates/drawio/js/drawioViewer';
+import { mountOpenDocumentViewer } from '../templates/opendocument/js/opendocumentViewer';
 import { getRegistrationBySlug, type ViewerSlug } from '../viewerRegistry';
 
 const cases = [
@@ -35,6 +49,13 @@ const cases = [
     ['eml', mountEmlViewer, jest.requireMock('omni-viewer-core/viewers/eml').mountEmlViewer],
     ['mcap', mountMcapViewer, jest.requireMock('omni-viewer-core/viewers/mcap/self-loading').mountSelfLoadingMcapViewer],
     ['mesh', mountMeshViewer, jest.requireMock('omni-viewer-core/viewers/mesh/self-loading').mountSelfLoadingMeshViewer],
+    ['sarif', mountSarifViewer, jest.requireMock('omni-viewer-core/viewers/sarif').mountSarifViewer],
+    ['gps', mountGpsViewer, jest.requireMock('omni-viewer-core/viewers/gps').mountGpsViewer],
+    ['trace', mountTraceViewer, jest.requireMock('omni-viewer-core/viewers/trace').mountTraceViewer],
+    ['sbom', mountSbomViewer, jest.requireMock('omni-viewer-core/viewers/sbom').mountSbomViewer],
+    ['msg', mountMsgViewer, jest.requireMock('omni-viewer-core/viewers/msg').mountMsgViewer],
+    ['drawio', mountDrawioViewer, jest.requireMock('omni-viewer-core/viewers/drawio').mountDrawioViewer],
+    ['opendocument', mountOpenDocumentViewer, jest.requireMock('omni-viewer-core/viewers/opendocument').mountOpenDocumentViewer],
     ['font', mountFontViewer, jest.requireMock('omni-viewer-core/viewers/font').mountFontViewer],
     ['arrow', mountArrowViewer, jest.requireMock('omni-viewer-core/viewers/arrow/self-loading').mountSelfLoadingArrowViewer],
     ['geojson', mountGeoJsonViewer, jest.requireMock('omni-viewer-core/viewers/geojson').mountGeoJsonViewer]

@@ -53,6 +53,13 @@ export type OmniViewerViewType =
     | 'omni-viewer.emlViewer'
     | 'omni-viewer.mcapViewer'
     | 'omni-viewer.meshViewer'
+    | 'omni-viewer.sarifViewer'
+    | 'omni-viewer.gpsViewer'
+    | 'omni-viewer.traceViewer'
+    | 'omni-viewer.sbomViewer'
+    | 'omni-viewer.msgViewer'
+    | 'omni-viewer.drawioViewer'
+    | 'omni-viewer.opendocumentViewer'
     | 'omni-viewer.markdownViewer'
     | 'omni-viewer.notebookViewer'
     | 'omni-viewer.epubViewer'
@@ -116,6 +123,13 @@ export type ViewerSlug =
     | 'eml'
     | 'mcap'
     | 'mesh'
+    | 'sarif'
+    | 'gps'
+    | 'trace'
+    | 'sbom'
+    | 'msg'
+    | 'drawio'
+    | 'opendocument'
     | 'markdown'
     | 'notebook'
     | 'epub'
@@ -182,6 +196,62 @@ function createPlaceholderProvider(viewType: OmniViewerViewType): ChromeViewerPr
 }
 
 export const VIEWER_REGISTRATIONS: ViewerRegistration[] = [
+    {
+        viewType: 'omni-viewer.sarifViewer',
+        slug: 'sarif',
+        command: 'omni-viewer.openSarifViewer',
+        missingMessage: 'No SARIF report file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.sarifViewer')
+    },
+    {
+        viewType: 'omni-viewer.gpsViewer',
+        slug: 'gps',
+        command: 'omni-viewer.openGpsViewer',
+        missingMessage: 'No GPS track file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.gpsViewer')
+    },
+    {
+        viewType: 'omni-viewer.traceViewer',
+        slug: 'trace',
+        command: 'omni-viewer.openTraceViewer',
+        missingMessage: 'No performance trace file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.traceViewer')
+    },
+    {
+        viewType: 'omni-viewer.sbomViewer',
+        slug: 'sbom',
+        command: 'omni-viewer.openSbomViewer',
+        missingMessage: 'No CycloneDX SBOM file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.sbomViewer')
+    },
+    {
+        viewType: 'omni-viewer.msgViewer',
+        slug: 'msg',
+        command: 'omni-viewer.openMsgViewer',
+        missingMessage: 'No Outlook message file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.msgViewer')
+    },
+    {
+        viewType: 'omni-viewer.drawioViewer',
+        slug: 'drawio',
+        command: 'omni-viewer.openDrawioViewer',
+        missingMessage: 'No draw.io diagram file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.drawioViewer')
+    },
+    {
+        viewType: 'omni-viewer.opendocumentViewer',
+        slug: 'opendocument',
+        command: 'omni-viewer.openOpenDocumentViewer',
+        missingMessage: 'No OpenDocument file selected',
+        retainContextWhenHidden: true,
+        createProvider: () => createPlaceholderProvider('omni-viewer.opendocumentViewer')
+    },
     {
         viewType: 'omni-viewer.textViewer',
         slug: 'text',
@@ -694,8 +764,6 @@ const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
     '.rss': 'xml',
     '.atom': 'xml',
     '.xaml': 'xml',
-    '.kml': 'xml',
-    '.gpx': 'xml',
     '.resx': 'xml',
     '.csproj': 'xml',
     '.vcxproj': 'xml',
@@ -717,6 +785,24 @@ const EXTENSION_TO_SLUG: Record<string, ViewerSlug> = {
     '.gltf': 'mesh',
     '.stl': 'mesh',
     '.obj': 'mesh',
+    '.sarif': 'sarif',
+    '.sarif.json': 'sarif',
+    // GPX and KML are XML, but the map preview outranks the generic tree, as
+    // in the core registry.
+    '.gpx': 'gps',
+    '.kml': 'gps',
+    '.kmz': 'gps',
+    '.trace.json': 'trace',
+    '.chrome-trace': 'trace',
+    '.cdx.json': 'sbom',
+    '.cyclonedx.json': 'sbom',
+    // ROS message definitions and Tcl catalogs share `.msg`; byte detection
+    // keeps only a compound file in the Outlook viewer.
+    '.msg': 'msg',
+    '.drawio': 'drawio',
+    '.dio': 'drawio',
+    '.odt': 'opendocument',
+    '.odp': 'opendocument',
     '.html': 'html',
     '.htm': 'html',
     '.md': 'markdown',

@@ -16,10 +16,15 @@ export interface AudioMetadata {
     fileSize?: string;
 }
 
+// Two-part extensions that name a format of their own: an archive, and the
+// core previews that would otherwise read as plain `.json`.
+const COMPOUND_EXTENSIONS = ['.tar.gz', '.sarif.json', '.trace.json', '.cdx.json', '.cyclonedx.json'];
+
 export function extOf(name: string): string {
     const lower = name.toLowerCase();
-    if (lower.endsWith('.tar.gz')) {
-        return '.tar.gz';
+    const compound = COMPOUND_EXTENSIONS.find((ext) => lower.endsWith(ext));
+    if (compound) {
+        return compound;
     }
     const dot = lower.lastIndexOf('.');
     return dot >= 0 ? lower.slice(dot) : '';

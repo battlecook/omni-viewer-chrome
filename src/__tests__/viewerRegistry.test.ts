@@ -78,6 +78,13 @@ const ALL_SLUGS: ViewerSlug[] = [
     'eml',
     'mcap',
     'mesh',
+    'sarif',
+    'gps',
+    'trace',
+    'sbom',
+    'msg',
+    'drawio',
+    'opendocument',
     'markdown',
     'notebook',
     'epub',
@@ -100,7 +107,7 @@ const ALL_SLUGS: ViewerSlug[] = [
 
 describe('viewerRegistry', () => {
     it('registers all viewers', () => {
-        expect(VIEWER_REGISTRATIONS).toHaveLength(57);
+        expect(VIEWER_REGISTRATIONS).toHaveLength(64);
         const slugs = VIEWER_REGISTRATIONS.map((r) => r.slug).sort();
         expect(slugs).toEqual([...ALL_SLUGS].sort());
     });
@@ -235,7 +242,21 @@ describe('viewerRegistry', () => {
             ['page.HTM', 'html'],
             ['schema.xsd', 'xml'],
             ['feed.rss', 'xml'],
-            ['route.gpx', 'xml'],
+            ['strings.resx', 'xml'],
+            ['scan.sarif', 'sarif'],
+            ['scan.SARIF.json', 'sarif'],
+            ['route.gpx', 'gps'],
+            ['places.KML', 'gps'],
+            ['places.kmz', 'gps'],
+            ['profile.trace.json', 'trace'],
+            ['profile.chrome-trace', 'trace'],
+            ['bom.cdx.json', 'sbom'],
+            ['bom.cyclonedx.json', 'sbom'],
+            ['mail.msg', 'msg'],
+            ['flow.drawio', 'drawio'],
+            ['flow.dio', 'drawio'],
+            ['letter.odt', 'opendocument'],
+            ['slides.ODP', 'opendocument'],
             ['App.csproj', 'xml'],
             ['book.epub', 'epub'],
             ['Book.EPUB', 'epub'],

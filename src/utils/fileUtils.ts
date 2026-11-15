@@ -18,7 +18,7 @@ import {
     getAudioMetadata as readAudioMetadata,
     AudioMetadata
 } from './fileUtils/media';
-import { refineDocumentType } from './documentDetection';
+import { PREVIEW_PROBE_MAX_BYTES, acceptsGpsDocument, probePreviewContainer, refineDocumentType } from './documentDetection';
 import { detectDelimiter } from './fileUtils/tabular';
 import { resolveRegistrationByFileName } from '../viewerRegistry';
 
@@ -45,6 +45,13 @@ export type OmniViewerViewType =
     | 'omni-viewer.emlViewer'
     | 'omni-viewer.mcapViewer'
     | 'omni-viewer.meshViewer'
+    | 'omni-viewer.sarifViewer'
+    | 'omni-viewer.gpsViewer'
+    | 'omni-viewer.traceViewer'
+    | 'omni-viewer.sbomViewer'
+    | 'omni-viewer.msgViewer'
+    | 'omni-viewer.drawioViewer'
+    | 'omni-viewer.opendocumentViewer'
     | 'omni-viewer.markdownViewer'
     | 'omni-viewer.notebookViewer'
     | 'omni-viewer.epubViewer'
@@ -131,6 +138,18 @@ const XML_EXTENSIONS = new Set([
     '.xml', '.xsd', '.xsl', '.xslt', '.wsdl', '.xlf', '.xliff', '.rss', '.atom',
     '.xaml', '.kml', '.gpx', '.resx', '.csproj', '.vcxproj', '.nuspec'
 ]);
+// omni-viewer-core's read-only previews. `.msg` is absent: it is shared with
+// ROS and Tcl text files, so only the compound-file signature claims it.
+const PREVIEW_EXTENSION_SLUGS: Partial<Record<string, 'sarif' | 'gps' | 'trace' | 'sbom' | 'drawio' | 'opendocument'>> = {
+    '.sarif': 'sarif', '.sarif.json': 'sarif',
+    '.gpx': 'gps', '.kml': 'gps', '.kmz': 'gps',
+    '.trace.json': 'trace', '.chrome-trace': 'trace',
+    '.cdx.json': 'sbom', '.cyclonedx.json': 'sbom',
+    '.drawio': 'drawio', '.dio': 'drawio',
+    '.odt': 'opendocument', '.odp': 'opendocument'
+};
+// Text formats whose UTF-16 BOM must not be read as an audio frame sync.
+const TEXT_FORMAT_SLUGS = new Set<string>(['text', 'sarif', 'gps', 'trace', 'sbom', 'drawio']);
 const STRUCTURED_DATA_BINARY_EXTENSIONS = new Set(['.avro', '.bag', '.db3', '.sqlite', '.sqlite3', '.pcap', '.pcapng', '.h5', '.hdf5']);
 
 // Lazy decoders — jest-environment-jsdom 29 does not expose `TextDecoder`
@@ -206,18 +225,21 @@ export class FileUtils {
         const fallbackViewType = options.fallbackViewType;
         const buffer = await this.readSignatureBuffer(file);
         const ext = extOf(file.name);
-        const formatSlug = ext === '.geojson' ? 'geojson'
+        const formatSlug = PREVIEW_EXTENSION_SLUGS[ext] ?? (ext === '.geojson' ? 'geojson'
             : ['.ttf', '.otf', '.woff'].includes(ext) ? 'font'
                 : ['.arrow', '.feather'].includes(ext) ? 'arrow'
                     : ext === '.txt' ? 'text'
                         : ['.dcm', '.dicom'].includes(ext) ? 'dicom'
                             : ext === '.eml' ? 'eml'
                                 : ext === '.mcap' ? 'mcap'
-                                    : ['.glb', '.gltf', '.stl', '.obj'].includes(ext) ? 'mesh' : undefined;
+                                    : ['.glb', '.gltf', '.stl', '.obj'].includes(ext) ? 'mesh' : undefined);
         const isHtmlExtension = ext === '.html' || ext === '.htm';
         const bufferLength = buffer.length;
         const preferredOfficeViewType = this.getOfficeViewTypeForExtension(ext);
-        const extensionClaimed = resolveRegistrationByFileName(file.name) !== undefined;
+        // As in the core registry, `.msg` names an Outlook message only when
+        // the bytes are a compound file; otherwise the name claims nothing.
+        const extensionClaimed = resolveRegistrationByFileName(file.name) !== undefined
+            && (ext !== '.msg' || this.isCompoundFileBinary(buffer));
 
         if (bufferLength === 0) {
             return {
@@ -292,7 +314,7 @@ export class FileUtils {
 
         // A UTF-16LE BOM (`FF FE`) passes the MP3 / ADTS frame-sync masks, so
         // those bare-sync sniffs stand aside for files named as XML or HTML.
-        const frameSyncEligible = !XML_EXTENSIONS.has(ext) && !isHtmlExtension && formatSlug !== 'text';
+        const frameSyncEligible = !XML_EXTENSIONS.has(ext) && !isHtmlExtension && !(formatSlug && TEXT_FORMAT_SLUGS.has(formatSlug));
 
         if (this.hasAsciiPrefix(buffer, 'ID3') || (frameSyncEligible && this.isMp3FrameHeader(buffer))) {
             return this.signatureMatch('omni-viewer.audioViewer', 'Matched MP3 frame metadata.');
@@ -425,11 +447,21 @@ export class FileUtils {
         }
 
         if (this.isCompoundFileBinary(buffer)) {
+            if (ext === '.msg') {
+                return this.signatureMatch('omni-viewer.msgViewer', 'Matched the Compound File signature under the Outlook .msg extension.');
+            }
+
             if (preferredOfficeViewType) {
                 return this.signatureMatch(
                     preferredOfficeViewType,
                     `Matched the Compound File signature and preserved the ${ext} Office viewer.`
                 );
+            }
+
+            // A renamed message can attach Office documents, so the core's
+            // root-storage probe is asked before the stream-name scan below.
+            if (!extensionClaimed && await this.probePreviewContainer(file, 'ole') === 'msg') {
+                return this.signatureMatch('omni-viewer.msgViewer', 'Matched Outlook message property streams.');
             }
 
             const compoundType = this.detectCompoundFileViewType(buffer);
@@ -476,11 +508,21 @@ export class FileUtils {
                 return this.signatureMatch('omni-viewer.pt2Viewer', 'Matched a PyTorch ExportedProgram ZIP container.');
             }
 
+            if (formatSlug === 'gps' || formatSlug === 'opendocument') {
+                return this.signatureMatch(`omni-viewer.${formatSlug}Viewer`, `Matched a ZIP container under the ${ext} extension.`);
+            }
+
             if (preferredOfficeViewType) {
                 return this.signatureMatch(
                     preferredOfficeViewType,
                     `Matched a ZIP-based Office container and preserved the ${ext} Office viewer.`
                 );
+            }
+
+            // A renamed KMZ or OpenDocument text / presentation package.
+            const previewType = extensionClaimed ? null : await this.probePreviewContainer(file, 'zip');
+            if (previewType) {
+                return this.signatureMatch(`omni-viewer.${previewType}Viewer`, `Matched a ${previewType} ZIP package.`);
             }
 
             const zipType = await this.detectZipBasedOfficeViewType(file, options.jsZip);
@@ -665,6 +707,15 @@ export class FileUtils {
             };
         }
 
+        // Other KML / GPX dialects keep the generic XML tree.
+        if (formatSlug === 'gps' && !acceptsGpsDocument(buffer)) {
+            return {
+                viewType: 'omni-viewer.xmlViewer',
+                reason: `Kept ${ext} outside the GPS map dialects in the XML viewer.`,
+                matchedBySignature: false
+            };
+        }
+
         if (formatSlug) {
             return {
                 viewType: `omni-viewer.${formatSlug}Viewer`,
@@ -676,7 +727,7 @@ export class FileUtils {
         const specificType = await refineDocumentType(buffer, ext, extensionClaimed, file);
         if (specificType) {
             return {
-                viewType: `omni-viewer.${specificType}Viewer`,
+                viewType: `omni-viewer.${specificType}Viewer` as OmniViewerViewType,
                 reason: `Matched ${specificType} document content.`,
                 matchedBySignature: false
             };
@@ -912,6 +963,19 @@ export class FileUtils {
 
     private static isCompoundFileBinary(buffer: Uint8Array): boolean {
         return this.matchesBytes(buffer, [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]);
+    }
+
+    private static async probePreviewContainer(file: File, container: 'ole' | 'zip'): Promise<'msg' | 'gps' | 'opendocument' | null> {
+        if (file.size > PREVIEW_PROBE_MAX_BYTES) {
+            return null;
+        }
+        try {
+            const viewerId = await probePreviewContainer(new Uint8Array(await blobToArrayBuffer(file)), container);
+            return viewerId as 'msg' | 'gps' | 'opendocument' | null;
+        } catch {
+            // An unreadable file keeps the signature and extension routing below.
+            return null;
+        }
     }
 
     private static detectCompoundFileViewType(buffer: Uint8Array): { viewType: OmniViewerViewType; reason: string } | null {
@@ -1840,6 +1904,20 @@ export function shortNameForViewType(viewType: OmniViewerViewType): string {
         return 'mcap';
     case 'omni-viewer.meshViewer':
         return 'mesh';
+    case 'omni-viewer.sarifViewer':
+        return 'sarif';
+    case 'omni-viewer.gpsViewer':
+        return 'gps';
+    case 'omni-viewer.traceViewer':
+        return 'trace';
+    case 'omni-viewer.sbomViewer':
+        return 'sbom';
+    case 'omni-viewer.msgViewer':
+        return 'msg';
+    case 'omni-viewer.drawioViewer':
+        return 'drawio';
+    case 'omni-viewer.opendocumentViewer':
+        return 'opendocument';
     case 'omni-viewer.geojsonViewer':
         return 'geojson';
     case 'omni-viewer.htmlViewer':
